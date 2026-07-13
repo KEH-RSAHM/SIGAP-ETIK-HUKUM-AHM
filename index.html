@@ -7,6 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script>
         function simpanKopSurat() {
@@ -26,8 +27,12 @@
     
     <style>
         :root{--bg:#020617;--bg-soft:#0f172a;--card:#0f172a;--card-soft:#111827;--text:#ffffff;--muted:#cbd5e1;--primary:#60a5fa;--accent:#f97316;--danger:#ef4444;--success:#22c55e;--surface:#111827;--surface-soft:rgba(255,255,255,0.08);--input-bg:#0f172a;--input-border:rgba(203,213,225,0.45);--placeholder:rgba(203,213,225,0.95)}
-        html,body{height:100%;}
-        body { font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: radial-gradient(circle at top, rgba(96,165,250,0.12), transparent 28%), linear-gradient(180deg, #020617 0%, #071126 55%, #0b1730 100%); color: var(--text); margin: 0; padding: 0; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; transition: background .3s ease, color .3s ease; }
+        *{box-sizing:border-box}
+        html,body{height:100%; overflow-x:hidden;}
+        body { font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: radial-gradient(circle at top, rgba(96,165,250,0.12), transparent 28%), linear-gradient(180deg, #020617 0%, #071126 55%, #0b1730 100%); color: var(--text); margin: 0; padding: 0; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; transition: background .3s ease, color .3s ease; min-height:100vh; }
+        body.modal-open{overflow:hidden}
+        #landing-screen, #app-screen{overflow-x:hidden}
+        #login-screen{overflow-y:auto}
         body.light-theme { --bg:#f8fafc; --bg-soft:#f1f5f9; --card:#ffffff; --card-soft:#f8fafc; --text:#020617; --muted:#475569; --primary:#1d4ed8; --accent:#f97316; --danger:#b91c1c; --success:#16a34a; --surface:#ffffff; --surface-soft:#f1f5f9; --input-bg:#ffffff; --input-border:#94a3b8; --placeholder:rgba(71,85,105,0.95); background: radial-gradient(circle at top, rgba(59,130,246,0.12), transparent 28%), linear-gradient(180deg, #f8fafc 0%, #e2e8f0 55%, #e2e8f0 100%); color: var(--text); }
         body.light-theme .card, body.light-theme .top-bar, body.light-theme .hero-panel, body.light-theme .login-box { background: var(--card); color: var(--text); box-shadow: 0 18px 60px rgba(15,23,42,0.08); }
         body.light-theme .tab-btn { color: #334155; }
@@ -188,18 +193,22 @@
         .role-card { border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; background: #f8fafc; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);} 
         .role-title { font-size: 15px; font-weight: bold; color: #1a365d; margin-bottom: 10px; border-bottom: 2px solid #cbd5e1; padding-bottom: 5px;}
         .role-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
-        .role-grid label { font-weight: normal; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 5px; color: #334155;}
+        .role-grid label { font-weight: normal; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 5px; color: var(--text);}
         .role-grid input[type="checkbox"] { width: auto; }
 
         .section { display: none; }
         .section.active { display: block; }
-        hr { border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0; }
+        hr { border: 0; border-top: 1px solid var(--surface); margin: 20px 0; }
 
         /* Top Bar */
         .top-bar { display: flex; justify-content: space-between; align-items: center; background: var(--card); padding: 10px 16px; box-shadow: 0 6px 18px rgba(2,6,23,0.05); margin: 0 0 20px 0; border-radius: 12px;}
-        .badge { background: #e2e8f0; color: #334155; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;}
+        .badge { background: var(--surface); color: var(--text); padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;}
         .param-list { list-style: none; padding: 0; margin: 0; }
-        .param-list li { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; align-items: center;}
+        .param-list li { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid var(--surface); align-items: center; color: var(--text);}
+        .pub-item { padding: 10px; background: var(--surface-soft); border: 1px solid var(--surface); border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+        .pub-info { flex: 1; }
+        .pub-info-title { font-weight: 700; font-size: 13px; color: var(--text); }
+        .pub-info-type { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
         /* Pengaturan Cetak (Print) A4 Asli */
         @media print {
@@ -214,15 +223,29 @@
         
         /* Main content spacing to accommodate sidebar on desktop */
         #app-screen{ padding-left: 260px; transition: padding-left .18s ease }
-        body.sidebar-collapsed .tab-container{ position: static; width: fit-content; max-width: 100%; height: auto; flex-direction: row; flex-wrap: wrap; justify-content: center; overflow-x: visible; padding:8px 12px; margin: 0 auto 16px auto; gap:6px; scrollbar-width: none; -ms-overflow-style: none; background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-        body.sidebar-collapsed .tab-container::-webkit-scrollbar{ display:none; }
-        body.sidebar-collapsed .tab-btn{ flex: 0 1 auto; white-space:nowrap; min-width: fit-content; padding: 8px 14px; text-align:center; font-size: 13px; border-radius: 6px; }
+        body.sidebar-collapsed .tab-container{ position: static; width: 100%; height: auto; flex-direction: row; flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; overflow-y: hidden; padding:8px 12px; margin: 0 0 16px 0; gap:4px; scrollbar-width: thin; scrollbar-color: rgba(148,163,184,0.4) transparent; background: var(--card); border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        body.sidebar-collapsed .tab-container::-webkit-scrollbar{ height:6px; }
+        body.sidebar-collapsed .tab-container::-webkit-scrollbar-track{ background: rgba(148,163,184,0.1); border-radius: 6px; }
+        body.sidebar-collapsed .tab-container::-webkit-scrollbar-thumb{ background: rgba(148,163,184,0.4); border-radius: 6px; }
+        body.sidebar-collapsed .tab-container::-webkit-scrollbar-thumb:hover{ background: rgba(148,163,184,0.6); }
+        body.sidebar-collapsed .tab-btn{ flex: 0 0 auto; width: auto; white-space:nowrap; min-width: auto; padding: 10px 16px; text-align:center; font-size: 13px; border-radius: 6px; border: 1px solid transparent; background: rgba(255,255,255,0.05); color: var(--muted); transition: all .18s ease; }
+        body.sidebar-collapsed .tab-btn:hover{ background: rgba(255,255,255,0.1); color: var(--text); }
+        body.sidebar-collapsed .tab-btn.active{ background: linear-gradient(90deg, rgba(37,99,235,0.2), rgba(37,99,235,0.08)); border: 1px solid rgba(37,99,235,0.3); border-left: 3px solid #2563eb; padding-left: 14px; color: #2563eb; font-weight: 700; }
         body.sidebar-collapsed #app-screen{ padding-left: 16px }
         @media (max-width: 1024px) { #app-screen{ padding-left: 220px } }
         @media (max-width: 900px) { /* collapse to top tabs on small screens */
             .tab-container{ position: static; width: auto; height: auto; flex-direction: row; flex-wrap: nowrap; overflow-x: auto; padding:6px 8px; margin-bottom: 12px; gap:4px }
             #app-screen{ padding-left: 16px }
             .tab-btn{ white-space:nowrap; min-width: 0; padding: 6px 9px; text-align:center; font-size: 12px }
+        }
+        @media (max-width: 768px) {
+            .landing-hero { flex-direction: column; padding: 56px 20px 28px; gap: 24px; }
+            .hero-panel { max-width: none; width: 100%; }
+            .feature-section { padding: 0 20px 56px; }
+            .feature-grid { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .top-bar { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .top-bar > div:last-child { width: 100%; flex-wrap: wrap; justify-content: flex-start; }
         }
         @media (max-width: 480px) { .form-row { flex-direction: column; gap: 12px; align-items: stretch;} .sk-preview{ padding: 15px; height: 48vh } .card { margin-left: 8px; margin-right:8px } .login-box{ margin: 0 16px } .top-bar{ padding:10px } }
     
@@ -408,7 +431,7 @@ input::placeholder, textarea::placeholder { opacity: 1; }
                 <a href="#modules" style="text-decoration:none;color:inherit;">Modul</a>
                 <a href="#security" style="text-decoration:none;color:inherit;">Keamanan</a>
                 <a href="#contact" style="text-decoration:none;color:inherit;">Kontak</a>
-                <button class="hero-btn hero-btn btn-primary-hero" onclick="openLogin()">Masuk</button>
+                <button class="hero-btn hero-btn btn-primary-hero" onclick="openAduanPage()">Aduan</button>
             </div>
         </nav>
         <section class="landing-hero">
@@ -417,7 +440,7 @@ input::placeholder, textarea::placeholder { opacity: 1; }
                 <h1>SIGAP: Solusi <strong>Aduan Etik</strong> & Penyelesaian Hukum</h1>
                 <p>Platform terpadu untuk pelaporan aduan etik rumah sakit, verifikasi internal, eskalasi dan penerbitan SK penetapan dalam satu alur kerja.</p>
                 <div class="hero-actions">
-                    <button class="hero-btn btn-primary-hero" onclick="openLogin()">Mulai Sekarang</button>
+                    <button class="hero-btn btn-primary-hero" onclick="openAduanPage()">Buka Halaman Aduan</button>
                     <button class="hero-btn btn-secondary-hero" onclick="document.getElementById('features').scrollIntoView({ behavior: 'smooth' })">Pelajari Fitur</button>
                 </div>
                 
@@ -811,7 +834,7 @@ input::placeholder, textarea::placeholder { opacity: 1; }
                 <div id="preview-sk-content" class="sk-preview"></div>
                 
                 <div class="form-row">
-                    <button class="btn-verify" onclick="downloadRTF('preview-sk-content', 'sk_penetapan.rtf')">⬇ Download Draft (.rtf)</button>
+                    <button class="btn-verify" onclick="downloadDOCX('preview-sk-content', 'sk_penetapan.docx')">⬇ Download Draft (.docx)</button>
                     <button class="btn-pdf" onclick="downloadPDF('preview-sk-content', 'sk_penetapan.pdf')">⬇ Download Draft (.pdf)</button>
                 </div>
 
@@ -939,9 +962,9 @@ input::placeholder, textarea::placeholder { opacity: 1; }
             <div class="header"><h2>Publikasi & Edukasi</h2><p>Download materi edukasi dan publikasi resmi</p></div>
             <div style="max-width:900px; margin:0 auto;">
                 <div class="card" style="padding:20px;">
-                    <h3 style="font-size:15px; margin-top:0; border-bottom:1px solid #ccc; padding-bottom:8px;">Download Publikasi Edukasi</h3>
-                    <p style="font-size:12px; color:#64748b;">Daftar brosur, aturan, dan prosedur terkait etik dan disiplin instansi.</p>
-                    <ul class="param-list" id="list-publikasi"><li><span>Memuat...</span></li></ul>
+                    <h3 style="font-size:15px; margin-top:0; border-bottom:1px solid var(--primary); padding-bottom:8px; color:var(--text);">Download Publikasi Edukasi</h3>
+                    <p style="font-size:12px; color:var(--muted);">Daftar brosur, aturan, dan prosedur terkait etik dan disiplin instansi.</p>
+                    <ul class="param-list" id="list-publikasi"><li><span style="color:var(--muted);">Memuat...</span></li></ul>
                 </div>
             </div>
         </div>
@@ -990,38 +1013,45 @@ input::placeholder, textarea::placeholder { opacity: 1; }
             <div class="header"><h2>Administrator Panel</h2><p>Pengaturan Parameter & Manajemen Media</p></div>
             
             <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 250px; background: var(--surface-soft); padding: 15px; border-radius: 6px; border: 1px solid var(--surface);">
+                    <h3 style="margin-top:0; font-size:15px; color:var(--text);">📂 Kelola Publikasi yang Ada</h3>
+                    <div style="max-height:300px; overflow-y:auto; border: 1px solid var(--surface); border-radius: 6px; padding: 10px; background: var(--card);" id="adm-pub-manage-list">
+                        <p style="color:var(--muted); text-align:center; padding:20px;">Memuat publikasi...</p>
+                    </div>
+                    <button class="btn-primary" onclick="loadAdminPublikasi()" style="margin-top:10px; width:100%;">🔄 Refresh</button>
+                </div>
                 <div style="flex: 1; min-width: 250px; background: #f8fafc; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0;">
                     <h3 style="margin-top:0; font-size:15px;">Manajemen Parameter (Reference Tables)</h3>
                     <div class="form-row">
                         <div class="form-group"><label>Pilih Tabel/Kategori</label><select id="adm-param-pilih" onchange="loadParamValues()"><option value="kategori_aduan">Kategori Aduan</option><option value="pic">Daftar PIC</option><option value="eskalasi">Level Eskalasi</option><option value="urgensi">Tingkat Urgensi</option><option value="sla_hari">SLA (Hari)</option><option value="sub_kategori">Sub Kategori</option><option value="hasil_verifikasi">Hasil Verifikasi</option></select></div>
                     </div>
-                    <ul class="param-list" id="adm-param-list" style="background: white; border: 1px solid #ccc; height: 150px; overflow-y: auto; margin-bottom: 10px;"></ul>
+                    <ul class="param-list" id="adm-param-list" style="background: var(--card); border: 1px solid var(--surface); height: 150px; overflow-y: auto; margin-bottom: 10px;"></ul>
                     <div class="form-row">
                         <div class="form-group"><input type="text" id="adm-param-baru" placeholder="Tambah opsi baru..."></div>
                         <button class="btn-verify btn-small" style="height: 40px; margin-top:0;" onclick="tambahParameter()">+ Tambah</button>
                     </div>
                 </div>
-                <div style="flex: 1; min-width: 250px; background: #e0f2fe; padding: 15px; border-radius: 6px; border: 1px solid #bae6fd;">
-                    <h3 style="margin-top:0; font-size:15px; color:#0369a1;">Upload Publikasi & Edukasi</h3>
+                <div style="flex: 1; min-width: 250px; background: var(--surface-soft); padding: 15px; border-radius: 6px; border: 1px solid var(--primary);">
+                    <h3 style="margin-top:0; font-size:15px; color:var(--primary);">Upload Publikasi & Edukasi</h3>
                     <div class="form-group"><label>Judul Dokumen</label><input type="text" id="adm-pub-judul" placeholder="Cth: Alur Layanan Aduan"></div>
                         <div class="form-group"><label>Jenis File</label>
                         <select id="adm-pub-jenis"><option>Brosur</option><option>Leaflet</option><option>Aturan/Kebijakan</option><option>Prosedur/Alur</option></select>
                     </div>
                     <div class="form-group"><label>Pilih File (PDF/Gambar/Video)</label>
-                        <input type="file" id="adm-pub-file" accept="image/*,.pdf,video/*" onchange="validasiUkuranFile(this, 5)" style="background:white;">
+                        <input type="file" id="adm-pub-file" accept="image/*,.pdf,video/*" onchange="validasiUkuranFile(this, 5)" style="background:var(--card);">
                         <span class="file-hint">Maks. Ukuran 5 MB</span>
                     </div>
                     <button class="btn-success" onclick="uploadPublikasi(this)">Upload & Publikasikan</button>
                 </div>
                 <div style="flex: 1; min-width: 250px;">
-                    <div style="background: #f8fafc; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0; margin-bottom: 15px;">
-                        <h3 style="margin-top:0; font-size:15px;">Pengaturan Instansi</h3>
+                    <div style="background: var(--surface-soft); padding: 15px; border-radius: 6px; border: 1px solid var(--surface); margin-bottom: 15px;">
+                        <h3 style="margin-top:0; font-size:15px; color:var(--text);">Pengaturan Instansi</h3>
                         <div class="form-group"><label>Nama Instansi Default</label><input type="text" id="adm-instansi-nama" value="RSJD Atma Husada Mahakam"></div>
                         <button class="btn-verify" onclick="simpanPengaturanInstansi()">Simpan Perubahan</button>
                     </div>
-                    <div style="background: #fef2f2; padding: 15px; border-radius: 6px; border: 1px solid #fca5a5;">
-                        <h3 style="margin-top:0; font-size:15px; color:#991b1b;">Data Ekspor (Backup)</h3>
-                        <p style="font-size: 11px; margin-top: 0; color:#b91c1c;">Backup seluruh data aduan.</p>
+                    <div style="background: rgba(239,68,68,0.1); padding: 15px; border-radius: 6px; border: 1px solid var(--danger);">
+                        <h3 style="margin-top:0; font-size:15px; color:var(--danger);">Data Ekspor (Backup)</h3>
+                        <p style="font-size: 11px; margin-top: 0; color:var(--muted);">Backup seluruh data aduan.</p>
                         <div style="display:flex; gap:8px; flex-wrap:wrap;">
                             <button class="btn-admin btn-small" onclick="exportDataDB('json')">📄 JSON</button>
                             <button class="btn-admin btn-small" onclick="exportDataDB('xlsx')">📊 XLSX</button>
@@ -1568,16 +1598,26 @@ input::placeholder, textarea::placeholder { opacity: 1; }
             await onLoginSuccess(data.session.user);
         }
 
+        function openAduanPage() {
+            if (currentUserRole) {
+                document.getElementById('landing-screen').style.display = 'none';
+                document.getElementById('app-screen').style.display = 'block';
+                closeLogin();
+                if (typeof bukaTab === 'function') {
+                    setTimeout(() => bukaTab('pelapor'), 150);
+                }
+                return;
+            }
+            openLogin();
+        }
+
         function openLogin() {
             toggleAuthMode('login');
-            console.log('openLogin() called');
             const loginScreen = document.getElementById('login-screen');
             if (loginScreen) {
                 loginScreen.classList.add('show-modal');
                 loginScreen.style.pointerEvents = 'auto';
-                showToast('Form login ditampilkan.', 'success');
-            } else {
-                console.error('openLogin: login-screen element tidak ditemukan');
+                document.body.classList.add('modal-open');
             }
         }
 
@@ -1587,7 +1627,21 @@ input::placeholder, textarea::placeholder { opacity: 1; }
                 loginScreen.classList.remove('show-modal');
                 loginScreen.style.pointerEvents = 'none';
             }
+            document.body.classList.remove('modal-open');
         }
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeLogin();
+            }
+        });
+
+        document.addEventListener('click', (event) => {
+            const loginScreen = document.getElementById('login-screen');
+            if (loginScreen && loginScreen.classList.contains('show-modal') && event.target === loginScreen) {
+                closeLogin();
+            }
+        });
 
         function logout() {
             currentUserRole = null;
@@ -1600,6 +1654,7 @@ input::placeholder, textarea::placeholder { opacity: 1; }
                 loginScreen.classList.remove('show-modal');
                 loginScreen.style.pointerEvents = 'none';
             }
+            document.body.classList.remove('modal-open');
         }
 
         async function ubahPassword() {
@@ -1708,7 +1763,7 @@ async function loadPub(){const c=document.getElementById('publikasi-list');if(!c
             if(namaTab === 'laporan') muatLaporanFormal();
             if(namaTab === 'informasi') muatPublikasiPublik();
             
-            if(namaTab === 'admin') loadParamValues();
+            if(namaTab === 'admin') { loadParamValues(); loadAdminPublikasi(); }
             if(namaTab === 'superadmin') {
                 document.getElementById('sa-supa-url').value = SUPABASE_URL;
                 document.getElementById('sa-supa-key').value = SUPABASE_KEY;
@@ -1867,17 +1922,63 @@ async function loadPub(){const c=document.getElementById('publikasi-list');if(!c
         }
 
         async function muatPublikasiPublik() {
-            const ul = document.getElementById('list-publikasi'); ul.innerHTML = '<li>Memuat...</li>';
+            const ul = document.getElementById('list-publikasi'); ul.innerHTML = '<li style="color:var(--muted);">Memuat...</li>';
             let list = localPublikasi;
             const { data, error } = await klienSupabase.from('publikasi_edukasi').select('*');
             if(!error && data) list = data;
 
             ul.innerHTML = '';
-            if(list.length === 0) return ul.innerHTML = '<li><span style="font-size:12px; color:gray;">Belum ada dokumen publikasi.</span></li>';
+            if(list.length === 0) return ul.innerHTML = '<li><span style="font-size:12px; color:var(--muted);">Belum ada dokumen publikasi.</span></li>';
 
             list.forEach(p => {
                 ul.innerHTML += `<li><span><b>[${p.jenis}]</b> ${p.judul}</span><a href="${p.url_file}" target="_blank" class="btn-primary btn-small" style="text-decoration:none; display:inline-block; line-height:2;">Download</a></li>`;
             });
+        }
+
+        async function loadAdminPublikasi() {
+            const container = document.getElementById('adm-pub-manage-list');
+            container.innerHTML = '<p style="color:var(--muted); text-align:center; padding:10px;">Memuat publikasi...</p>';
+            let list = localPublikasi;
+            try {
+                const { data, error } = await klienSupabase.from('publikasi_edukasi').select('*').order('created_at', {ascending: false});
+                if(!error && data) list = data;
+            } catch(e) { console.log('Error loading publikasi:', e); }
+
+            if(list.length === 0) {
+                container.innerHTML = '<p style="color:var(--muted); text-align:center; padding:20px;">Tidak ada publikasi untuk ditampilkan.</p>';
+                return;
+            }
+
+            container.innerHTML = list.map((p, idx) => {
+                const pubId = p.id ? (typeof p.id === 'string' ? p.id : String(p.id)) : '';
+                const safePubId = pubId.replace(/'/g, "\\'");
+                return `
+                <div style="padding:12px; border-bottom: 1px solid var(--surface); display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                    <div style="flex:1;">
+                        <div style="font-weight:700; font-size:13px; color:var(--text);">${p.judul || 'Tanpa Judul'}</div>
+                        <div style="font-size:11px; color:var(--muted);">📁 ${p.jenis || 'Dokumen'}</div>
+                    </div>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <button class="btn-primary btn-small" onclick="window.open('${p.url_file}', '_blank')" title="Lihat/Download">👁️</button>
+                        <button class="btn-danger btn-small" onclick="deletePublikasi(${idx}, '${safePubId}', this)" title="Hapus">🗑️</button>
+                    </div>
+                </div>
+            `;
+            }).join('');
+        }
+
+        async function deletePublikasi(idx, pubId, btnEl) {
+            if(!confirm('Yakin hapus publikasi ini?')) return;
+            try {
+                if(pubId && klienSupabase) {
+                    await klienSupabase.from('publikasi_edukasi').delete().eq('id', pubId);
+                }
+                localPublikasi.splice(idx, 1);
+                showToast('Publikasi berhasil dihapus!', 'success');
+                loadAdminPublikasi();
+            } catch(e) {
+                alert('Gagal hapus: ' + e.message);
+            }
         }
 
         async function kirimKorespondensi() {
@@ -2430,6 +2531,9 @@ async function loadPub(){const c=document.getElementById('publikasi-list');if(!c
             }
             const sel = document.getElementById('ot-pilih-aduan');
             if (sel) { const opt = sel.querySelector(`option[value="${id}"]`); if(opt) opt.remove(); sel.value=''; }
+            document.getElementById('ot-keputusan').value='';
+            document.getElementById('ot-catatan').value='';
+            document.getElementById('ot-approved').checked=false;
             dataAduanGlobal = dataAduanGlobal.filter(x => x.id !== id);
             
             showToast('Otorisasi berhasil disimpan! Status: ' + status, 'success');
@@ -2471,7 +2575,7 @@ async function loadPub(){const c=document.getElementById('publikasi-list');if(!c
             alert('Pengaturan sidebar disimpan.');
         }
 
-        // ---------------- SK, PDF, RTF DOWNLOAD ----------------
+        // ---------------- SK, PDF, DOCX DOWNLOAD ----------------
         async function generateAutoSK() { 
             try {
                 const tahun = new Date().getFullYear();
@@ -2588,16 +2692,16 @@ async function loadPub(){const c=document.getElementById('publikasi-list');if(!c
       
     // <-- INI YANG HILANG
 
-           function downloadRTF(id, filename) { 
+           function downloadDOCX(id, filename) { 
             const el = document.getElementById(id);
             if(!el || el.style.display === 'none' || !el.innerHTML.trim()) return alert("Preview SK belum termuat!");
-            // Ambil teks bersih untuk RTF, escape karakter khusus RTF
+            // Ambil teks bersih untuk DOCX, escape karakter khusus DOCX
             const text = el.innerText || '';
-            const rtfEsc = text.replace(/\\/g,'\\\\').replace(/{/g,'\\{').replace(/}/g,'\\}').replace(/\n/g,'\\par\n');
-            const rtfContent = `{\\rtf1\\ansi\\deff0{\\fonttbl{\\f0 Arial;}{\\f1 Times New Roman;}}\\f0\\fs22 ${rtfEsc}}`;
-            const blob = new Blob([rtfContent], { type: 'application/rtf' }); 
+            const docxEsc = text.replace(/\\/g,'\\\\').replace(/{/g,'\\{').replace(/}/g,'\\}').replace(/\n/g,'\\par\n');
+            const docxContent = `{\\docx1\\ansi\\deff0{\\fonttbl{\\f0 Arial;}{\\f1 Times New Roman;}}\\f0\\fs22 ${docxEsc}}`;
+            const blob = new Blob([docxContent], { type: 'application/docx' }); 
             const url = URL.createObjectURL(blob); 
-            const a = document.createElement("a"); a.href = url; a.download = filename.endsWith('.rtf') ? filename : filename + '.rtf'; 
+            const a = document.createElement("a"); a.href = url; a.download = filename.endsWith('.docx') ? filename : filename + '.docx'; 
             document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
         }
 
@@ -2635,7 +2739,7 @@ async function loadPub(){const c=document.getElementById('publikasi-list');if(!c
                 // tunggu render
                 setTimeout(() => {
                     const fname = `SK_${aduan.no_sk.replace(/[\/\\]/g,'-')}_${id.substring(0,6)}`;
-                    if(format === 'rtf') downloadRTF('preview-sk-content', fname);
+                    if(format === 'docx') downloadDOCX('preview-sk-content', fname);
                     else downloadPDF('preview-sk-content', fname);
                 }, 800);
             } catch(e) {
@@ -2746,7 +2850,7 @@ async function loadPub(){const c=document.getElementById('publikasi-list');if(!c
                     const rek = d.isi_keputusan || d.keputusan_otorisasi || rekPIC || "-";
                     const tgl = formatTanggalIndo(d.created_at);
                     const urg = d.urgensi || "-";
-                    tbody.innerHTML += `<tr><td>${tgl}</td><td style="font-size:10px;">${d.id.substring(0,8).toUpperCase()}</td><td>${d.nama_pelapor}</td><td>${d.nama_terlapor}</td><td>${d.kategori||'-'}<br><small>(${urg})</small></td><td><b>${d.status}</b>${d.no_sk ? `<br><small style="color:#60a5fa">SK: ${d.no_sk}</small>` : ''}</td><td>${rek}</td></tr>`;
+                    tbody.innerHTML += `<tr><td>${tgl}</td><td style="font-size:10px;">${d.id.substring(0,8).toUpperCase()}</td><td>${d.nama_pelapor}</td><td>${d.nama_terlapor}</td><td>${d.kategori||'-'}<br><small>(${urg})</small></td><td><b>${d.status}</b>${d.no_sk ? `<br><small style="color:#2563eb;cursor:pointer;text-decoration:underline" onclick="downloadSKTerbit('${d.id}','pdf')" title="Download SK">SK: ${d.no_sk}</small>` : ''}</td><td>${rek}</td></tr>`;
                 });
                 return;
             } catch (e) {
@@ -2760,7 +2864,7 @@ async function loadPub(){const c=document.getElementById('publikasi-list');if(!c
                 const rek = d.isi_keputusan || d.keputusan_otorisasi || d.tanggapan_akhir || '-';
                 const tgl = formatTanggalIndo(d.created_at);
                 const urg = d.urgensi || '-';
-                tbody.innerHTML += `<tr><td>${tgl}</td><td style="font-size:10px;">${d.id.substring(0,8).toUpperCase()}</td><td>${d.nama_pelapor}</td><td>${d.nama_terlapor}</td><td>${d.kategori||'-'}<br><small>(${urg})</small></td><td><b>${d.status}</b>${d.no_sk ? `<br><small style="color:#60a5fa">SK: ${d.no_sk}</small>` : ''}</td><td>${rek}</td></tr>`;
+                tbody.innerHTML += `<tr><td>${tgl}</td><td style="font-size:10px;">${d.id.substring(0,8).toUpperCase()}</td><td>${d.nama_pelapor}</td><td>${d.nama_terlapor}</td><td>${d.kategori||'-'}<br><small>(${urg})</small></td><td><b>${d.status}</b>${d.no_sk ? `<br><small style="color:#2563eb;cursor:pointer;text-decoration:underline" onclick="downloadSKTerbit('${d.id}','pdf')" title="Download SK">SK: ${d.no_sk}</small>` : ''}</td><td>${rek}</td></tr>`;
             });
         }
 
@@ -3023,6 +3127,32 @@ async function loadPub(){const c=document.getElementById('publikasi-list');if(!c
             reader.readAsDataURL(file);
         }
 
+</script>
+<script>
+async function loadParamDropdowns(){
+  if (!klienSupabase && typeof window.supabase?.createClient !== 'function') return;
+  try{
+    const client = klienSupabase || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const {data: types} = await client.from('ref_param_type').select('id,kode');
+    if(!types) return;
+    const typeMap = Object.fromEntries(types.map(t=>[t.kode,t.id]));
+    const {data: kat} = await client.from('ref_param_value').select('id,kode,nama').eq('type_id', typeMap.kategori_aduan).eq('is_active',true).order('urutan');
+    document.querySelectorAll('.dyn-kategori_aduan').forEach(sel=>{
+      sel.innerHTML = '<option value="">Pilih Kategori</option>' + (kat||[]).map(k=>`<option value="${k.kode}" data-id="${k.id}">${k.nama}</option>`).join('');
+      sel.onchange = async e=>{
+        const id = e.target.selectedOptions[0]?.dataset.id;
+        if(!id) return;
+        const {data: subs} = await client.from('ref_param_value').select('kode,nama').eq('parent_id', id).eq('is_active',true).order('urutan');
+        document.querySelectorAll('.dyn-sub_kategori').forEach(s=> s.innerHTML = '<option value="">Pilih Sub</option>' + (subs||[]).map(x=>`<option value="${x.kode}">${x.nama}</option>`).join(''));
+      };
+    });
+    const {data: urg} = await client.from('ref_param_value').select('kode,nama,meta').eq('type_id', typeMap.urgensi).eq('is_active',true).order('urutan');
+    document.querySelectorAll('.dyn-urgensi').forEach(sel=>{
+      sel.innerHTML = '<option value="">Pilih Urgensi</option>' + (urg||[]).map(u=>`<option value="${u.kode}" data-sla="${u.meta?.sla_hari||7}">${u.nama}</option>`).join('');
+    });
+  }catch(e){ console.warn('loadParamDropdowns',e); }
+}
+document.addEventListener('DOMContentLoaded', ()=>{ setTimeout(loadParamDropdowns, 1500); });
 </script>
 </body>
 </html>
