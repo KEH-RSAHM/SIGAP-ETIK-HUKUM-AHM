@@ -463,10 +463,53 @@ input::placeholder, textarea::placeholder { opacity: 1; }
         </section>
         <section id="publikasi" class="feature-section"><div class="landing-section-title"><h2>Publikasi & Edukasi</h2><p>Materi edukasi interaktif untuk meningkatkan pemahaman etik dan hukum</p></div>
             <div id="publikasi-list" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;max-width:1200px;margin:auto"></div>
-
-
-            
+       
         </section>
+        <section id="survey-rekap-section" class="feature-section" style="background: rgba(255,255,255,0.04); border-top: 1px solid rgba(255,255,255,0.08); border-bottom: 1px solid rgba(255,255,255,0.08);">
+            <div class="landing-section-title">
+                <h2>Rekapitulasi Kepuasan Pelanggan</h2>
+                <p>Data real-time dari penilaian pengguna layanan SIGAP - transparan dan akuntabel</p>
+            </div>
+            <div style="max-width:1200px; margin:30px auto 0; display:grid; grid-template-columns: 1fr 1fr 1fr; gap:20px;" id="survey-rekap-top">
+                <div class="card" style="padding:20px; text-align:center; background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); border:none;">
+                    <div style="font-size:36px; font-weight:bold; color:#fff;" id="rekap-total">0</div>
+                    <div style="font-size:13px; color:#dbeafe; margin-top:4px;">Total Responden</div>
+                </div>
+                <div class="card" style="padding:20px; text-align:center; background: linear-gradient(135deg, #065f46 0%, #10b981 100%); border:none;">
+                    <div style="font-size:36px; font-weight:bold; color:#fff;" id="rekap-avg">0.0</div>
+                    <div style="font-size:13px; color:#d1fae5; margin-top:4px;">Rata-rata Rating ⭐</div>
+                </div>
+                <div class="card" style="padding:20px; text-align:center; background: linear-gradient(135deg, #7c2d12 0%, #f97316 100%); border:none;">
+                    <div style="font-size:18px; font-weight:bold; color:#fff; line-height:1.3;" id="rekap-top-aspek">-</div>
+                    <div style="font-size:13px; color:#ffedd5; margin-top:4px;">Aspek Terfavorit</div>
+                </div>
+            </div>
+            <div style="max-width:1200px; margin:20px auto 0; display:grid; grid-template-columns: 1.2fr 1fr; gap:20px;">
+                <div class="card" style="padding:20px;">
+                    <h4 style="margin:0 0 14px 0; font-size:14px; color:var(--text);">Distribusi Penilaian</h4>
+                    <div id="rekap-distribusi" style="display:flex; flex-direction:column; gap:10px;"></div>
+                </div>
+                <div class="card" style="padding:20px;">
+                    <h4 style="margin:0 0 14px 0; font-size:14px; color:var(--text);">Ulasan Terbaru</h4>
+                    <div id="rekap-ulasan" style="max-height:320px; overflow-y:auto; display:flex; flex-direction:column; gap:10px;"></div>
+                </div>
+            </div>
+            <div style="max-width:1200px; margin:20px auto 0;">
+                <div class="card" style="padding:0; overflow:hidden;">
+                    <div style="padding:16px 20px; border-bottom:1px solid var(--input-border); display:flex; justify-content:space-between; align-items:center;">
+                        <h4 style="margin:0; font-size:14px;">Tabel Detail Rekapitulasi Kepuasan</h4>
+                        <span style="font-size:11px; color:var(--muted);" id="rekap-last-update">Loading...</span>
+                    </div>
+                    <div style="overflow-x:auto;">
+                        <table class="dashboard-table" style="margin:0;">
+                            <thead><tr><th>Tanggal</th><th>Rating</th><th>Aspek Dinilai</th><th>Ulasan</th></tr></thead>
+                            <tbody id="rekap-table-body"><tr><td colspan="4" style="text-align:center; padding:20px;">Memuat data...</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
         <section id="features" class="feature-section">
             <div class="landing-section-title"><h2>Fitur Unggulan SIGAP</h2><p>Dirancang untuk alur pelaporan etika, verifikasi, eskalasi, hingga penerbitan keputusan resmi.</p></div>
             <div class="feature-grid">
