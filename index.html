@@ -9,22 +9,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script>
-        function simpanKopSurat() {
-            const input = document.getElementById('kop-input');
-            if (!input || !input.files || !input.files[0]) { alert('Pilih file kop terlebih dahulu'); return; }
-            const file = input.files[0];
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    localStorage.setItem('kopSuratData', e.target.result);
-                    alert('Kop surat berhasil disimpan dan akan tampil di preview SK');
-                } catch(err) { alert('Gagal simpan kop: ' + err.message); }
-            };
-            reader.readAsDataURL(file);
-        }
-    </script>
-    
     <style>
         :root{--bg:#020617;--bg-soft:#0f172a;--card:#0f172a;--card-soft:#111827;--text:#ffffff;--muted:#cbd5e1;--primary:#60a5fa;--accent:#f97316;--danger:#ef4444;--success:#22c55e;--surface:#111827;--surface-soft:rgba(255,255,255,0.08);--input-bg:#0f172a;--input-border:rgba(203,213,225,0.45);--placeholder:rgba(203,213,225,0.95)}
         *{box-sizing:border-box}
@@ -170,11 +154,11 @@
         .timeline-date { display: block; font-size: 11px; color: #94a3b8; font-weight: normal; margin-top: 3px; }
 
         /* SK Preview Asli */
-        .sk-preview { background: white; color: black; font-family: 'Times New Roman', Times, serif; padding: 40px 50px; border: 1px solid #cbd5e1; box-shadow: 0 4px 20px rgba(0,0,0,0.1); margin-bottom: 15px; font-size: 12pt; line-height: 1.8; text-align: justify; height: 70vh; max-height:800px; overflow-y: auto; display: none; width: 210mm; min-height: 297mm; margin: 0 auto 15px; box-sizing: border-box; }
+        .sk-preview { background: white; color: black; font-family: 'Times New Roman', Times, serif; padding: 20mm; border: none; box-shadow: none; margin-bottom: 15px; font-size: 12pt; line-height: 1.8; text-align: justify; min-height: 297mm; overflow: visible; display: none; width: 100%; max-width: 100%; margin: 0 auto 15px; box-sizing: border-box; }
         .sk-preview h3 { text-align: center; margin: 0 0 5px 0; font-size: 15px; text-decoration: underline; }
         .sk-preview p.nomor { text-align: center; margin: 0 0 20px 0; }
-        .sk-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-        .sk-table td { padding: 3px; vertical-align: top; }
+        .sk-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; border: none; }
+        .sk-table td { padding: 3px; vertical-align: top; border: none; }
         .sk-table td:first-child { width: 25%; font-weight: bold; }
         .sk-table td:nth-child(2) { width: 3%; }
 
@@ -212,11 +196,15 @@
 
         /* Pengaturan Cetak (Print) A4 Asli */
         @media print {
+            body { margin: 0; background: white; }
             body * { visibility: hidden; }
             #print-area, #print-area * { visibility: visible; }
-            #print-area { position: absolute; left: 0; top: 0; width: 100%; color: black; background: white;}
+            #print-area { position: static; left: auto; top: auto; width: auto; min-height: auto; margin: 0; padding: 0; background: white; color: black; overflow: visible; }
             .no-print { display: none !important; }
-            @page { size: A4 landscape; margin: 15mm; }
+            .card { box-shadow: none !important; border: none !important; }
+            table, tr, td, th { page-break-inside: avoid; }
+            tr { page-break-after: auto; }
+            @page { size: A4 landscape; margin: 10mm; }
             .dashboard-table th { background-color: #eee !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; -moz-print-color-adjust: exact; }
             .dashboard-table th, .dashboard-table td { border: 1px solid #000; padding: 6px; }
         }
@@ -1179,7 +1167,6 @@ input::placeholder, textarea::placeholder { opacity: 1; }
         let SUPABASE_URL = localStorage.getItem('supa_url') || 'https://slkijpnmzjwpbzxshyux.supabase.co';
         let SUPABASE_KEY = localStorage.getItem('supa_key') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsa2lqcG5temp3cGJ6eHNoeXV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5Nzg1OTQsImV4cCI6MjA5NTU1NDU5NH0.hPAYlNmJFo1M4-J76hKeAv6LnQgpUHO2-6qoniPjyao';
         let klienSupabase = null;
-
         // Persist defaults into localStorage so the SuperAdmin config fields are pre-filled
         try {
             if (!localStorage.getItem('supa_url')) localStorage.setItem('supa_url', SUPABASE_URL);
@@ -1187,12 +1174,28 @@ input::placeholder, textarea::placeholder { opacity: 1; }
             if (SUPABASE_KEY && !localStorage.getItem('supa_key')) localStorage.setItem('supa_key', SUPABASE_KEY);
         } catch (e) { console.warn('Could not save Supabase config to localStorage:', e); }
 
-        
+        function getSupabaseClient() {
+            const savedUrl = localStorage.getItem('supa_url');
+            const savedKey = localStorage.getItem('supa_key');
+            if (savedUrl && savedUrl !== SUPABASE_URL) {
+                SUPABASE_URL = savedUrl;
+                klienSupabase = null;
+            }
+            if (savedKey && savedKey !== SUPABASE_KEY) {
+                SUPABASE_KEY = savedKey;
+                klienSupabase = null;
+            }
+            if (!klienSupabase) initSupabase();
+            return klienSupabase;
+        }
+
         async function loadPublikasiLanding(){
             const c = document.getElementById('publikasi-list');
             if(!c) return;
             try{
-                const {data} = await klienSupabase.from('publikasi_edukasi').select('*').order('created_at',{ascending:false}).limit(8);
+                const client = getSupabaseClient();
+                if (!client) throw new Error('Supabase tidak tersedia');
+                const {data} = await client.from('publikasi_edukasi').select('*').order('created_at',{ascending:false}).limit(8);
                 const list = data || [];
                 if(list.length===0){ c.innerHTML='<div style="color:var(--muted);text-align:center;padding:40px;grid-column:1/-1">Belum ada publikasi</div>'; return; }
                 c.innerHTML = list.map(p=>{
@@ -1279,6 +1282,7 @@ input::placeholder, textarea::placeholder { opacity: 1; }
         };
         let editingId = null;
         let dataAduanGlobal = [];
+        let localPublikasi = [];
 
         // Utility: generate short id
         function genId() { return crypto.randomUUID(); }
@@ -1335,19 +1339,36 @@ input::placeholder, textarea::placeholder { opacity: 1; }
 
         async function loadSurveyRekap(){
             try {
+                // FIX: Pastikan Supabase client siap, bahkan di landing page
                 if(!klienSupabase) {
-                    try { if(typeof initSupabase==='function') initSupabase(); } catch(e){}
+                    try { 
+                        if(typeof initSupabase==='function') {
+                            initSupabase(); 
+                        }
+                        // Jika masih null, coba buat client langsung dari SUPABASE_URL/KEY (untuk demo)
+                        if(!klienSupabase && typeof window.supabase !== 'undefined' && SUPABASE_URL && SUPABASE_KEY){
+                            klienSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                        }
+                    } catch(e){
+                        console.warn('initSupabase di landing gagal', e);
+                    }
                 }
-                var client = klienSupabase || (window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null);
+                var client = klienSupabase || (typeof window.supabase !== 'undefined' && SUPABASE_URL && SUPABASE_KEY ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null);
                 if(!client) {
                     var upd = document.getElementById('rekap-last-update');
-                    if(upd) upd.innerText = 'DB belum siap';
+                    if(upd) upd.innerText = 'DB belum siap - cek konfigurasi Supabase';
                     return;
                 }
-                var result = await client.from('survey_kepuasan').select('*').order('created_at',{ascending:false}).limit(100);
-                if(result.error) throw result.error;
+                var result = await client.from('survey_kepuasan').select('*', { count: 'exact' }).order('created_at',{ascending:false});
+                if(result.error) {
+                    // Jika RLS blokir, tampilkan pesan jelas
+                    if(result.error.message && result.error.message.includes('row-level security')){
+                        throw new Error('RLS aktif - buat policy SELECT untuk anon di tabel survey_kepuasan: CREATE POLICY \"Allow anon read\" ON survey_kepuasan FOR SELECT USING (true);');
+                    }
+                    throw result.error;
+                }
                 var list = result.data || [];
-                var total = list.length;
+                var total = result.count ?? list.length;
                 var sum = 0;
                 for(var i=0;i<list.length;i++){ sum += (list[i].rating||0); }
                 var avg = total ? (sum/total) : 0;
@@ -1416,7 +1437,7 @@ input::placeholder, textarea::placeholder { opacity: 1; }
                         tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--muted);">Belum ada data kepuasan</td></tr>';
                     } else {
                         var htmlT = '';
-                        for(var t=0; t<Math.min(20,list.length); t++){
+                        for(var t=0; t<list.length; t++){
                             var r = list[t];
                             var tgl2 = new Date(r.created_at).toLocaleString('id-ID');
                             var stars3 = '★'.repeat(r.rating||0);
@@ -1630,6 +1651,8 @@ input::placeholder, textarea::placeholder { opacity: 1; }
             initSupabase();
             loadPublikasiLanding();
             loadPub();
+            await loadSurveyRekap();
+            await loadKorespondensiHistory();
             const temp = document.getElementById('header-template').innerHTML;
             document.querySelectorAll('#header-op, #header-esk, #header-pic, #header-ot, #header-pen').forEach(el => el.innerHTML = temp);
             renderChecklistSuperAdmin();
@@ -1649,8 +1672,9 @@ input::placeholder, textarea::placeholder { opacity: 1; }
             const email = document.getElementById('login-email').value.trim();
             const password = document.getElementById('login-pass').value;
             if (!email || !password) return alert('Isi email dan password terlebih dulu.');
-            if (!klienSupabase) return alert('Supabase tidak tersedia atau API Key belum dikonfigurasi.\n\nSolusi:\n1. Login sebagai SuperAdmin (jika sudah ada)\n2. Buka menu C-Panel > Konfigurasi Supabase API\n3. Masukkan URL dan Anon Key yang valid dari Supabase');
-            const { data, error } = await klienSupabase.auth.signInWithPassword({ email, password });
+            const client = getSupabaseClient();
+            if (!client) return alert('Supabase tidak tersedia atau API Key belum dikonfigurasi.\n\nSolusi:\n1. Login sebagai SuperAdmin (jika sudah ada)\n2. Buka menu C-Panel > Konfigurasi Supabase API\n3. Masukkan URL dan Anon Key yang valid dari Supabase');
+            const { data, error } = await client.auth.signInWithPassword({ email, password });
             if (error) return alert('Login gagal: ' + error.message);
             if (!data || !data.session) return alert('Login gagal, session tidak ditemukan.');
             await onLoginSuccess(data.user);
@@ -1662,11 +1686,12 @@ input::placeholder, textarea::placeholder { opacity: 1; }
             const password = document.getElementById('register-pass').value;
             const role = document.getElementById('register-role').value;
             if (!name || !email || !password) return alert('Lengkapi semua kolom pendaftaran.');
-            if (!klienSupabase) return alert('Supabase tidak tersedia atau API Key belum dikonfigurasi.\n\nSolusi:\n1. Login sebagai SuperAdmin (jika sudah ada)\n2. Buka menu C-Panel > Konfigurasi Supabase API\n3. Masukkan URL dan Anon Key yang valid dari Supabase');
-            const { data, error } = await klienSupabase.auth.signUp({ email, password, options: { data: { full_name: name } } });
+            const client = getSupabaseClient();
+            if (!client) return alert('Supabase tidak tersedia atau API Key belum dikonfigurasi.\n\nSolusi:\n1. Login sebagai SuperAdmin (jika sudah ada)\n2. Buka menu C-Panel > Konfigurasi Supabase API\n3. Masukkan URL dan Anon Key yang valid dari Supabase');
+            const { data, error } = await client.auth.signUp({ email, password, options: { data: { full_name: name } } });
             if (error) return alert('Pendaftaran gagal: ' + error.message);
             if (data?.user?.id) {
-                await klienSupabase.from('profiles').upsert([{ id: data.user.id, email, role, name, is_active: true }]);
+                await client.from('profiles').upsert([{ id: data.user.id, email, role, name, is_active: true }]);
             }
             alert('Pendaftaran berhasil. Silakan login setelah memverifikasi email jika diperlukan.');
             toggleAuthMode('login');
@@ -1738,8 +1763,9 @@ input::placeholder, textarea::placeholder { opacity: 1; }
         }
 
         async function loadSession() {
-            if (!klienSupabase) return;
-            const { data, error } = await klienSupabase.auth.getSession();
+            const client = getSupabaseClient();
+            if (!client) return;
+            const { data, error } = await client.auth.getSession();
             if (error || !data?.session) return;
             await onLoginSuccess(data.session.user);
         }
@@ -1758,12 +1784,18 @@ input::placeholder, textarea::placeholder { opacity: 1; }
         }
 
         function openLogin() {
+            const client = getSupabaseClient();
+            if (!client) {
+                showToast('Supabase belum dikonfigurasi atau tidak dapat dihubungkan. Silakan cek C-Panel > Konfigurasi Supabase.', 'error');
+            }
             toggleAuthMode('login');
             const loginScreen = document.getElementById('login-screen');
             if (loginScreen) {
                 loginScreen.classList.add('show-modal');
                 loginScreen.style.pointerEvents = 'auto';
                 document.body.classList.add('modal-open');
+                const emailInput = document.getElementById('login-email');
+                if (emailInput) emailInput.focus();
             }
         }
 
@@ -2038,8 +2070,6 @@ async function loadPub(){const c=document.getElementById('publikasi-list');if(!c
         }
 
         // ---------------- FITUR PUBLIKASI, KORESPONDENSI, SURVEY ----------------
-        let localPublikasi = []; 
-
         async function uploadPublikasi(btn) {
             const judul = document.getElementById('adm-pub-judul').value;
             const jenis = document.getElementById('adm-pub-jenis').value;
@@ -2065,6 +2095,17 @@ async function loadPub(){const c=document.getElementById('publikasi-list');if(!c
                 document.getElementById('adm-pub-judul').value = ''; document.getElementById('adm-pub-file').value = '';
             } else { alert("Gagal mengupload file: " + (errUp.message || errUp)); }
             if(btnEl){ btnEl.innerText = "Upload & Publikasikan"; btnEl.disabled = false; }
+        }
+
+        async function uploadBuktiAduanFile(file) {
+            if (!file || !klienSupabase) return null;
+            const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+            const filePath = `aduan/${Date.now()}_${safeName}`;
+            const { data, error } = await klienSupabase.storage.from('bukti_aduan').upload(filePath, file);
+            if (error) throw error;
+            const publicRes = klienSupabase.storage.from('bukti_aduan').getPublicUrl(filePath);
+            if (publicRes.error) throw publicRes.error;
+            return publicRes.data?.publicUrl || null;
         }
 
         async function muatPublikasiPublik() {
@@ -2138,14 +2179,39 @@ async function loadPub(){const c=document.getElementById('publikasi-list');if(!c
                 document.getElementById('kor-nama').value = ''; 
                 document.getElementById('kor-email').value = '';
                 document.getElementById('kor-pesan').value = '';
-                // Update history
-                const historyEl = document.getElementById('kor-history-list');
-                if(historyEl) {
-                    const now = new Date().toLocaleString('id-ID');
-                    historyEl.innerHTML = `<div style="padding:8px;background:var(--surface-soft);border-radius:8px;margin-bottom:6px;"><strong>${now}</strong><br>${pesan.substring(0,60)}...</div>` + historyEl.innerHTML;
-                }
+                await loadKorespondensiHistory();
             } catch(e) {
-                alert("Gagal kirim: " + e.message);
+                alert("Gagal kirim: " + (e.message || e));
+            }
+        }
+
+        async function loadKorespondensiHistory(limit = 10) {
+            const historyEl = document.getElementById('kor-history-list');
+            if (!historyEl) return;
+            try {
+                let rows = [];
+                if (klienSupabase) {
+                    const { data, error } = await klienSupabase.from('korespondensi').select('id,nama,email,pesan,created_at').order('created_at', { ascending: false }).limit(limit);
+                    if (error) throw error;
+                    rows = data || [];
+                }
+                if (!rows.length) {
+                    historyEl.innerHTML = '<div style="color:var(--muted);">Belum ada pesan</div>';
+                    return;
+                }
+                historyEl.innerHTML = rows.map(item => {
+                    const tanggal = item.created_at ? new Date(item.created_at).toLocaleString('id-ID') : '-';
+                    const emailLine = item.email ? `<div style="font-size:12px;color:var(--muted);margin-top:4px;">${item.email}</div>` : '';
+                    return `<div style="padding:14px;border:1px solid var(--surface);border-radius:12px;background:var(--surface-soft);margin-bottom:12px;">
+                        <div style="font-size:14px;font-weight:700;">${item.nama}</div>
+                        ${emailLine}
+                        <div style="font-size:12px;color:var(--muted);margin:8px 0;">${tanggal}</div>
+                        <div style="white-space:pre-wrap;line-height:1.6;">${item.pesan}</div>
+                    </div>`;
+                }).join('');
+            } catch (e) {
+                console.warn('loadKorespondensiHistory', e);
+                historyEl.innerHTML = '<div style="color:#f97316;">Gagal memuat riwayat pesan</div>';
             }
         }
 
@@ -2166,8 +2232,9 @@ async function loadPub(){const c=document.getElementById('publikasi-list');if(!c
                 showToast("Terima kasih! Survey berhasil dikirim.", 'success');
                 document.getElementById('srv-ulasan').value = '';
                 document.querySelectorAll('.srv-aspek').forEach(el => el.checked = false);
+                await loadSurveyRekap();
             } catch(e) {
-                alert("Gagal kirim survey: " + e.message);
+                alert("Gagal kirim survey: " + (e.message || e));
             }
         }
 
@@ -2262,7 +2329,8 @@ async function loadPub(){const c=document.getElementById('publikasi-list');if(!c
             localStorage.setItem('supa_key', key);
             alert("Konfigurasi tersimpan. Halaman akan dimuat ulang untuk menerapkan koneksi baru."); 
             location.reload();
-            
+        }
+
         async function exportDataDB(fmt='json'){
             const {data} = await klienSupabase.from('aduan').select('*');
             const d = data || getLocalAduan();
@@ -2325,7 +2393,7 @@ async function loadPub(){const c=document.getElementById('publikasi-list');if(!c
                 alert('Gagal backup: ' + e.message);
             }
         }
-        }
+        
 
         // ---------------- FUNGSI BISNIS INTI (CRUD) ----------------
         async function muatPilihanAduan(elementId, statusFilter, infoId) {
@@ -2493,7 +2561,8 @@ async function loadPub(){const c=document.getElementById('publikasi-list');if(!c
 
         async function kirimLaporan(statusParam = 'Terkirim') {
             const subKat = document.getElementById('input-subkategori') ? document.getElementById('input-subkategori').value : '';
-            const linkBukti = document.getElementById('input-link') ? document.getElementById('input-link').value : '';
+            let linkBukti = document.getElementById('input-link') ? document.getElementById('input-link').value.trim() : '';
+            const buktiFile = document.getElementById('input-file') ? document.getElementById('input-file').files[0] : null;
             
             // Validasi input wajib
             const nama = document.getElementById('input-nama').value.trim();
@@ -2505,6 +2574,15 @@ async function loadPub(){const c=document.getElementById('publikasi-list');if(!c
             
             if (!nama || !email || !terlapor || !lokasi || !tanggal || !deskripsi) {
                 return alert('Harap lengkapi semua field yang wajib (*)');
+            }
+
+            if (buktiFile && klienSupabase) {
+                try {
+                    const uploadedUrl = await uploadBuktiAduanFile(buktiFile);
+                    if (uploadedUrl) linkBukti = uploadedUrl;
+                } catch (err) {
+                    return alert('Gagal upload bukti: ' + (err.message || err));
+                }
             }
             
             const inp = { 
@@ -2737,7 +2815,7 @@ async function loadPub(){const c=document.getElementById('publikasi-list');if(!c
             }
             muatPreviewSK(document.getElementById('pen-pilih-aduan').value);
         }
-        //KEH/RSJDAHM/${new Date().getFullYear()}`; muatPreviewSK(document.getElementById('pen-pilih-aduan').value); }
+
         async function muatPreviewSK(id) {
             if(!id) return;
             const preview = document.getElementById('preview-sk-content');
@@ -2763,10 +2841,15 @@ async function loadPub(){const c=document.getElementById('publikasi-list');if(!c
                 const tglAduan = formatTanggalPanjang(aduan.tanggal_kejadian || aduan.created_at);
                 const tglSurat = formatTanggalPanjang(tglSK);
                 const idAduan = aduan.id.substring(0,8).toUpperCase();
-                
+                const kopHtml = (function(){
+                    const k = localStorage.getItem("kopSuratData");
+                    if (!k) return '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><div style="width:70px;height:70px;border:2px solid #16a34a;border-radius:50%;"></div><div style="width:70px;height:70px;background:#dc2626;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:32px;">S</div></div>';
+                    return '<img src="' + k + '" style="width:100%;max-height:140px;object-fit:contain;margin-bottom:10px;">';
+                })();
+
                 preview.innerHTML = `
                     <div style="text-align:center;margin-bottom:30px;line-height: 1.0;">
-                        ${(function(){const k=localStorage.getItem("kopSuratData");return k?`<img src="${k}" style="width:100%;max-height:140px;object-fit:contain;margin-bottom:10px;">`:`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><div style="width:70px;height:70px;border:2px solid #16a34a;border-radius:50%;"></div><div style="width:70px;height:70px;background:#dc2626;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:32px;">S</div></div>`})()}
+                        ${kopHtml}
                     </div>
                     
                     <div style="text-align:center;margin:30px;line-height: 1.0;">
@@ -2786,7 +2869,7 @@ async function loadPub(){const c=document.getElementById('publikasi-list');if(!c
                         <tr><td>Mengingat</td><td>:</td><td>
                             1.</td><td>Undang-undang Nomor 17 Tahun 2023 tentang Kesehatan;</td></tr>
                         <tr><td></td><td></td><td>
-                            2.</td><td>Peraturan Menteri Kesehatan tentang Etik Rumah Sakit;</td></tr>
+                            2.</td><td>Peraturan Menteri Kesehatan Republik Indonesia Nomor 42 Tahun 2018 tentang Komite Etik dan Hukum Rumah Sakit;</td></tr>
                         <tr><td>Memperhatikan</td><td>:</td>
                             <td>Hasil</td><td>rekomendasi PIC dan pertimbangan Komite Etik</td></tr>
                     </table>
@@ -2801,7 +2884,8 @@ async function loadPub(){const c=document.getElementById('publikasi-list');if(!c
                                 <p>Nama       : <span style="font-weight: bold;">${aduan.nama_terlapor || '-'}</span></p>
                                 <p>Jabatan    : <span style="font-weight: bold;">${aduan.jabatan || '-'}</span></p>
                                 <p>Unit Kerja : <span style="font-weight: bold;">${aduan.lokasi_kejadian || '-'}</span></p>
-                            </div>    
+                            </div>
+                        </td></tr>
                         <tr><td></td><td></td><td>
                             ${isiKeputusan} melakukan pemenuhan unsur kategori pelanggaran pada perkara ${aduan.kategori || '-'} dengan tingkat urgensi penanganan ${aduan.urgensi || '-'}
                             </td></tr>
@@ -2835,61 +2919,110 @@ async function loadPub(){const c=document.getElementById('publikasi-list');if(!c
             const bulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
             return d.getDate() + ' ' + bulan[d.getMonth()] + ' ' + d.getFullYear();
         }
-      
-    // <-- INI YANG HILANG
 
-           function downloadDOCX(id, filename) { 
+        function downloadDOCX(id, filename) { 
             const el = document.getElementById(id);
-            if(!el || el.style.display === 'none' || !el.innerHTML.trim()) return alert("Preview SK belum termuat!");
-            // Ambil teks bersih untuk DOCX, escape karakter khusus DOCX
-            const text = el.innerText || '';
-            const docxEsc = text.replace(/\\/g,'\\\\').replace(/{/g,'\\{').replace(/}/g,'\\}').replace(/\n/g,'\\par\n');
-            const docxContent = `{\\docx1\\ansi\\deff0{\\fonttbl{\\f0 Arial;}{\\f1 Times New Roman;}}\\f0\\fs22 ${docxEsc}}`;
-            const blob = new Blob([docxContent], { type: 'application/docx' }); 
-            const url = URL.createObjectURL(blob); 
-            const a = document.createElement("a"); a.href = url; a.download = filename.endsWith('.docx') ? filename : filename + '.docx'; 
+            if(!el || el.style.display === 'none' || !el.innerHTML.trim()) return alert("Preview SK belum termuat! Klik Preview dulu.");
+            // FIX: Buat HTML DOCX yang 100% sama dengan preview, termasuk kop surat base64
+            const html = `<!DOCTYPE html>
+                <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+                <head><meta charset="utf-8">
+                <style>
+                    @page { size: A4; margin: 20mm; }
+                    body{font-family:'Times New Roman', Times, serif; color:#000; font-size:12pt; line-height:1.6; text-align:justify; margin:0; padding:20mm; background:#fff;}
+                    h3{ text-align:center; font-size:14pt; margin:0 0 5px 0; }
+                    p.nomor{ text-align:center; margin:0 0 20px 0; font-size:12pt;}
+                    .sk-table{width:100%;border-collapse:collapse; margin:15px 0;}
+                    .sk-table td{padding:4px 6px;vertical-align:top; font-size:12pt;}
+                    .sk-table td:first-child{width:25%;font-weight:bold;}
+                    img{max-width:100%; height:auto;}
+                </style></head>
+                <body>${el.innerHTML}</body></html>`;
+            let blob;
+            if (window.htmlDocx && typeof window.htmlDocx.asBlob === 'function') {
+                blob = window.htmlDocx.asBlob(html, {orientation:'portrait'});
+            } else {
+                // Fallback txt
+                blob = new Blob([el.innerText], { type: 'application/msword' });
+            }
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a"); a.href = url; a.download = filename.endsWith('.docx') ? filename : filename + '.docx';
             document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
         }
 
         function downloadPDF(id, filename) { 
             const element = document.getElementById(id);
             if(!element || element.style.display === 'none' || !element.innerHTML.trim()) return alert("Preview SK belum termuat! Klik 'Preview' dulu.");
-            // Pastikan html2pdf sudah load
             if(typeof html2pdf === 'undefined') return alert('Library PDF belum siap, refresh halaman.');
+            // FIX: Clone element agar tampilan PDF 100% sama dengan preview
+            const clone = element.cloneNode(true);
+            clone.style.display = 'block';
+            clone.style.width = '210mm';
+            clone.style.minHeight = '297mm';
+            clone.style.padding = '20mm';
+            clone.style.margin = '0 auto';
+            clone.style.background = '#ffffff';
+            clone.style.color = '#000000';
+            clone.style.boxShadow = 'none';
+            clone.style.border = 'none';
+            clone.style.boxSizing = 'border-box';
+            clone.style.position = 'static';
+            clone.style.left = 'auto';
+            clone.style.top = 'auto';
+            
+            // Bungkus untuk html2pdf
+            const wrapper = document.createElement('div');
+            wrapper.style.background = '#ffffff';
+            wrapper.style.width = '210mm';
+            wrapper.style.margin = '0 auto';
+            wrapper.appendChild(clone);
+            document.body.appendChild(wrapper);
+            
             const opt = {
-                margin:       [0.5, 0.5, 0.7, 0.5],
+                margin:       0,
                 filename:     filename.endsWith('.pdf') ? filename : filename + '.pdf',
                 image:        { type:'jpeg', quality:0.98 },
-                html2canvas:  { scale:2.5, useCORS:true, scrollY:0, backgroundColor: '#ffffff', windowWidth: 794  },
-                jsPDF:        { unit:'mm', format:'f4', orientation:'portrait' },
-                pagebreak:    { mode:['avoid-all','css','legacy'] }
+                html2canvas:  { scale:2, useCORS:true, backgroundColor:'#ffffff', scrollY:0, logging:false },
+                jsPDF:        { unit:'mm', format:'a4', orientation:'portrait' },
+                pagebreak:    { mode:['css','legacy'] }
             };
-            html2pdf().set(opt).from(element).save(); 
+            html2pdf().set(opt).from(clone).save().then(() => {
+                document.body.removeChild(wrapper);
+            }).catch(e => {
+                document.body.removeChild(wrapper);
+                alert('Gagal generate PDF: ' + e.message);
+            });
         }
         
         // FITUR BARU: download SK yang sudah diterbitkan
         async function downloadSKTerbit(id, format='pdf') {
             try {
-                // muat data dulu, isi form, generate preview
-                const { data: aduan } = await klienSupabase.from('aduan').select('*').eq('id', id).single();
-                if(!aduan || !aduan.no_sk) return alert('SK belum diterbitkan untuk aduan ini');
-                
-                // set form sementara agar preview pakai data asli
+                let aduan = null;
+                if (klienSupabase) {
+                    const { data, error } = await klienSupabase.from('aduan').select('*').eq('id', id).single();
+                    if (error) console.warn('downloadSKTerbit supabase error', error);
+                    aduan = data;
+                }
+                if (!aduan) {
+                    const local = typeof getLocalAduan === 'function' ? getLocalAduan() : [];
+                    aduan = local.find(x => x.id === id);
+                }
+                if (!aduan || !aduan.no_sk) return alert('SK belum diterbitkan untuk aduan ini');
+
                 document.getElementById('pen-pilih-aduan').value = id;
                 document.getElementById('pen-no-sk').value = aduan.no_sk;
-                document.getElementById('pen-tgl').value = aduan.tgl_sk || '';
-                document.getElementById('pen-isi-keputusan').value = aduan.isi_keputusan || aduan.keputusan_otorisasi || '';
-                
+                const tglEl = document.getElementById('pen-tgl');
+                if (tglEl) tglEl.value = aduan.tgl_sk || '';
+                const isiEl = document.getElementById('pen-isi-keputusan');
+                if (isiEl) isiEl.value = aduan.isi_keputusan || aduan.keputusan_otorisasi || '';
+
                 await muatPreviewSK(id);
-                
-                // tunggu render
-                setTimeout(() => {
-                    const fname = `SK_${aduan.no_sk.replace(/[\/\\]/g,'-')}_${id.substring(0,6)}`;
-                    if(format === 'docx') downloadDOCX('preview-sk-content', fname);
-                    else downloadPDF('preview-sk-content', fname);
-                }, 800);
-            } catch(e) {
-                alert('Gagal download SK: ' + e.message);
+
+                const fname = `SK_${aduan.no_sk.replace(/[\/\\]/g,'-')}_${id.substring(0,6)}`;
+                if (format === 'docx') downloadDOCX('preview-sk-content', fname);
+                else downloadPDF('preview-sk-content', fname);
+            } catch (e) {
+                alert('Gagal download SK: ' + (e.message || e));
             }
         }
         
@@ -3236,13 +3369,7 @@ async function loadPub(){const c=document.getElementById('publikasi-list');if(!c
         // --- End SuperAdmin Aduan Manager ---
 
 
-        // Auto-render Detail Aduan header saat pilih aduan
-        ['op-pilih-aduan','pic-pilih-aduan','ot-pilih-aduan','pen-pilih-aduan','esk-pilih-aduan'].forEach(id => {
-          document.getElementById(id)?.addEventListener('change', e => sinkronHeader(e.target.value));
-        });
-
-
-        // Auto-render Detail Aduan header
+        // Single listener - fix duplikasi
         ['op-pilih-aduan','pic-pilih-aduan','ot-pilih-aduan','pen-pilih-aduan','esk-pilih-aduan'].forEach(id => {
           document.getElementById(id)?.addEventListener('change', e => sinkronHeader(e.target.value));
         });
@@ -3273,32 +3400,93 @@ async function loadPub(){const c=document.getElementById('publikasi-list');if(!c
             reader.readAsDataURL(file);
         }
 
-</script>
-<script>
-async function loadParamDropdowns(){
-  if (!klienSupabase && typeof window.supabase?.createClient !== 'function') return;
-  try{
-    const client = klienSupabase || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    const {data: types} = await client.from('ref_param_type').select('id,kode');
-    if(!types) return;
-    const typeMap = Object.fromEntries(types.map(t=>[t.kode,t.id]));
-    const {data: kat} = await client.from('ref_param_value').select('id,kode,nama').eq('type_id', typeMap.kategori_aduan).eq('is_active',true).order('urutan');
-    document.querySelectorAll('.dyn-kategori_aduan').forEach(sel=>{
-      sel.innerHTML = '<option value="">Pilih Kategori</option>' + (kat||[]).map(k=>`<option value="${k.kode}" data-id="${k.id}">${k.nama}</option>`).join('');
-      sel.onchange = async e=>{
-        const id = e.target.selectedOptions[0]?.dataset.id;
-        if(!id) return;
-        const {data: subs} = await client.from('ref_param_value').select('kode,nama').eq('parent_id', id).eq('is_active',true).order('urutan');
-        document.querySelectorAll('.dyn-sub_kategori').forEach(s=> s.innerHTML = '<option value="">Pilih Sub</option>' + (subs||[]).map(x=>`<option value="${x.kode}">${x.nama}</option>`).join(''));
-      };
-    });
-    const {data: urg} = await client.from('ref_param_value').select('kode,nama,meta').eq('type_id', typeMap.urgensi).eq('is_active',true).order('urutan');
-    document.querySelectorAll('.dyn-urgensi').forEach(sel=>{
-      sel.innerHTML = '<option value="">Pilih Urgensi</option>' + (urg||[]).map(u=>`<option value="${u.kode}" data-sla="${u.meta?.sla_hari||7}">${u.nama}</option>`).join('');
-    });
-  }catch(e){ console.warn('loadParamDropdowns',e); }
-}
-document.addEventListener('DOMContentLoaded', ()=>{ setTimeout(loadParamDropdowns, 1500); });
-</script>
+        async function loadParamDropdowns(){
+          try{
+            if (!klienSupabase && typeof initSupabase === 'function') initSupabase();
+            if (!klienSupabase && typeof window.supabase?.createClient !== 'function') return;
+            const client = klienSupabase || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            const {data: types, error: errTypes} = await client.from('ref_param_type').select('id,kode,nama');
+            if (errTypes) throw errTypes;
+
+            const valuesByType = {};
+            for (const type of types || []) {
+              const { data: values, error: errValues } = await client.from('ref_param_value').select('*').eq('type_id', type.id).eq('is_active', true).order('urutan');
+              if (errValues) {
+                console.warn('loadParamDropdowns: gagal memuat', type.kode, errValues);
+                valuesByType[type.kode] = [];
+              } else {
+                valuesByType[type.kode] = values || [];
+              }
+            }
+
+            const fallbackCategories = (systemParameters.kategori_aduan || []).map((nama, idx) => ({
+              id: `fallback-kat-${idx}`,
+              kode: nama,
+              nama
+            }));
+            const fallbackSubCategories = (systemParameters.sub_kategori || []).map((nama, idx) => ({
+              id: `fallback-sub-${idx}`,
+              kode: nama,
+              nama,
+              parent_id: null
+            }));
+
+            const setOptions = (sel, items, placeholder) => {
+              sel.innerHTML = placeholder + (items || []).map(x => {
+                const value = x.kode || x.id || '';
+                const label = x.nama || x.kode || value;
+                return `<option value="${value}" data-id="${x.id}" data-kode="${x.kode || ''}">${label}</option>`;
+              }).join('');
+            };
+
+            const categories = (valuesByType.kategori_aduan && valuesByType.kategori_aduan.length) ? valuesByType.kategori_aduan : fallbackCategories;
+            const subCategories = (valuesByType.sub_kategori && valuesByType.sub_kategori.length) ? valuesByType.sub_kategori : fallbackSubCategories;
+            const hasSubParent = subCategories.some(item => item.parent_id);
+
+            document.querySelectorAll('.dyn-kategori_aduan').forEach(sel => {
+              const placeholder = sel.id === 'lap-filter-kategori' ? '<option value="">Semua Kategori</option>' : '<option value="">Pilih Kategori</option>';
+              setOptions(sel, categories, placeholder);
+            });
+
+            const refreshSubKategori = parentId => {
+              let items = subCategories;
+              if (parentId && hasSubParent) {
+                items = subCategories.filter(x => x.parent_id === parentId);
+              }
+              if (!items.length && !hasSubParent) {
+                items = subCategories;
+              }
+              document.querySelectorAll('.dyn-sub_kategori').forEach(sel => setOptions(sel, items, '<option value="">Pilih Sub Kategori</option>'));
+            };
+
+            document.querySelectorAll('.dyn-kategori_aduan').forEach(sel => {
+              sel.addEventListener('change', e => {
+                const id = e.target.selectedOptions[0]?.dataset.id || null;
+                refreshSubKategori(id);
+              });
+              if (sel.value) {
+                refreshSubKategori(sel.selectedOptions[0]?.dataset.id || null);
+              }
+            });
+
+            const urgensi = valuesByType.urgensi || [];
+            document.querySelectorAll('.dyn-urgensi').forEach(sel => {
+              setOptions(sel, urgensi, '<option value="">Pilih Urgensi</option>');
+            });
+
+            const genericTypes = ['hasil_verifikasi', 'eskalasi', 'pic', 'sla_hari'];
+            genericTypes.forEach(typeCode => {
+              const items = valuesByType[typeCode] || [];
+              document.querySelectorAll(`.dyn-${typeCode}`).forEach(sel => {
+                const placeholder = sel.tagName.toLowerCase() === 'select' ? `<option value="">Pilih ${sel.previousElementSibling?.innerText || typeCode.replace('_',' ')}</option>` : '';
+                setOptions(sel, items, placeholder);
+              });
+            });
+          }catch(e){
+            console.warn('loadParamDropdowns', e);
+          }
+        }
+
+    </script>
 </body>
 </html>
