@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Pelaporan Etik & Hukum Terpadu</title>
+    <title>SIGAP Etik dan Hukum - Sistem Integrasi Gerak Aduan Pelanggaran Etik dan Hukum | RSJD AHM</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -1291,6 +1291,110 @@ input::placeholder, textarea::placeholder { opacity: 1; }
             document.getElementById('landing-percent').innerText = percent + '%';
         }
 
+        async function loadSurveyRekap(){
+            try {
+                if(!klienSupabase) {
+                    try { if(typeof initSupabase==='function') initSupabase(); } catch(e){}
+                }
+                var client = klienSupabase || (window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null);
+                if(!client) {
+                    var upd = document.getElementById('rekap-last-update');
+                    if(upd) upd.innerText = 'DB belum siap';
+                    return;
+                }
+                var result = await client.from('survey_kepuasan').select('*').order('created_at',{ascending:false}).limit(100);
+                if(result.error) throw result.error;
+                var list = result.data || [];
+                var total = list.length;
+                var sum = 0;
+                for(var i=0;i<list.length;i++){ sum += (list[i].rating||0); }
+                var avg = total ? (sum/total) : 0;
+                var totalEl = document.getElementById('rekap-total');
+                if(totalEl) totalEl.innerText = total;
+                var avgEl = document.getElementById('rekap-avg');
+                if(avgEl) avgEl.innerText = avg.toFixed(1);
+
+                var aspekCount = {};
+                for(var j=0;j<list.length;j++){
+                    var aspekStr = list[j].aspek_dinilai || '';
+                    var parts = aspekStr.split(',');
+                    for(var k=0;k<parts.length;k++){
+                        var t = parts[k].trim();
+                        if(!t) continue;
+                        aspekCount[t] = (aspekCount[t]||0)+1;
+                    }
+                }
+                var topAspek = null;
+                var maxC = 0;
+                for(var key in aspekCount){
+                    if(aspekCount[key] > maxC){ maxC = aspekCount[key]; topAspek = key; }
+                }
+                var topEl = document.getElementById('rekap-top-aspek');
+                if(topEl) topEl.innerText = topAspek ? topAspek : (total? 'Umum' : '-');
+
+                var dist = {5:0,4:0,3:0,2:0,1:0};
+                for(var d=0; d<list.length; d++){
+                    var r = list[d].rating;
+                    if(dist[r]!==undefined) dist[r]++;
+                }
+                var distEl = document.getElementById('rekap-distribusi');
+                if(distEl){
+                    var htmlDist = '';
+                    var stars = [5,4,3,2,1];
+                    for(var s=0; s<stars.length; s++){
+                        var star = stars[s];
+                        var cnt = dist[star]||0;
+                        var pct = total ? Math.round(cnt/total*100) : 0;
+                        htmlDist += '<div style="display:flex;align-items:center;gap:10px;"><div style="width:50px;font-size:13px;">' + '★'.repeat(star) + ' ' + star + '</div><div style="flex:1;height:10px;background:var(--surface-soft);border-radius:6px;overflow:hidden;"><div style="width:' + pct + '%;height:100%;background:linear-gradient(90deg,#f59e0b,#fbbf24);"></div></div><div style="width:60px;font-size:12px;text-align:right;">' + cnt + ' (' + pct + '%)</div></div>';
+                    }
+                    distEl.innerHTML = htmlDist;
+                }
+
+                var ulasanEl = document.getElementById('rekap-ulasan');
+                if(ulasanEl){
+                    if(list.length===0){
+                        ulasanEl.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px;">Belum ada ulasan</div>';
+                    } else {
+                        var htmlU = '';
+                        for(var u=0; u<Math.min(6,list.length); u++){
+                            var r = list[u];
+                            var tgl = new Date(r.created_at).toLocaleDateString('id-ID');
+                            var stars2 = '★'.repeat(r.rating||5);
+                            var aspekShort = (r.aspek_dinilai||'').substring(0,60);
+                            var ulasShort = (r.ulasan||'').substring(0,120);
+                            htmlU += '<div style="padding:10px 12px;background:var(--surface-soft);border-radius:8px;border-left:3px solid #3b82f6;"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);"><span>' + stars2 + '</span><span>' + tgl + '</span></div><div style="font-size:12px;margin-top:4px;color:var(--muted);font-style:italic;">' + aspekShort + '</div><div style="font-size:13px;margin-top:4px;">' + ulasShort + '</div></div>';
+                        }
+                        ulasanEl.innerHTML = htmlU;
+                    }
+                }
+
+                var tbody = document.getElementById('rekap-table-body');
+                if(tbody){
+                    if(list.length===0){
+                        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--muted);">Belum ada data kepuasan</td></tr>';
+                    } else {
+                        var htmlT = '';
+                        for(var t=0; t<Math.min(20,list.length); t++){
+                            var r = list[t];
+                            var tgl2 = new Date(r.created_at).toLocaleString('id-ID');
+                            var stars3 = '★'.repeat(r.rating||0);
+                            var aspekT = (r.aspek_dinilai||'-').substring(0,50);
+                            var ulasT = (r.ulasan||'').substring(0,100);
+                            htmlT += '<tr><td style="font-size:11px;white-space:nowrap;">' + tgl2 + '</td><td>' + stars3 + ' (' + r.rating + ')</td><td style="font-size:12px;">' + aspekT + '</td><td style="font-size:12px;max-width:300px;overflow:hidden;text-overflow:ellipsis;">' + ulasT + '</td></tr>';
+                        }
+                        tbody.innerHTML = htmlT;
+                    }
+                }
+                var upd2 = document.getElementById('rekap-last-update');
+                if(upd2) upd2.innerText = 'Update: ' + new Date().toLocaleString('id-ID');
+            } catch(e){
+                console.error('loadSurveyRekap error', e);
+                var el = document.getElementById('rekap-last-update');
+                if(el) el.innerText = 'Gagal load: ' + (e.message||e);
+            }
+        }
+
+        
         function formatTanggalIndo(dateStr) {
             if (!dateStr) return '-';
             const d = new Date(dateStr);
@@ -2638,7 +2742,7 @@ async function loadPub(){const c=document.getElementById('publikasi-list');if(!c
                         <tr><td></td><td> </td><td>
                             c.</td><td>Bahwa berdasarkan hasil pemeriksaan dan sidang etik, perlu ditetapkan melalui surat keputusan.;</td></tr>
                         <tr><td>Mengingat</td><td>:</td><td>
-                            1.</td><td>Undang-undang Nomor 36 Tahun 2009 tentang Kesehatan;</td></tr>
+                            1.</td><td>Undang-undang Nomor 17 Tahun 2023 tentang Kesehatan;</td></tr>
                         <tr><td></td><td></td><td>
                             2.</td><td>Peraturan Menteri Kesehatan tentang Etik Rumah Sakit;</td></tr>
                         <tr><td>Memperhatikan</td><td>:</td>
@@ -2714,8 +2818,8 @@ async function loadPub(){const c=document.getElementById('publikasi-list');if(!c
                 margin:       [0.5, 0.5, 0.7, 0.5],
                 filename:     filename.endsWith('.pdf') ? filename : filename + '.pdf',
                 image:        { type:'jpeg', quality:0.98 },
-                html2canvas:  { scale:2, useCORS:true, scrollY:0 },
-                jsPDF:        { unit:'in', format:'a4', orientation:'portrait' },
+                html2canvas:  { scale:2.5, useCORS:true, scrollY:0, backgroundColor: '#ffffff', windowWidth: 794  },
+                jsPDF:        { unit:'mm', format:'f4', orientation:'portrait' },
                 pagebreak:    { mode:['avoid-all','css','legacy'] }
             };
             html2pdf().set(opt).from(element).save(); 
