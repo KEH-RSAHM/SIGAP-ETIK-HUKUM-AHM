@@ -1986,11 +1986,11 @@ async function loadPub(){const c=document.getElementById('publikasi-list');if(!c
             if(namaTab === 'laporan') muatLaporanFormal();
             if(namaTab === 'informasi') muatPublikasiPublik();
             // Trigger Load Khusus
-            if(namaTab === 'korespondensi' && ['Administrator', 'SuperAdmin'].includes(currentUserRole)) {
+// Trigger Load Khusus: Tampilkan panel jawab untuk semua role SELAIN Pelapor
+            if(namaTab === 'korespondensi' && currentUserRole !== 'Pelapor') {
                 document.getElementById('admin-korespondensi-panel').style.display = 'block';
                 loadAdminKorespondensi();
-            }
-            if(namaTab === 'referensi') {
+            }            if(namaTab === 'referensi') {
                 loadMappingTabel();
             }
             
@@ -3696,8 +3696,8 @@ async function tambahParameter() {
                 }]);
                 showToast("Pesan berhasil dikirim!", 'success');
                 document.getElementById('kor-nama').value = ''; document.getElementById('kor-email').value = ''; document.getElementById('kor-pesan').value = '';
-                await loadKorespondensiHistory();
-                if(['Administrator', 'SuperAdmin'].includes(currentUserRole)) loadAdminKorespondensi();
+            await loadKorespondensiHistory();
+                if(currentUserRole !== 'Pelapor') loadAdminKorespondensi();
             } catch(e) { alert("Gagal kirim: " + (e.message || e)); }
         }
 
@@ -3764,11 +3764,16 @@ async function tambahParameter() {
             `).join('');
         }
 
-        async function balasKorespondensi(id) {
+async function balasKorespondensi(id) {
+            // Proteksi: Tolak akses jika role-nya adalah Pelapor
+            if (currentUserRole === 'Pelapor') {
+                return alert("Akses Ditolak: Anda tidak memiliki hak untuk menjawab korespondensi.");
+            }
+
             const jawaban = prompt("Masukkan jawaban/tanggapan Anda untuk pertanyaan ini:");
             if (!jawaban) return;
             
-            const namaPenjawab = currentUserProfile?.name || 'Administrator';
+            const namaPenjawab = currentUserProfile?.name || currentUserRole;
             
             const { error } = await klienSupabase.from('korespondensi').update({
                 jawaban: jawaban,
@@ -3782,7 +3787,6 @@ async function tambahParameter() {
             loadAdminKorespondensi(); // Refresh panel admin
             loadKorespondensiHistory(); // Refresh history
         }
-
 
         // =========================================================
         // FITUR EDIT TABEL REFERENSI (DATABASE MAPPING)
