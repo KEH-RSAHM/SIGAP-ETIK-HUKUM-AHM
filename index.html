@@ -2656,17 +2656,31 @@ async function tambahParameter() {
             const tgl_lapor_str = aduan.tanggal_kejadian || aduan.created_at?.substring(0,10) || '';
             const tgl = tgl_lapor_str ? new Date(tgl_lapor_str).toLocaleDateString('id-ID') : '-';
             
-            const SLA_TARGET = 14;
+// --- KODE SLA BARU ---
+            // Ambil target SLA dari db (default 14 hari)
+            const SLA_TARGET = parseInt(aduan.target_sla) || 14; 
             let sla_sisa = '-', sla_status = '-';
+
+            // Sinkronkan input form PIC dengan data yang ada di database
+            const picMulai = document.getElementById('pic-tgl-mulai');
+            const picSelesai = document.getElementById('pic-tgl-selesai');
+            if (picMulai) picMulai.value = aduan.tgl_mulai || '';
+            if (picSelesai) picSelesai.value = aduan.tgl_selesai || '';
+
             if (tgl_lapor_str) {
-                const t1 = new Date(tgl_lapor_str);
-                const now = new Date();
-                const diff = Math.floor((now - t1) / 86400000);
+                // Tentukan tanggal mulai (Prioritas: input tgl_mulai > dieskalasi_at > tgl_kejadian)
+                const t1 = aduan.tgl_mulai ? new Date(aduan.tgl_mulai) : (aduan.dieskalasi_at ? new Date(aduan.dieskalasi_at) : new Date(tgl_lapor_str));
+                
+                // Tentukan tanggal selesai (Prioritas: input tgl_selesai > hari ini)
+                const t2 = aduan.tgl_selesai ? new Date(aduan.tgl_selesai) : new Date();
+                
+                const diff = Math.floor((t2 - t1) / 86400000);
                 const sisa = SLA_TARGET - diff;
+                
                 sla_sisa = sisa >= 0 ? sisa + ' hari' : 'Terlambat ' + Math.abs(sisa) + ' hari';
-                sla_status = sisa >= 3 ? 'Aman' : sisa >= 0 ? 'Mendekati' : 'Overdue';
+                sla_status = sisa >= 3 ? 'Aman' : (sisa >= 0 ? 'Mendekati' : 'Overdue');
             }
-            
+            // --- AKHIR KODE SLA BARU ---            
             const setAll = (sel, val) => document.querySelectorAll(sel).forEach(el => el.textContent = val || '-');
             setAll('.h-pelapor', aduan.nama_pelapor);
             setAll('.h-tgl', tgl);
@@ -2857,23 +2871,33 @@ async function tambahParameter() {
             }
         }
         async function simpanPenanganan() { 
-    const id = document.getElementById('pic-pilih-aduan').value;
-    const tanggapanProses = document.getElementById('pic-tanggapan-proses').value;
-    const tanggapanAkhir = document.getElementById('pic-tanggapan-akhir').value;
-    
-    await klienSupabase.from('proses_penanganan').insert([{ 
-        aduan_id: id, 
-        tanggapan_proses: tanggapanProses, 
-        tanggapan_akhir: tanggapanAkhir,
-        rekomendasi_pic: tanggapanAkhir
-    }]);
-    
-    await klienSupabase.from('aduan').update({ 
-        status: 'Menunggu Otorisasi',
-        rekomendasi_pic: tanggapanAkhir
-    }).eq('id', id); alert('Disimpan!'); resetForm('section-pic'); muatPilihanAduan('pic-pilih-aduan', 'Proses PIC / Dieskalasi'); muatDatasheetView('pic');
-        }
-        async function simpanOtorisasi() { 
+            const id = document.getElementById('pic-pilih-aduan').value;
+            const tanggapanProses = document.getElementById('pic-tanggapan-proses').value;
+            const tanggapanAkhir = document.getElementById('pic-tanggapan-akhir').value;
+            
+            // Ambil nilai tanggal dari form input PIC
+            const tglMulai = document.getElementById('pic-tgl-mulai').value;
+            const tglSelesai = document.getElementById('pic-tgl-selesai').value;
+            
+            await klienSupabase.from('proses_penanganan').insert([{ 
+                aduan_id: id, 
+                tanggapan_proses: tanggapanProses, 
+                tanggapan_akhir: tanggapanAkhir,
+                rekomendasi_pic: tanggapanAkhir
+            }]);
+            
+            await klienSupabase.from('aduan').update({ 
+                status: 'Menunggu Otorisasi',
+                rekomendasi_pic: tanggapanAkhir,
+                tgl_mulai: tglMulai,        // Simpan input Tanggal Mulai
+                tgl_selesai: tglSelesai     // Simpan input Tanggal Selesai
+            }).eq('id', id); 
+            
+            alert('Disimpan!'); 
+            resetForm('section-pic'); 
+            muatPilihanAduan('pic-pilih-aduan', 'Proses PIC / Dieskalasi'); 
+            muatDatasheetView('pic');
+        }        async function simpanOtorisasi() { 
             try {
             const id = document.getElementById('ot-pilih-aduan').value;
             if (!id) return alert('Pilih aduan dulu');
@@ -3846,6 +3870,34 @@ async function loadMappingTabel() {
             await simpanKeSupabaseMapping();
             showToast("Tabel dihapus", "success");
         }
+    // Listener untuk update SLA secara dinamis/otomatis saat PIC merubah input tanggal
+        function updateSLADinamis() {
+            const targetSlaText = document.querySelector('.h-sla').textContent;
+            const SLA_TARGET = parseInt(targetSlaText) || 14;
+            
+            const tglMulaiInput = document.getElementById('pic-tgl-mulai').value;
+            const tglSelesaiInput = document.getElementById('pic-tgl-selesai').value;
+            
+            if(!tglMulaiInput) return; // Tunggu PIC mengisi form tanggal mulai
+
+            const t1 = new Date(tglMulaiInput);
+            const t2 = tglSelesaiInput ? new Date(tglSelesaiInput) : new Date();
+            
+            const diff = Math.floor((t2 - t1) / 86400000);
+            const sisa = SLA_TARGET - diff;
+            
+            const sla_sisa = sisa >= 0 ? sisa + ' hari' : 'Terlambat ' + Math.abs(sisa) + ' hari';
+            const sla_status = sisa >= 3 ? 'Aman' : (sisa >= 0 ? 'Mendekati' : 'Overdue');
+            
+            document.querySelectorAll('.h-sla-sisa').forEach(el => el.textContent = sla_sisa);
+            document.querySelectorAll('.h-sla-status').forEach(el => {
+                el.textContent = sla_status;
+                el.style.color = sla_status === 'Overdue' ? '#dc2626' : (sla_status === 'Mendekati' ? '#d97706' : '#16a34a');
+            });
+        }
+
+        document.getElementById('pic-tgl-mulai')?.addEventListener('change', updateSLADinamis);
+        document.getElementById('pic-tgl-selesai')?.addEventListener('change', updateSLADinamis);
     </script>
 </body>
 </html>
