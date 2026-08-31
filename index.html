@@ -132,16 +132,69 @@
 
         .top-bar { display: flex; justify-content: space-between; align-items: center; background: var(--card); padding: 10px 16px; box-shadow: 0 6px 18px rgba(0,0,0,0.2); margin: 0 0 20px 0; border-radius: 12px; border: 1px solid var(--border);}
         
-        /* ========================================= */
-        /* 5. FIX KONTRAS & PENGUNCIAN SUPERADMIN    */
-        /* ========================================= */
+/* ========================================================= */
+        /* FIX: WARNA TEKS KOTAK INFOGRAFIS & PERINGATAN (DARK MODE) */
+        /* ========================================================= */
         .stat-box { flex: 1; padding: 20px; border-radius: 8px; text-align: center; min-width: 150px; }
-        .stat-box h3 { font-size: 28px; margin: 0 0 5px 0; color: #0f172a !important; }
-        .stat-box p { margin: 0; font-size: 13px; font-weight: bold; opacity: 0.9; color: #1e293b !important; }
-        #auto-deteksi-badge { color: #0f172a !important; font-weight: bold; background: #f1f5f9; }
-        #preview-sk-content, #sk-print-area, #laporan-print-area { background-color: #ffffff !important; color: #000000 !important; }
-        #preview-sk-content *, #sk-print-area *, #laporan-print-area * { color: #000000 !important; }
+        .stat-box h3, .stat-box p { color: #0f172a !important; }
+        
+        #auto-deteksi-badge { background: #f1f5f9 !important; color: #0f172a !important; font-weight: bold; }
+        #info-jenis-dokumen { background: #eef2ff !important; color: #4338ca !important; font-weight: 500; }
+        
+        /* Memaksa background putih dan teks hitam pada Preview SK */
+        .sk-preview, #preview-sk-content, #sk-print-area, #sk-print-area *, #sk-isi-preview { 
+            background-color: #ffffff !important; 
+            color: #000000 !important; 
+        }
 
+        /* ========================================================= */
+        /* FIX: MODE TOPBAR & ANIMASI SIDEBAR                        */
+        /* ========================================================= */
+        .sidebar { transition: all 0.3s ease; }
+        
+        /* Saat Mode Topbar Aktif */
+        body.top-nav-mode .sidebar {
+            position: relative !important;
+            width: 100% !important;
+            height: auto !important;
+            display: flex !important;
+            flex-direction: row !important;
+            overflow-x: auto !important;
+            white-space: nowrap !important;
+            padding: 10px 15px !important;
+            border-right: none !important;
+            border-bottom: 3px solid var(--accent) !important;
+            background: var(--sidebar-bg) !important;
+            z-index: 100;
+            left: 0; 
+            top: 0; 
+            border-radius: 0; 
+            box-shadow: none;
+        }
+        
+        body.top-nav-mode .sidebar::-webkit-scrollbar { height: 6px; }
+        body.top-nav-mode .sidebar::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 4px; }
+        
+        body.top-nav-mode .sidebar .tab-btn {
+            width: auto !important;
+            margin-right: 8px !important;
+            margin-bottom: 0 !important;
+            padding: 10px 18px !important;
+            display: inline-flex !important;
+            border-radius: 6px;
+        }
+        
+        body.top-nav-mode .sidebar .tab-btn.active {
+            border-left: none !important;
+            border-bottom: 3px solid var(--accent) !important;
+        }
+        
+        body.top-nav-mode #app-screen {
+            margin-left: 0 !important;
+            padding-left: 15px !important;
+            width: 100% !important;
+            padding-top: 25px !important;
+        }
         /* Mengunci Panel SuperAdmin di Dark Mode */
         #section-superadmin, #section-superadmin .card { background-color: #0f172a !important; border-color: #334155 !important; }
         #section-superadmin h2, #section-superadmin h3, #section-superadmin h4, #section-superadmin p, #section-superadmin label, #section-superadmin div { color: #f8fafc !important; }
@@ -875,11 +928,23 @@ function toggleTheme() {
     document.body.classList.toggle('light-theme'); 
     localStorage.setItem('sigap_theme', document.body.classList.contains('light-theme')?'light':'dark'); 
 }
+// --- FIX FUNGSI TOGGLE SIDEBAR KE TOPBAR ---
 function toggleLayoutMode() {
-    const btn = document.getElementById('btn-toggle-layout'); const body = document.body;
+    const btn = document.getElementById('btn-toggle-layout');
+    const body = document.body;
+    
+    // Toggle class utama untuk mengubah tata letak CSS
     body.classList.toggle('top-nav-mode');
-    if (body.classList.contains('top-nav-mode')) { btn.innerHTML = '⇄ Mode Sidebar'; const s = document.querySelector('.sidebar'); if(s) s.scrollLeft = 0; } 
-    else { btn.innerHTML = '⇄ Mode Topbar'; }
+    
+    // Ubah teks tombol secara interaktif
+    if (body.classList.contains('top-nav-mode')) {
+        btn.innerHTML = '⇄ Mode Sidebar';
+        // Auto scroll ke kiri agar menu pertama terlihat
+        const sidebarEl = document.querySelector('.sidebar');
+        if(sidebarEl) sidebarEl.scrollLeft = 0;
+    } else {
+        btn.innerHTML = '⇄ Mode Topbar';
+    }
 }
 function validasiUkuranFile(input, maxMb){ if(input.files && input.files[0] && input.files[0].size > maxMb*1024*1024){ showToast(`File maksimal ${maxMb}MB`, true); input.value=''; } }
 
@@ -1061,12 +1126,33 @@ async function loadGlobalKop() {
     terapkanKopSurat();
 }
 
+// --- FIX FUNGSI MEMUAT PUBLIKASI DI HALAMAN DEPAN ---
 async function loadPublikasiLanding() {
-    const container = document.getElementById('publikasi-list'); if (!container) return;
-    container.innerHTML = '<p style="text-align:center; color:var(--muted); grid-column:1/-1;">Memuat informasi...</p>';
-    const { data, error } = await supabaseClient.from('publikasi').select('*').order('created_at', { ascending: false }).limit(6);
-    if (error || !data || data.length === 0) { container.innerHTML = '<p style="text-align:center; color:var(--muted); grid-column:1/-1;">Belum ada publikasi.</p>'; return; }
-    container.innerHTML = data.map(p => `<div class="card" style="margin:0; transition: transform 0.2s;"><span class="badge">${p.kategori}</span><h4 style="margin:12px 0 8px 0; font-size:16px;">${p.judul}</h4><p style="font-size:12px; color:var(--muted); margin-bottom:15px;">Diterbitkan: ${new Date(p.created_at).toLocaleDateString('id-ID')}</p><a href="${p.file_url}" target="_blank" class="btn-primary" style="text-decoration:none; padding:8px 16px; border-radius:6px; font-size:13px; font-weight:bold; display:inline-block;">Lihat Dokumen</a></div>`).join('');
+    const container = document.getElementById('publikasi-list');
+    if (!container) return; // Batal jika elemen tidak ditemukan
+
+    container.innerHTML = '<p style="text-align:center; color:var(--muted); grid-column:1/-1;">Memuat informasi edukasi...</p>';
+
+    const { data, error } = await supabaseClient
+        .from('publikasi')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(6);
+
+    if (error || !data || data.length === 0) {
+        container.innerHTML = '<p style="text-align:center; color:var(--muted); grid-column:1/-1;">Belum ada dokumen publikasi atau materi edukasi yang tersedia.</p>';
+        return;
+    }
+
+    // Merender (menggambar) data ke dalam kotak-kotak HTML
+    container.innerHTML = data.map(p => `
+        <div style="background:var(--surface-soft); border:1px solid var(--border); padding:20px; border-radius:12px; transition: transform 0.2s ease;">
+            <span style="font-size:11px; background:var(--accent); color:#111; padding:4px 10px; border-radius:12px; font-weight:bold;">${p.kategori || 'Info'}</span>
+            <h4 style="margin:12px 0 8px 0; color:var(--text); font-size:16px;">${p.judul}</h4>
+            <p style="font-size:12px; color:var(--muted); margin-bottom:15px;">Diterbitkan: ${new Date(p.created_at).toLocaleDateString('id-ID')}</p>
+            <a href="${p.file_url}" target="_blank" style="display:inline-flex; align-items:center; justify-content:center; background:var(--primary); color:white; text-decoration:none; padding:8px 16px; border-radius:6px; font-size:13px; font-weight:bold; transition: background 0.2s;">📄 Lihat Dokumen</a>
+        </div>
+    `).join('');
 }
 
 async function loadKustomisasiLanding() {
@@ -1592,11 +1678,26 @@ async function hapusRowMapping(idx) { if(!confirm("Hapus baris tabel ini?")) ret
 // ==========================================
 document.addEventListener('DOMContentLoaded', async ()=>{
     if(localStorage.getItem('sigap_theme')==='light') document.body.classList.add('light-theme');
+    
+    // 1. Cek sesi login
     await checkSession(); 
+    
+    // 2. Muat data utama aplikasi
     await loadAllData(); 
     
-    ['login-email','login-pass'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('keydown', e=>{ if(e.key==='Enter') submitLogin(); }); });
-    const loginScreen=document.getElementById('login-screen'); if(loginScreen) loginScreen.addEventListener('click', e=>{ if(e.target===loginScreen) closeLogin(); });
+    // 3. PENTING: Muat data untuk Halaman Depan (Landing Page)
+    await loadPublikasiLanding(); 
+    await loadKustomisasiLanding(); 
+    
+    // 4. Atur tombol Enter untuk Login
+    ['login-email','login-pass'].forEach(id=>{ 
+        const el=document.getElementById(id); 
+        if(el) el.addEventListener('keydown', e=>{ if(e.key==='Enter') submitLogin(); }); 
+    });
+    
+    // 5. Tutup modal login jika klik di luar kotak
+    const loginScreen=document.getElementById('login-screen'); 
+    if(loginScreen) loginScreen.addEventListener('click', e=>{ if(e.target===loginScreen) closeLogin(); });
 });
 
 </script>
