@@ -1267,6 +1267,20 @@
                     <h3 style="font-size:16px; margin-top:0; border-bottom:2px solid var(--primary); padding-bottom:10px; color:var(--text);">✉️ Kirim Pesan / Pertanyaan</h3>
                     <div class="form-group"><label>Nama Anda</label><input type="text" id="kor-nama" placeholder="Nama Lengkap"></div>
                     <div class="form-group"><label>Email (opsional)</label><input type="email" id="kor-email" placeholder="email@domain.com"></div>
+                    
+                    <!-- KODE BARU: Dropdown Pemilihan Target Role -->
+                    <div class="form-group">
+                        <label>Ditujukan Kepada (Role yang menjawab)</label>
+                        <select id="kor-target-role">
+                            <option value="Administrator">Administrator / Umum</option>
+                            <option value="Operator">Operator (Verifikasi)</option>
+                            <option value="Komite Etik">Komite Etik</option>
+                            <option value="PIC">PIC (Penanganan Aduan)</option>
+                            <option value="Direktur">Direktur (Pimpinan)</option>
+                        </select>
+                    </div>
+                    <!-- AKHIR KODE BARU -->
+
                     <div class="form-group"><label>Pesan / Pertanyaan</label><textarea id="kor-pesan" placeholder="Tuliskan pertanyaan atau masukan Anda..." style="min-height:140px;"></textarea></div>
                     <button class="btn-verify" onclick="kirimKorespondensi()">Kirim Pesan</button>
                     <div id="korespondensi-history" style="margin-top:20px; padding-top:20px; border-top:1px solid var(--input-border);">
@@ -1523,6 +1537,7 @@ if (aksesConfigGlobal['Komite']) {
     localStorage.setItem('akses_config_sigap', JSON.stringify(aksesConfigGlobal));
 }
 
+// PERBARUI VARIABEL INI (Tambahkan item no 15)
 const daftarSemuaModul = [
     { id: 'pelapor', nama: '1. Lapor & Datasheet' },
     { id: 'operator', nama: '2. Panel Verifikasi' },
@@ -1537,8 +1552,9 @@ const daftarSemuaModul = [
     { id: 'korespondensi', nama: '11. Korespondensi & Survey' },
     { id: 'admin', nama: '13. Pengaturan Admin' },
     { id: 'pic_bukti', nama: '14. Akses Unduh Bukti (PIC)' },
-    { id: 'superadmin', nama: '15. SuperAdmin C-Panel' },         // Tambahan
-    { id: 'referensi', nama: '16. Setting Database (Referensi)' }  // Tambahan
+    { id: 'jawab_korespondensi', nama: '15. Hak Jawab Pesan' }, // <--- TAMBAHAN BARU
+    { id: 'superadmin', nama: '16. SuperAdmin C-Panel' },         
+    { id: 'referensi', nama: '17. Setting Database (Referensi)' }  
 ];
 
 let dbMappingData = [];
@@ -1781,6 +1797,7 @@ function toggleSidebar() {
     document.getElementById('mobile-overlay')?.classList.toggle('show');
 }
 
+// --- KODE PERBAIKAN PINDAH TAB & AUTO-LOAD PELAPOR ---
 function bukaTab(target) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     const sec = document.getElementById('section-' + target);
@@ -1790,16 +1807,36 @@ function bukaTab(target) {
     const btn = document.querySelector(`.tab-btn[data-target="${target}"]`);
     if(btn) btn.classList.add('active');
     
-    // Otomatis menutup sidebar di HP/Tablet setelah menu diklik
     document.querySelector('.tab-container')?.classList.remove('show-sidebar');
     document.getElementById('mobile-overlay')?.classList.remove('show');
 
-    // Eksekusi fungsi khusus tiap modul
+    // Panggil fungsi penyesuaian khusus setiap modul
     if(target === 'cetak-sk') syncCetakSKList();
     if(target === 'cetak-laporan') loadCetakLaporan();
     if(target === 'superadmin') renderChecklistSuperAdmin();
     if(target === 'referensi') loadMappingTabel();
-}function toggleTheme(){ document.body.classList.toggle('light-theme'); localStorage.setItem('sigap-theme', document.body.classList.contains('light-theme')?'light':'dark'); }
+    
+    // TAMBAHAN: Logika khusus saat membuka tab Lacak
+    if(target === 'korespondensi') {
+        const userRole = currentProfile?.role || 'Pelapor';
+        const roleKey = Object.keys(aksesConfigGlobal).find(k => k.toLowerCase() === userRole.toLowerCase()) || 'Pelapor';
+        const allowedModules = aksesConfigGlobal[roleKey] || [];
+        const panelAdminKor = document.getElementById('admin-korespondensi-panel');
+        
+        // Munculkan panel JIKA user adalah Administrator/SuperAdmin, ATAU dicentangkan Hak Jawab
+        if (panelAdminKor) {
+            if (userRole.toLowerCase() === 'superadmin' || userRole.toLowerCase() === 'administrator' || allowedModules.includes('jawab_korespondensi')) {
+                panelAdminKor.style.display = 'block';
+                loadAdminKorespondensi();
+            } else {
+                panelAdminKor.style.display = 'none';
+            }
+        }
+        loadKorespondensiHistory();
+    }
+}
+
+function toggleTheme(){ document.body.classList.toggle('light-theme'); localStorage.setItem('sigap-theme', document.body.classList.contains('light-theme')?'light':'dark'); }
 
 async function uploadFile(bucket, file){
     if(!file) return { url:null, path:null };
@@ -2326,17 +2363,36 @@ function cetakLaporan_Excel(){
 }
 function cetakLaporan_DOCX(){ const area=document.getElementById('laporan-print-area'); if(window.htmlDocx){ const blob=htmlDocx.asBlob(area.innerHTML); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='Laporan-SIGAP.docx'; a.click(); } }
 
-// --- GANTI FUNGSI LAMA DENGAN INI ---
+// --- KODE PERBAIKAN FUNGSI LACAK ADUAN (FILTER BERDASARKAN ROLE) ---
 async function cariStatusLaporan(){
     const kode = document.getElementById('lacak-id')?.value.trim(); 
-    if(!kode){ showToast('Masukkan kode tracking, nama pelapor, atau nomor kontak', true); return; }
+    const isPelapor = currentProfile && currentProfile.role.toLowerCase() === 'pelapor';
+
+    // Jika BUKAN pelapor, wajib mengisi kata kunci agar sistem tidak berat meload seluruh data RS
+    if(!isPelapor && !kode){ 
+        showToast('Masukkan kode tracking, nama pelapor, atau nomor kontak', true); 
+        return; 
+    }
     
-    // PERBAIKAN: Menghapus "id.eq" untuk menghindari Error UUID Casting dari database.
-    // Menggunakan "ilike" untuk mencari teks secara sebagian dan tidak sensitif huruf besar/kecil.
-    const { data, error } = await supabaseClient.from('v_aduan_lengkap')
+    let query = supabaseClient.from('v_aduan_lengkap')
         .select('*')
-        .or(`kode_tracking.ilike.%${kode}%,nama_pelapor.ilike.%${kode}%,kontak_pelapor.ilike.%${kode}%`)
         .order('created_at', { ascending: false });
+
+    // FILTER BERDASARKAN ROLE
+    if (isPelapor) {
+        // PELAPOR: Hanya boleh mengambil data yang emailnya cocok dengan akunnya sendiri
+        query = query.eq('email_pelapor', currentProfile.email);
+        
+        // Jika pelapor mengetik di kolom pencarian, filter laporannya berdasarkan kode atau terlapor
+        if (kode) {
+            query = query.or(`kode_tracking.ilike.%${kode}%,nama_terlapor.ilike.%${kode}%`);
+        }
+    } else {
+        // ROLE LAIN (Operator, PIC, Admin, dll): Bisa mencari ke SELURH aduan
+        query = query.or(`kode_tracking.ilike.%${kode}%,nama_pelapor.ilike.%${kode}%,kontak_pelapor.ilike.%${kode}%`);
+    }
+
+    const { data, error } = await query;
 
     let res = document.getElementById('lacak-result'); 
     if(!res){ 
@@ -2347,21 +2403,22 @@ async function cariStatusLaporan(){
     }
 
     if(error || !data || data.length === 0){ 
-        console.error("Lacak Error:", error); // Membantu melacak error di Console (F12) jika masih terjadi
-        res.innerHTML = `<p style="color:#ef4444; background:#fee2e2; padding:12px; border-radius:8px; border:1px solid #fca5a5;">❌ Laporan dengan kata kunci "<b>${kode}</b>" tidak ditemukan.</p>`; 
+        res.innerHTML = `<p style="color:#ef4444; background:#fee2e2; padding:12px; border-radius:8px; border:1px solid #fca5a5;">
+            ❌ ${isPelapor && !kode ? 'Anda belum memiliki riwayat laporan.' : `Laporan dengan kata kunci "<b>${kode}</b>" tidak ditemukan.`}
+        </p>`; 
         showToast('Tidak ditemukan', true); 
         return; 
     }
 
-    // Jika ditemukan 1 atau lebih, render menjadi daftar card yang rapi
-    res.innerHTML = `<h4 style="margin-bottom:12px;">Ditemukan ${data.length} Laporan:</h4>` + data.map(d => `
+    // Render daftar laporan
+    res.innerHTML = `<h4 style="margin-bottom:12px;">${isPelapor && !kode ? 'Riwayat Laporan Anda:' : `Ditemukan ${data.length} Laporan:`}</h4>` + data.map(d => `
         <div style="border:1px solid var(--input-border); border-radius:8px; padding:16px; margin-bottom:12px; background:var(--surface-soft);">
             <h4 style="margin:0 0 10px 0; color:var(--primary); font-size:15px; display:flex; justify-content:space-between; align-items:center;">
                 ${d.kode_tracking} 
-                <span style="background:var(--card); border:1px solid var(--input-border); color:var(--text); padding:4px 10px; border-radius:12px; font-size:11px;">${d.status}</span>
+                <span style="background:var(--card); border:1px solid var(--input-border); color:var(--text); padding:4px 10px; border-radius:12px; font-size:11px; text-transform:uppercase;">${d.status}</span>
             </h4>
             <table style="width:100%; font-size:13px; border-collapse:collapse; color:var(--text);">
-                <tr><td style="border-bottom:1px solid var(--input-border); padding:6px 0; width:35%;">Tgl Lapor</td><td style="border-bottom:1px solid var(--input-border); padding:6px 0;">${new Date(d.created_at).toLocaleDateString('id-ID')}</td></tr>
+                <tr><td style="border-bottom:1px solid var(--input-border); padding:6px 0; width:35%;">Tgl Lapor</td><td style="border-bottom:1px solid var(--input-border); padding:6px 0;">${new Date(d.created_at).toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'})}</td></tr>
                 <tr><td style="border-bottom:1px solid var(--input-border); padding:6px 0;">Pelapor / Kontak</td><td style="border-bottom:1px solid var(--input-border); padding:6px 0;">${d.nama_pelapor} / ${d.kontak_pelapor || '-'}</td></tr>
                 <tr><td style="border-bottom:1px solid var(--input-border); padding:6px 0;">Terlapor</td><td style="border-bottom:1px solid var(--input-border); padding:6px 0;">${d.nama_terlapor} - ${d.jabatan_terlapor||''}</td></tr>
                 <tr><td style="border-bottom:1px solid var(--input-border); padding:6px 0;">Kategori</td><td style="border-bottom:1px solid var(--input-border); padding:6px 0;">${d.kategori_nama||'-'}</td></tr>
@@ -2370,7 +2427,8 @@ async function cariStatusLaporan(){
             </table>
         </div>
     `).join('');
-    showToast(`Ditemukan ${data.length} laporan`);
+    
+    showToast(isPelapor && !kode ? `Memuat riwayat laporan Anda` : `Ditemukan ${data.length} laporan`);
 }
 // --- KODE BARU BERAKHIR DI SINI ---
 
@@ -2392,12 +2450,26 @@ function cetakLaporan(){
 }
 
 async function kirimKorespondensi(){
-    const nama=document.getElementById('kor-nama')?.value.trim(); const email=document.getElementById('kor-email')?.value.trim(); const pesan=document.getElementById('kor-pesan')?.value.trim();
-    if(!nama||!pesan){ showToast('Nama & pesan wajib', true); return; }
-    const { error } = await supabaseClient.from('korespondensi').insert({ nama, email, pesan, user_id: currentUser?.id || null });
-    if(error){ showToast(error.message, true); return; } showToast('✅ Pesan terkirim');
-    document.getElementById('kor-nama').value=''; document.getElementById('kor-email').value=''; document.getElementById('kor-pesan').value=''; loadKorespondensiHistory();
+    const nama=document.getElementById('kor-nama')?.value.trim(); 
+    const email=document.getElementById('kor-email')?.value.trim(); 
+    const pesan=document.getElementById('kor-pesan')?.value.trim();
+    // Tangkap data target role
+    const targetRole = document.getElementById('kor-target-role')?.value || 'Administrator';
+    
+    if(!nama||!pesan){ showToast('Nama & pesan wajib diisi', true); return; }
+    
+    const { error } = await supabaseClient.from('korespondensi').insert({ 
+        nama, email, pesan, 
+        target_role: targetRole, 
+        user_id: currentUser?.id || null 
+    });
+    
+    if(error){ showToast(error.message, true); return; } 
+    showToast('✅ Pesan terkirim');
+    document.getElementById('kor-pesan').value=''; 
+    loadKorespondensiHistory();
 }
+
 async function loadKorespondensiHistory(){
     const { data } = await supabaseClient.from('korespondensi').select('*').order('created_at',{ascending:false}).limit(10);
     const hist=document.getElementById('kor-history-list'); if(hist && data){ hist.innerHTML=data.map(k=>`<div style="border-bottom:1px solid #e2e8f0; padding:8px 0;"><b>${k.nama}</b> <small>${new Date(k.created_at).toLocaleString('id-ID')}</small><br>${k.pesan}${k.balasan?'<br><small style="color:#16a34a;">Balasan: '+k.balasan+'</small>':''}</div>`).join('') || 'Belum ada pesan'; }
@@ -2452,13 +2524,27 @@ async function renderPICDirectory(){
 }
 
 async function loadAdminKorespondensi() {
-    const { data, error } = await supabaseClient.from('korespondensi').select('*').order('created_at', { ascending: false }).limit(50);
+    let query = supabaseClient.from('korespondensi').select('*').order('created_at', { ascending: false }).limit(50);
+    
+    // Filter Cerdas: Jika BUKAN Administrator / SuperAdmin, hanya tampilkan pesan yang ditujukan untuk Role miliknya
+    const userRole = currentProfile?.role || 'Pelapor';
+    if (userRole.toLowerCase() !== 'administrator' && userRole.toLowerCase() !== 'superadmin') {
+        query = query.eq('target_role', userRole);
+    }
+
+    const { data, error } = await query;
     if (error) { showToast('Gagal memuat pesan: ' + error.message, true); return; }
-    const listEls = document.querySelectorAll('#admin-kor-list'); if (listEls.length === 0) return;
-    const htmlOutput = (!data || data.length === 0) ? '<div style="padding:15px; text-align:center; color:var(--muted);">Belum ada pesan masuk.</div>' : data.map(k => `
+    
+    const listEls = document.querySelectorAll('#admin-kor-list'); 
+    if (listEls.length === 0) return;
+    
+    const htmlOutput = (!data || data.length === 0) ? '<div style="padding:15px; text-align:center; color:var(--muted);">Belum ada pesan masuk untuk Anda.</div>' : data.map(k => `
         <div style="border:1px solid var(--input-border); padding:16px; border-radius:8px; background:var(--surface-soft);">
             <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                <strong style="color:var(--text);">${k.nama} <span style="color:var(--muted); font-size:12px; font-weight:normal;">(${k.email || 'Tanpa Email'})</span></strong>
+                <strong style="color:var(--text);">${k.nama} 
+                    <span style="color:var(--muted); font-size:12px; font-weight:normal;">(${k.email || 'Tanpa Email'})</span><br>
+                    <span style="background:var(--primary); color:white; padding:2px 6px; border-radius:4px; font-size:10px;">Untuk: ${k.target_role || 'Umum'}</span>
+                </strong>
                 <small style="color:var(--muted);">${new Date(k.created_at).toLocaleString('id-ID')}</small>
             </div>
             <p style="margin:0 0 14px 0; font-size:13px; color:var(--text); line-height:1.6;">${k.pesan}</p>
@@ -2467,7 +2553,9 @@ async function loadAdminKorespondensi() {
             </div>
         </div>
     `).join('');
-    listEls.forEach(el => { el.innerHTML = htmlOutput; }); showToast('✅ Pesan berhasil diperbarui');
+    
+    listEls.forEach(el => { el.innerHTML = htmlOutput; }); 
+    showToast('✅ Daftar Pesan diperbarui');
 }
 
 async function balasPesan(id) {
