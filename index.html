@@ -13,7 +13,23 @@
     
     <style id="print-custom-style"></style>
     <style>
-        :root{--bg:#020617;--bg-soft:#0f172a;--card:#0f172a;--card-soft:#111827;--text:#ffffff;--muted:#cbd5e1;--primary:#60a5fa;--accent:#f97316;--danger:#ef4444;--success:#22c55e;--surface:#111827;--surface-soft:rgba(255,255,255,0.08);--input-bg:#0f172a;--input-border:rgba(203,213,225,0.45);--placeholder:rgba(203,213,225,0.95)}
+    :root {
+        --primary: #800000;          /* Maroon */
+        --primary-hover: #5a0000;    /* Maroon Gelap */
+        --accent: #d4af37;           /* Keemasan (Gold) */
+        --accent-hover: #b8860b;     /* Emas Gelap */
+        --bg: #121212;               /* Hitam Pekat Latar Belakang */
+        --surface: #1e1e1e;          /* Hitam Kartu / Panel */
+        --surface-soft: #2a2a2a;     /* Hitam Lembut */
+        --text: #e5e7eb;             /* Silver Terang untuk Teks */
+        --muted: #9ca3af;            /* Silver Meredup */
+        --border: #404040;           /* Silver Gelap untuk Garis Pembatas */
+        
+        --sidebar-bg: #0a0a0a;       /* Hitam Sidebar */
+        --sidebar-text: #c0c0c0;     /* Silver Menu */
+        --sidebar-active-bg: #800000;/* Maroon Saat Aktif */
+        --sidebar-active-text: #d4af37;/* Emas Saat Aktif */
+    }
         *{box-sizing:border-box}
         html,body{height:100%; overflow-x:hidden;}
         body { font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif; background: radial-gradient(circle at top, rgba(96,165,250,0.12), transparent 28%), linear-gradient(180deg, #020617 0%, #071126 55%, #0b1730 100%); color: var(--text); margin: 0; padding: 0; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; transition: background .3s ease, color .3s ease; min-height:100vh; }
@@ -321,6 +337,58 @@
         .btn-submit, .btn-verify, .btn-escalate, .btn-pic, .btn-otorisasi, .btn-admin, .btn-search, .btn-auto, .btn-pdf, .btn-success, .btn-danger, .btn-primary { color: #ffffff !important; }
         #laporan-print-area table, #laporan-print-area th, #laporan-print-area td, #sk-print-area table, #sk-print-area th, #sk-print-area td { background-color: #ffffff !important; color: #000000 !important; border-color: #000000 !important; }
         #laporan-print-area table tr:nth-child(even), #sk-print-area table tr:nth-child(even) { background-color: #f8f9fa !important; }
+    /* Efek Animasi Panel Seperti Slide Presentasi Interaktif */
+        .section {
+            display: none;
+            opacity: 0;
+            transform: translateY(15px) scale(0.99);
+        }
+        .section.active {
+            display: block;
+            animation: presentationSlide 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes presentationSlide {
+            0% {
+                opacity: 0;
+                transform: translateY(20px) scale(0.98);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Mode Top Toolbar (Toggle Layout) */
+        body.top-nav-mode .sidebar {
+            position: relative !important;
+            width: 100% !important;
+            height: auto !important;
+            display: flex !important;
+            flex-direction: row !important;
+            overflow-x: auto !important;
+            white-space: nowrap !important;
+            padding: 10px 15px !important;
+            border-right: none !important;
+            border-bottom: 3px solid var(--accent) !important;
+            background: var(--sidebar-bg) !important;
+            z-index: 100;
+        }
+        body.top-nav-mode .sidebar::-webkit-scrollbar { height: 5px; }
+        body.top-nav-mode .sidebar::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 4px; }
+
+        body.top-nav-mode .sidebar .tab-btn {
+            width: auto !important;
+            margin-right: 8px !important;
+            margin-bottom: 0 !important;
+            padding: 10px 18px !important;
+            display: inline-flex !important;
+            border-radius: 6px;
+        }
+        body.top-nav-mode .main-content {
+            margin-left: 0 !important;
+            width: 100% !important;
+            padding: 25px !important;
+        }    
     </style>
 </head>
 
@@ -513,8 +581,9 @@
         <div class="top-bar no-print">
             <div><b id="top-instansi-name">RSJD Atma Husada Mahakam</b> | SIGAP</div>
             <div>
-                <button class="btn-admin btn-small sidebar-toggle-btn" onclick="toggleSidebar()">☰ Sidebar</button>
-                <span class="badge" id="top-role-badge">Role</span>
+                <button id="btn-toggle-layout" class="btn-success btn-small" onclick="toggleLayoutMode()" style="background: var(--accent); color: #111; font-weight: bold; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; margin-right: 12px;">
+                    ⇄ Mode Topbar
+                </button>                <span class="badge" id="top-role-badge">Role</span>
                 <button class="btn-verify btn-small" style="margin-left: 6px;" onclick="ubahPassword()">🔑 Ubah Password</button>
                 <button class="btn-small" style="margin-left: 6px; background-color: #6366f1; color: white; border: none; border-radius: 6px; padding: 6px 12px; cursor: pointer;" onclick="toggleTheme()">🌓 Tema</button>
                 <button class="btn-submit btn-small" style="margin-left: 6px;" onclick="logout()">Keluar</button>
@@ -2835,6 +2904,22 @@ async function simpanKeSupabaseMapping() { await supabaseClient.from('system_set
 async function tambahRowMapping() { const tabel = prompt("Nama Tabel:"); if(!tabel) return; const fungsi = prompt("Fungsi / Deskripsi Utama:"); const kolom = prompt("Daftar Kolom (pisahkan dengan koma):"); dbMappingData.push({ tabel, fungsi, kolom }); renderMappingTabel(); await simpanKeSupabaseMapping(); }
 async function editRowMapping(idx) { const cur = dbMappingData[idx]; const tabel = prompt("Nama Tabel:", cur.tabel); if(!tabel) return; const fungsi = prompt("Fungsi / Deskripsi Utama:", cur.fungsi); const kolom = prompt("Daftar Kolom:", cur.kolom); dbMappingData[idx] = { tabel, fungsi, kolom }; renderMappingTabel(); await simpanKeSupabaseMapping(); }
 async function hapusRowMapping(idx) { if(!confirm("Hapus baris tabel ini?")) return; dbMappingData.splice(idx, 1); renderMappingTabel(); await simpanKeSupabaseMapping(); }
+function toggleLayoutMode() {
+    const btn = document.getElementById('btn-toggle-layout');
+    const body = document.body;
+    
+    // Toggle class untuk mengubah layout secara bolak-balik
+    body.classList.toggle('top-nav-mode');
+    
+    // Mengubah label teks pada tombol secara dinamis
+    if (body.classList.contains('top-nav-mode')) {
+        btn.innerHTML = '⇄ Mode Sidebar';
+        const sidebarEl = document.querySelector('.sidebar');
+        if(sidebarEl) sidebarEl.scrollLeft = 0;
+    } else {
+        btn.innerHTML = '⇄ Mode Topbar';
+    }
+}
 </script>
 </body>
 </html>
