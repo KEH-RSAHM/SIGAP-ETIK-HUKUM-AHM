@@ -1364,13 +1364,37 @@
             <p style="font-size: 12px; color: #64748b; margin-top:-10px;">Centang modul yang diizinkan untuk masing-masing Role, lalu klik tombol Simpan di bagian bawah.</p>
             <div id="checklist-akses-container"></div>
 
-            <div class="card" style="background:#111827; color:white; padding:20px; margin-top: 20px;">
-                <h3 style="margin-top:0;">Manajemen Pengguna</h3>
-                <p style="font-size:13px; color:#cbd5e1; margin-bottom:12px;">Lihat, aktifkan/nonaktifkan, dan hapus profil pengguna.</p>
-                <button class="btn-search btn-small" onclick="muatUserManagement()">Muat Daftar Pengguna</button>
+            <<div class="card" style="background:#111827; color:white; padding:20px; margin-top: 20px;">
+                <h3 style="margin-top:0;">Manajemen Pengguna (CRUD)</h3>
+                <p style="font-size:13px; color:#cbd5e1; margin-bottom:12px;">Ubah role (hak akses), aktifkan/nonaktifkan, dan hapus profil pengguna.</p>
+                <button class="btn-search btn-small" onclick="muatUserManagement()">🔄 Muat / Refresh Pengguna</button>
+                
+                <!-- Form Edit User (Disembunyikan secara default) -->
+                <div id="edit-user-form" style="display:none; background:#1e293b; padding:15px; border-radius:8px; margin-top:15px; border: 1px solid #334155;">
+                    <h4 style="margin-top:0; color:#60a5fa;">✏️ Edit Data Pengguna</h4>
+                    <input type="hidden" id="edit-user-id">
+                    <div class="form-row">
+                        <div class="form-group"><label style="color:#cbd5e1;">Nama Lengkap</label><input type="text" id="edit-user-nama" style="background:#0f172a; color:white; border-color:#334155;"></div>
+                        <div class="form-group"><label style="color:#cbd5e1;">Role Hak Akses</label>
+                            <select id="edit-user-role" style="background:#0f172a; color:white; border-color:#334155;">
+                                <option value="Pelapor">Pelapor</option>
+                                <option value="Operator">Operator</option>
+                                <option value="Komite Etik">Komite Etik</option>
+                                <option value="PIC">PIC</option>
+                                <option value="Direktur">Direktur</option>
+                                <option value="Administrator">Administrator (SuperAdmin)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn-success btn-small" onclick="simpanEditUser()">💾 Simpan Perubahan</button>
+                        <button class="btn-danger btn-small" onclick="document.getElementById('edit-user-form').style.display='none'">Batal</button>
+                    </div>
+                </div>
+
                 <div style="overflow-x:auto; margin-top:16px;">
-                    <table class="dashboard-table" id="user-management-table">
-                        <thead><tr><th>Nama</th><th>Email</th><th>Role</th><th>Status</th><th>Aksi</th></tr></thead>
+                    <table class="dashboard-table" id="user-management-table" style="color: white;">
+                        <thead><tr><th>Nama</th><th>Email</th><th>Role</th><th>Status</th><th>Aksi CRUD</th></tr></thead>
                         <tbody><tr><td colspan="5" style="text-align:center;">Klik Muat Daftar Pengguna untuk menampilkan.</td></tr></tbody>
                     </table>
                 </div>
@@ -1447,7 +1471,8 @@ let aksesConfigGlobal = JSON.parse(localStorage.getItem('akses_config_sigap')) |
     'Komite Etik': ['eskalasi', 'dashboard', 'informasi', 'korespondensi'],
     'PIC': ['pic', 'dashboard', 'informasi', 'korespondensi', 'pic_bukti'],
     'Direktur': ['otorisasi', 'dashboard', 'informasi', 'korespondensi'],
-    'Administrator': ['penetapan', 'laporan', 'admin', 'dashboard', 'informasi', 'korespondensi', 'pic_bukti']
+    // SUPERADMIN DIBERIKAN HAK AKSES PENUH KE MODUL RAHASIA
+    'Administrator': ['penetapan', 'laporan', 'admin', 'dashboard', 'informasi', 'korespondensi', 'pic_bukti', 'superadmin', 'referensi']
 };
 
 // Skrip migrasi jika ada data lama di localStorage (opsional agar tidak error)
@@ -1470,7 +1495,9 @@ const daftarSemuaModul = [
     { id: 'informasi', nama: '10. Publikasi & Edukasi' },
     { id: 'korespondensi', nama: '11. Korespondensi & Survey' },
     { id: 'admin', nama: '13. Pengaturan Admin' },
-    { id: 'pic_bukti', nama: '14. Akses Unduh Bukti (PIC)' }
+    { id: 'pic_bukti', nama: '14. Akses Unduh Bukti (PIC)' },
+    { id: 'superadmin', nama: '15. SuperAdmin C-Panel' },         // Tambahan
+    { id: 'referensi', nama: '16. Setting Database (Referensi)' }  // Tambahan
 ];
 
 let dbMappingData = [];
@@ -1513,19 +1540,37 @@ async function afterLogin(user){
     currentUser=user;
     const { data:profile, error } = await supabaseClient.from('profiles').select('*').eq('id', user.id).single();
     if(error && error.code==='PGRST116'){
-        const { data:newProf } = await supabaseClient.from('profiles').insert({ id:user.id, email:user.email, full_name:user.user_metadata?.full_name||user.email.split('@')[0], role:'pelapor' }).select().single();
+        const { data:newProf } = await supabaseClient.from('profiles').insert({ id:user.id, email:user.email, full_name:user.user_metadata?.full_name||user.email.split('@')[0], role:'Pelapor' }).select().single();
         currentProfile=newProf;
     } else {
         currentProfile=profile;
     }
+    
     document.getElementById('landing-screen').style.display='none';
     closeLogin();
     const app=document.getElementById('app-screen');
     app.style.display='block';
-    document.getElementById('top-role-badge').textContent=(currentProfile?.role||'pelapor').toUpperCase()+' | '+user.email;
+    
+    // --- SISTEM RBAC: SEMBUNYIKAN/TAMPILKAN MENU SESUAI ROLE ---
+    const userRole = currentProfile?.role || 'Pelapor';
+    document.getElementById('top-role-badge').textContent = userRole.toUpperCase() + ' | ' + user.email;
+    
+    const roleKey = Object.keys(aksesConfigGlobal).find(k => k.toLowerCase() === userRole.toLowerCase()) || 'Pelapor';
+    const allowedModules = aksesConfigGlobal[roleKey] || [];
+    
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        const target = btn.getAttribute('data-target');
+        if (allowedModules.includes(target)) {
+            btn.style.display = 'inline-flex'; // Tampilkan jika punya hak
+        } else {
+            btn.style.display = 'none'; // Sembunyikan jika dilarang
+        }
+    });
+    // -----------------------------------------------------------
+
     bukaTab('dashboard');
     await loadAllData();
-    showToast('Login berhasil: '+currentProfile.role);
+    showToast('Login berhasil sebagai: ' + userRole);
 }
 
 async function submitLogin(){
@@ -2236,12 +2281,53 @@ function simpanChecklistHakAkses() {
 }
 
 async function muatUserManagement() {
-    const tbody = document.querySelector('#user-management-table tbody'); if (!tbody) return; tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Memuat data...</td></tr>';
-    if (!supabaseClient) return tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Supabase tidak tersedia.</td></tr>';
+    const tbody = document.querySelector('#user-management-table tbody'); if (!tbody) return; 
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Memuat data...</td></tr>';
+    
     const { data, error } = await supabaseClient.from('profiles').select('*').order('created_at', { ascending: false });
     if (error || !data) return tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Gagal memuat pengguna.</td></tr>';
-    tbody.innerHTML = data.length ? data.map(user => `<tr><td>${user.full_name || user.name || '-'}</td><td>${user.email || '-'}</td><td>${user.role || '-'}</td><td>${user.is_active ? 'Aktif' : 'Nonaktif'}</td><td style="white-space:nowrap;"><button class="btn-small" onclick="toggleUserActive('${user.id}', ${user.is_active})">${user.is_active ? 'Nonaktifkan' : 'Aktifkan'}</button> <button class="btn-small btn-danger" onclick="hapusUser('${user.id}')">Hapus</button></td></tr>`).join('') : '<tr><td colspan="5" style="text-align:center;">Belum ada pengguna.</td></tr>';
+    
+    tbody.innerHTML = data.length ? data.map(user => `<tr>
+        <td>${user.full_name || '-'}</td>
+        <td>${user.email || '-'}</td>
+        <td><span style="background:var(--primary); color:#fff; padding:2px 6px; border-radius:4px; font-size:11px;">${user.role || '-'}</span></td>
+        <td>${user.is_active ? '✅ Aktif' : '❌ Nonaktif'}</td>
+        <td style="white-space:nowrap; display:flex; gap:6px;">
+            <button class="btn-small btn-primary" onclick="bukaEditUser('${user.id}', '${user.full_name || ''}', '${user.role || 'Pelapor'}')">✏️ Edit</button>
+            <button class="btn-small" onclick="toggleUserActive('${user.id}', ${user.is_active})">${user.is_active ? '🔒 Blokir' : '🔓 Aktifkan'}</button>
+            <button class="btn-small btn-danger" onclick="hapusUser('${user.id}')">🗑️ Hapus</button>
+        </td></tr>`).join('') : '<tr><td colspan="5" style="text-align:center;">Belum ada pengguna.</td></tr>';
 }
+
+function bukaEditUser(id, nama, role) {
+    document.getElementById('edit-user-id').value = id;
+    document.getElementById('edit-user-nama').value = nama;
+    
+    const sel = document.getElementById('edit-user-role');
+    for(let i=0; i<sel.options.length; i++) {
+        if(sel.options[i].value.toLowerCase() === role.toLowerCase()) { sel.selectedIndex = i; break; }
+    }
+    document.getElementById('edit-user-form').style.display = 'block';
+    document.getElementById('edit-user-form').scrollIntoView({behavior: 'smooth'});
+}
+
+async function simpanEditUser() {
+    const id = document.getElementById('edit-user-id').value;
+    const nama = document.getElementById('edit-user-nama').value.trim();
+    const role = document.getElementById('edit-user-role').value;
+
+    if(!id || !nama) return showToast('Nama tidak boleh kosong!', true);
+
+    const { error } = await supabaseClient.from('profiles').update({ full_name: nama, role: role }).eq('id', id);
+    if(error) return showToast('Gagal update: ' + error.message, true);
+
+    showToast('✅ Data Pengguna berhasil diperbarui!');
+    document.getElementById('edit-user-form').style.display = 'none';
+    muatUserManagement(); // Reload tabel
+}
+
+async function toggleUserActive(userId, currentState) { if (!confirm(currentState ? 'Nonaktifkan (Blokir) akun ini?' : 'Aktifkan kembali akun ini?')) return; await supabaseClient.from('profiles').update({ is_active: !currentState }).eq('id', userId); muatUserManagement(); }
+async function hapusUser(userId) { if (!confirm('Hapus profil pengguna ini? Peringatan: Supabase memerlukan penghapusan di menu Authentication juga.')) return; await supabaseClient.from('profiles').delete().eq('id', userId); muatUserManagement(); }
 
 async function toggleUserActive(userId, currentState) { if (!confirm('Ubah status akun?')) return; await supabaseClient.from('profiles').update({ is_active: !currentState }).eq('id', userId); muatUserManagement(); }
 async function hapusUser(userId) { if (!confirm('Hapus pengguna ini dari profil?')) return; await supabaseClient.from('profiles').delete().eq('id', userId); muatUserManagement(); }
