@@ -1121,7 +1121,7 @@
             <div class="card">
                 <div class="form-row">
                     <div class="form-group" style="flex:3;">
-                        <input type="text" id="lacak-id" placeholder="Cari: NamaPelapor-Tanggal-NamaTerlapor (atau UUID)" required>
+                        <input type="text" id="lacak-id" placeholder="Masukkan Kode Tracking / Nama Pelapor / No. Kontak..." required>
                     </div>
                     <div class="form-group" style="flex:1;">
                         <button class="btn-search" onclick="cariStatusLaporan()">Cari</button>
@@ -1535,6 +1535,101 @@ async function checkSession(){
     const { data:{session} } = await supabaseClient.auth.getSession();
     if(session?.user){ await afterLogin(session.user); }
 }
+
+// --- KODE BARU DIMULAI DARI SINI ---
+
+// Fungsi baru untuk mengisi otomatis data form berdasarkan profil pengguna
+async function autoFillData() {
+    if (!currentProfile) return;
+
+    // 1. Auto-fill Korespondensi (Selalu terisi & terkunci untuk semua role)
+    const korNama = document.getElementById('kor-nama');
+    const korEmail = document.getElementById('kor-email');
+    if (korNama) { 
+        korNama.value = currentProfile.full_name || ''; 
+        korNama.readOnly = true; 
+        korNama.style.backgroundColor = 'rgba(255,255,255,0.06)';
+    }
+    if (korEmail) { 
+        korEmail.value = currentProfile.email || ''; 
+        korEmail.readOnly = true; 
+        korEmail.style.backgroundColor = 'rgba(255,255,255,0.06)';
+    }
+
+    // 2. Auto-fill Lapor Aduan
+    const laporNama = document.getElementById('input-nama');
+    const laporEmail = document.getElementById('input-email');
+    const laporKontak = document.getElementById('input-kontak');
+
+    // Jika Role adalah 'Pelapor', isi otomatis dan kunci formnya
+    if (currentProfile.role.toLowerCase() === 'pelapor') {
+        if (laporNama) { 
+            laporNama.value = currentProfile.full_name || ''; 
+            laporNama.readOnly = true; 
+            laporNama.style.backgroundColor = 'rgba(255,255,255,0.06)';
+        }
+        if (laporEmail) { 
+            laporEmail.value = currentProfile.email || ''; 
+            laporEmail.readOnly = true; 
+            laporEmail.style.backgroundColor = 'rgba(255,255,255,0.06)';
+        }
+        
+        // Cari history nomor kontak dari laporan terakhir user ini di database
+        if (laporKontak && !laporKontak.value) {
+            const { data } = await supabaseClient.from('aduan')
+                .select('kontak_pelapor').eq('pelapor_id', currentProfile.id)
+                .not('kontak_pelapor', 'is', null)
+                .order('created_at', { ascending: false }).limit(1);
+                
+            if (data && data.length > 0) {
+                laporKontak.value = data[0].kontak_pelapor;
+            }
+        }
+    } else {
+        // Jika Operator / Role lain, biarkan kosong & bisa diketik manual untuk lapor atas nama orang lain
+        if (laporNama) { laporNama.value = ''; laporNama.readOnly = false; laporNama.style.backgroundColor = 'var(--input-bg)'; }
+        if (laporEmail) { laporEmail.value = ''; laporEmail.readOnly = false; laporEmail.style.backgroundColor = 'var(--input-bg)'; }
+        if (laporKontak) { laporKontak.value = ''; }
+    }
+}
+
+// Perbaikan fungsi afterLogin (Menyisipkan pemanggilan autoFillData)
+async function afterLogin(user){
+    currentUser=user;
+    const { data:profile, error } = await supabaseClient.from('profiles').select('*').eq('id', user.id).single();
+    
+    if(error && error.code==='PGRST116'){
+        const { data:newProf } = await supabaseClient.from('profiles').insert({ id:user.id, email:user.email, full_name:user.user_metadata?.full_name||user.email.split('@')[0], role:'Pelapor' }).select().single();
+        currentProfile=newProf;
+    } else {
+        currentProfile=profile;
+    }
+    
+    document.getElementById('landing-screen').style.display='none';
+    closeLogin();
+    const app=document.getElementById('app-screen');
+    app.style.display='block';
+    
+    const userRole = currentProfile?.role || 'Pelapor';
+    document.getElementById('top-role-badge').textContent = userRole.toUpperCase() + ' | ' + user.email;
+    
+    if (userRole.toLowerCase() === 'superadmin') {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.style.display = 'inline-flex');
+    } else {
+        const roleKey = Object.keys(aksesConfigGlobal).find(k => k.toLowerCase() === userRole.toLowerCase()) || 'Pelapor';
+        const allowedModules = aksesConfigGlobal[roleKey] || [];
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            const target = btn.getAttribute('data-target');
+            btn.style.display = allowedModules.includes(target) ? 'inline-flex' : 'none';
+        });
+    }
+
+    bukaTab('dashboard');
+    await loadAllData();
+    await autoFillData(); // <-- FUNGSI AUTO-FILL DIPANGGIL DI SINI
+    showToast('Login berhasil sebagai: ' + userRole);
+}
+// --- KODE BARU BERAKHIR DI SINI ---
 
 async function afterLogin(user){
     currentUser=user;
@@ -2119,14 +2214,51 @@ function cetakLaporan_Excel(){
 }
 function cetakLaporan_DOCX(){ const area=document.getElementById('laporan-print-area'); if(window.htmlDocx){ const blob=htmlDocx.asBlob(area.innerHTML); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='Laporan-SIGAP.docx'; a.click(); } }
 
+// --- GANTI FUNGSI LAMA DENGAN INI ---
 async function cariStatusLaporan(){
-    const kode=document.getElementById('lacak-id')?.value.trim(); if(!kode){ showToast('Masukkan kode tracking', true); return; }
-    const { data, error } = await supabaseClient.from('v_aduan_lengkap').select('*').or(`kode_tracking.eq.${kode},id.eq.${kode}`).single();
-    let res=document.getElementById('lacak-result'); if(!res){ res=document.createElement('div'); res.id='lacak-result'; res.className='card'; res.style.marginTop='16px'; document.getElementById('section-lacak').appendChild(res); }
-    if(error || !data){ res.innerHTML=`<p style="color:#ef4444;">❌ Kode ${kode} tidak ditemukan</p>`; showToast('Tidak ditemukan', true); return; }
-    res.innerHTML=`<h4>${data.kode_tracking} - ${data.status}</h4><table style="width:100%; font-size:13px; border-collapse:collapse;"><tr><td style="border:1px solid #e2e8f0; padding:6px;">Terlapor</td><td style="border:1px solid #e2e8f0; padding:6px;">${data.nama_terlapor} - ${data.jabatan_terlapor||''}</td></tr><tr><td style="border:1px solid #e2e8f0; padding:6px;">Kategori</td><td style="border:1px solid #e2e8f0; padding:6px;">${data.kategori_nama||'-'}</td></tr><tr><td style="border:1px solid #e2e8f0; padding:6px;">PIC</td><td style="border:1px solid #e2e8f0; padding:6px;">${data.pic_ref_nama||'-'}</td></tr><tr><td style="border:1px solid #e2e8f0; padding:6px;">Rekomendasi</td><td style="border:1px solid #e2e8f0; padding:6px;">${data.tanggapan_akhir||'-'}</td></tr><tr><td style="border:1px solid #e2e8f0; padding:6px;">No SK</td><td style="border:1px solid #e2e8f0; padding:6px;">${data.no_sk||'-'}</td></tr></table>`;
-    showToast('Ditemukan: '+data.kode_tracking);
+    const kode = document.getElementById('lacak-id')?.value.trim(); 
+    if(!kode){ showToast('Masukkan kode tracking, nama pelapor, atau nomor kontak', true); return; }
+    
+    // Penelusuran cerdas: Bisa mencari via Kode, UUID, Nama Pelapor, atau Nomor Kontak Pelapor
+    const { data, error } = await supabaseClient.from('v_aduan_lengkap')
+        .select('*')
+        .or(`kode_tracking.eq.${kode},id.eq.${kode},nama_pelapor.ilike.%${kode}%,kontak_pelapor.ilike.%${kode}%`)
+        .order('created_at', { ascending: false });
+
+    let res = document.getElementById('lacak-result'); 
+    if(!res){ 
+        res = document.createElement('div'); 
+        res.id = 'lacak-result'; 
+        res.style.marginTop = '16px'; 
+        document.getElementById('section-lacak').querySelector('.card').appendChild(res); 
+    }
+
+    if(error || !data || data.length === 0){ 
+        res.innerHTML = `<p style="color:#ef4444; background:#fee2e2; padding:12px; border-radius:8px; border:1px solid #fca5a5;">❌ Laporan dengan kata kunci "<b>${kode}</b>" tidak ditemukan.</p>`; 
+        showToast('Tidak ditemukan', true); 
+        return; 
+    }
+
+    // Jika ditemukan 1 atau lebih, render menjadi daftar card yang rapi
+    res.innerHTML = `<h4 style="margin-bottom:12px;">Ditemukan ${data.length} Laporan:</h4>` + data.map(d => `
+        <div style="border:1px solid var(--input-border); border-radius:8px; padding:16px; margin-bottom:12px; background:var(--surface-soft);">
+            <h4 style="margin:0 0 10px 0; color:var(--primary); font-size:15px; display:flex; justify-content:space-between; align-items:center;">
+                ${d.kode_tracking} 
+                <span style="background:var(--card); border:1px solid var(--input-border); color:var(--text); padding:4px 10px; border-radius:12px; font-size:11px;">${d.status}</span>
+            </h4>
+            <table style="width:100%; font-size:13px; border-collapse:collapse; color:var(--text);">
+                <tr><td style="border-bottom:1px solid var(--input-border); padding:6px 0; width:35%;">Tgl Lapor</td><td style="border-bottom:1px solid var(--input-border); padding:6px 0;">${new Date(d.created_at).toLocaleDateString('id-ID')}</td></tr>
+                <tr><td style="border-bottom:1px solid var(--input-border); padding:6px 0;">Pelapor / Kontak</td><td style="border-bottom:1px solid var(--input-border); padding:6px 0;">${d.nama_pelapor} / ${d.kontak_pelapor || '-'}</td></tr>
+                <tr><td style="border-bottom:1px solid var(--input-border); padding:6px 0;">Terlapor</td><td style="border-bottom:1px solid var(--input-border); padding:6px 0;">${d.nama_terlapor} - ${d.jabatan_terlapor||''}</td></tr>
+                <tr><td style="border-bottom:1px solid var(--input-border); padding:6px 0;">Kategori</td><td style="border-bottom:1px solid var(--input-border); padding:6px 0;">${d.kategori_nama||'-'}</td></tr>
+                <tr><td style="border-bottom:1px solid var(--input-border); padding:6px 0;">Rekomendasi PIC</td><td style="border-bottom:1px solid var(--input-border); padding:6px 0;">${d.tanggapan_akhir||'-'}</td></tr>
+                <tr><td style="padding:6px 0;">No SK Final</td><td style="padding:6px 0; font-weight:bold;">${d.no_sk||'-'}</td></tr>
+            </table>
+        </div>
+    `).join('');
+    showToast(`Ditemukan ${data.length} laporan`);
 }
+// --- KODE BARU BERAKHIR DI SINI ---
 
 async function muatLaporanFormal(){
     const waktu=document.getElementById('lap-filter-waktu')?.value||'semua'; const kategori=document.getElementById('lap-filter-kategori')?.value||''; const status=document.getElementById('lap-filter-status')?.value||''; const tbody=document.getElementById('lap-tbody'); if(tbody) tbody.innerHTML='<tr><td colspan="8" style="text-align:center;">Memuat...</td></tr>';
