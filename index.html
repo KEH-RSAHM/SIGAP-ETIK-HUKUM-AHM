@@ -1382,7 +1382,7 @@
                                 <option value="Komite Etik">Komite Etik</option>
                                 <option value="PIC">PIC</option>
                                 <option value="Direktur">Direktur</option>
-                                <option value="Administrator">Administrator (SuperAdmin)</option>
+                                <option value="SuperAdmin">SuperAdmin</option>
                             </select>
                         </div>
                     </div>
@@ -1539,6 +1539,7 @@ async function checkSession(){
 async function afterLogin(user){
     currentUser=user;
     const { data:profile, error } = await supabaseClient.from('profiles').select('*').eq('id', user.id).single();
+    
     if(error && error.code==='PGRST116'){
         const { data:newProf } = await supabaseClient.from('profiles').insert({ id:user.id, email:user.email, full_name:user.user_metadata?.full_name||user.email.split('@')[0], role:'Pelapor' }).select().single();
         currentProfile=newProf;
@@ -1551,22 +1552,30 @@ async function afterLogin(user){
     const app=document.getElementById('app-screen');
     app.style.display='block';
     
-    // --- SISTEM RBAC: SEMBUNYIKAN/TAMPILKAN MENU SESUAI ROLE ---
+    // --- SISTEM RBAC & BYPASS SUPERADMIN ---
     const userRole = currentProfile?.role || 'Pelapor';
     document.getElementById('top-role-badge').textContent = userRole.toUpperCase() + ' | ' + user.email;
     
-    const roleKey = Object.keys(aksesConfigGlobal).find(k => k.toLowerCase() === userRole.toLowerCase()) || 'Pelapor';
-    const allowedModules = aksesConfigGlobal[roleKey] || [];
-    
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        const target = btn.getAttribute('data-target');
-        if (allowedModules.includes(target)) {
-            btn.style.display = 'inline-flex'; // Tampilkan jika punya hak
-        } else {
-            btn.style.display = 'none'; // Sembunyikan jika dilarang
-        }
-    });
-    // -----------------------------------------------------------
+    if (userRole.toLowerCase() === 'superadmin') {
+        // 1. BYPASS MUTLAK: Jika SuperAdmin, tampilkan SEMUA tombol menu tanpa kecuali
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.style.display = 'inline-flex';
+        });
+    } else {
+        // 2. CEK RBAC NORMAL: Untuk role selain SuperAdmin (Pelapor, PIC, dll)
+        const roleKey = Object.keys(aksesConfigGlobal).find(k => k.toLowerCase() === userRole.toLowerCase()) || 'Pelapor';
+        const allowedModules = aksesConfigGlobal[roleKey] || [];
+        
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            const target = btn.getAttribute('data-target');
+            if (allowedModules.includes(target)) {
+                btn.style.display = 'inline-flex'; // Tampilkan jika punya hak
+            } else {
+                btn.style.display = 'none'; // Sembunyikan jika dilarang
+            }
+        });
+    }
+    // ---------------------------------------
 
     bukaTab('dashboard');
     await loadAllData();
