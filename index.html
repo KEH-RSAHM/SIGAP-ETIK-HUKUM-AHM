@@ -915,6 +915,11 @@
                 <div class="form-group"><label>Tempat Ditetapkan</label><input type="text" value="Samarinda" readonly></div>
                 <div class="form-group"><label>Isi Keputusan / Amar Putusan *</label><textarea id="pen-isi-keputusan" placeholder="Tuliskan amar keputusan lengkap, sanksi, dan tindak lanjut yang diputuskan..." style="min-height:120px;" oninput="syncHalSK(); muatPreviewSK(document.getElementById('pen-pilih-aduan').value)" required></textarea></div>
 
+                <!-- KODE BARU: Tombol Template Sanksi -->
+                <div style="display: flex; justify-content: flex-end; margin-top: -5px; margin-bottom: 15px;">
+                    <button class="btn-success btn-small" style="width: auto; background: #059669;" onclick="ambilTemplateSanksi()">📄 Ambil Template SK Sanksi</button>
+                </div>
+
                 <hr>
                 <label>Preview Surat Keputusan (Otomatis)</label>
                 <div id="preview-sk-content" class="sk-preview"></div>
@@ -1892,11 +1897,20 @@ async function loadRefData(){
     });
 }
 
+let templateSKSanksiGlobal = '';
+
+async function loadTemplateSKSanksi() {
+    try {
+        const { data } = await supabaseClient.from('system_settings').select('key_value').eq('key_name', 'template_sk_sanksi').single();
+        if (data) templateSKSanksiGlobal = data.key_value;
+    } catch(e) { console.warn("Template SK gagal dimuat"); }
+}
+
 async function loadAllData() {
     await Promise.all([
-        loadRBACDatabase(), // <--- DITAMBAHKAN DI SINI
-        renderDashboardCharts(), loadSurveyLanding(), loadRefData(), loadAduanOptions(), updateDashboardStats(),
-        loadAdminPublikasi(), renderPICDirectory(), loadParamValues(), loadBuktiPIC(), loadGlobalKop(), loadKustomisasiLanding()
+        loadRBACDatabase(), renderDashboardCharts(), loadSurveyLanding(), loadRefData(), loadAduanOptions(), updateDashboardStats(),
+        loadAdminPublikasi(), renderPICDirectory(), loadParamValues(), loadBuktiPIC(), loadGlobalKop(), loadKustomisasiLanding(),
+        loadTemplateSKSanksi() // <--- SISIPKAN FUNGSI INI
     ]);
 }
 
@@ -2156,6 +2170,68 @@ async function simpanPenetapan(){
     await supabaseClient.from('aduan').update({ status:'selesai_sk' }).eq('id', aduanId); showToast('✅ SK Terbitkan: '+noSK); await loadAllData();
 }
 
+// --- FUNGSI BARU AUTO-FILL TEMPLATE SK ---
+async function ambilTemplateSanksi() {
+    const aduanId = document.getElementById('pen-pilih-aduan')?.value;
+    if (!aduanId) return showToast('Pilih laporan (Disahkan) terlebih dahulu!', true);
+    
+    // Tarik data lengkap aduan
+    const { data } = await supabaseClient.from('v_aduan_lengkap').select('*').eq('id', aduanId).single();
+    if (!data) return;
+
+    // Ambil isi putusan dari textbox (jika admin sudah mengetik manual) atau dari hasil rekomendasi PIC
+    let isiKeputusan = document.getElementById('pen-isi-keputusan').value || data.tanggapan_akhir || 'Sanksi diberikan sesuai ketentuan...';
+    
+    // Format Tanggal Aduan (Bahasa Indonesia)
+    const tglAduan = new Date(data.created_at).toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
+    
+    // Pastikan template sudah termuat
+    let temp = templateSKSanksiGlobal;
+    if (!temp) return showToast('Template belum tersedia di database.', true);
+
+    // Ganti Placeholder dengan Data Real
+    temp = temp.replace(/\[tanggal_aduan\]/g, tglAduan);
+    temp = temp.replace(/\[ID_Aduan\]/g, data.kode_tracking);
+    temp = temp.replace(/\[nama_terlapor\]/g, data.nama_terlapor);
+    temp = temp.replace(/\[jabatan\]/g, data.jabatan_terlapor || '-');
+    temp = temp.replace(/\[lokasi\]/g, data.lokasi_kejadian || '-');
+    temp = temp.replace(/\[kategori\]/g, data.kategori_nama || '-');
+    temp = temp.replace(/\[isi_keputusan\]/g, isiKeputusan);
+
+    // Siapkan Tanda Tangan & Kop
+    const preview = document.getElementById('preview-sk-content');
+    if (preview) {
+        const noSK = document.getElementById('pen-no-sk')?.value || '-/KEH/RSJDAHM/' + new Date().getFullYear();
+        const hal = document.getElementById('pen-hal-sk')?.value || 'Penetapan Hasil Penanganan Aduan';
+        const tgl = document.getElementById('pen-tgl')?.value || new Date().toISOString().slice(0,10);
+        const tglFormat = new Date(tgl).toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
+
+        // Injeksi Kode HTML ke Preview
+        preview.innerHTML = `
+            <h3 style="text-align:center; font-family:'Times New Roman', Times, serif; font-size:14pt; margin-bottom:0; text-decoration:underline;">SURAT KEPUTUSAN PENETAPAN</h3>
+            <p style="text-align:center; font-family:'Times New Roman', Times, serif; font-size:12pt; margin-top:5px; margin-bottom:30px;">Nomor: ${noSK}</p>
+            
+            ${temp}
+            
+            <div style="margin-top:40px; display:flex; justify-content:flex-end; font-family:'Times New Roman', Times, serif; font-size:12pt;">
+                <div style="text-align:center; width:300px;">
+                    <p style="margin:0;">Ditetapkan di : Samarinda</p>
+                    <p style="margin:0; border-bottom: 1px solid #000; padding-bottom:10px;">Pada Tanggal : ${tglFormat}</p>
+                    <p style="margin:10px 0 70px 0;">DIREKTUR,</p>
+                    <p style="margin:0; font-weight:bold; text-decoration:underline;">dr. Indah Puspitasari, MARS</p>
+                    <p style="margin:0;">NIP. 196705301998032003</p>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Ganti haluan subjek SK secara otomatis
+    const halSK = document.getElementById('pen-hal-sk');
+    if (halSK && !halSK.value) halSK.value = 'Penetapan Hasil Penanganan Aduan';
+    
+    showToast('✅ Template SK Sanksi berhasil diterapkan!');
+}
+
 function downloadPDF(id, name){
     const el=document.getElementById(id); if(!el){ showToast('Element tidak ditemukan', true); return; }
     if(window.html2pdf) html2pdf().set({margin:10, filename:name, image:{type:'jpeg',quality:0.98}, html2canvas:{scale:2}, jsPDF:{unit:'mm', format:'a4', orientation:'portrait'}}).from(el).save();
@@ -2255,10 +2331,11 @@ async function cariStatusLaporan(){
     const kode = document.getElementById('lacak-id')?.value.trim(); 
     if(!kode){ showToast('Masukkan kode tracking, nama pelapor, atau nomor kontak', true); return; }
     
-    // Penelusuran cerdas: Bisa mencari via Kode, UUID, Nama Pelapor, atau Nomor Kontak Pelapor
+    // PERBAIKAN: Menghapus "id.eq" untuk menghindari Error UUID Casting dari database.
+    // Menggunakan "ilike" untuk mencari teks secara sebagian dan tidak sensitif huruf besar/kecil.
     const { data, error } = await supabaseClient.from('v_aduan_lengkap')
         .select('*')
-        .or(`kode_tracking.eq.${kode},id.eq.${kode},nama_pelapor.ilike.%${kode}%,kontak_pelapor.ilike.%${kode}%`)
+        .or(`kode_tracking.ilike.%${kode}%,nama_pelapor.ilike.%${kode}%,kontak_pelapor.ilike.%${kode}%`)
         .order('created_at', { ascending: false });
 
     let res = document.getElementById('lacak-result'); 
@@ -2270,6 +2347,7 @@ async function cariStatusLaporan(){
     }
 
     if(error || !data || data.length === 0){ 
+        console.error("Lacak Error:", error); // Membantu melacak error di Console (F12) jika masih terjadi
         res.innerHTML = `<p style="color:#ef4444; background:#fee2e2; padding:12px; border-radius:8px; border:1px solid #fca5a5;">❌ Laporan dengan kata kunci "<b>${kode}</b>" tidak ditemukan.</p>`; 
         showToast('Tidak ditemukan', true); 
         return; 
