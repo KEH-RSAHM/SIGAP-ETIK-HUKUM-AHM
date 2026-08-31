@@ -1763,6 +1763,7 @@ async function loadRefData(){
 
 async function loadAllData() {
     await Promise.all([
+        loadRBACDatabase(), // <--- DITAMBAHKAN DI SINI
         renderDashboardCharts(), loadSurveyLanding(), loadRefData(), loadAduanOptions(), updateDashboardStats(),
         loadAdminPublikasi(), renderPICDirectory(), loadParamValues(), loadBuktiPIC(), loadGlobalKop(), loadKustomisasiLanding()
     ]);
@@ -2282,11 +2283,71 @@ function renderChecklistSuperAdmin() {
     });
 }
 
-function simpanChecklistHakAkses() {
-    const rolesToManage = ['Pelapor', 'Operator', 'Komite', 'PIC', 'Direktur', 'Administrator'];
-    rolesToManage.forEach(r => aksesConfigGlobal[r] = []);
-    document.querySelectorAll('.chk-matrix:checked').forEach(cb => { aksesConfigGlobal[cb.getAttribute('data-role')].push(cb.value); });
-    localStorage.setItem('akses_config_sigap', JSON.stringify(aksesConfigGlobal)); showToast("Konfigurasi Hak Akses berhasil disimpan!");
+// --- KODE BARU DIMULAI DARI SINI ---
+async function loadRBACDatabase() {
+    const { data, error } = await supabaseClient
+        .from('hak_akses_matriks')
+        .select('nama_role, nama_modul, is_granted');
+        
+    if (error) {
+        console.warn("Gagal memuat RBAC DB, menggunakan default:", error);
+        return;
+    }
+
+    if (data && data.length > 0) {
+        const roles = ['Pelapor', 'Operator', 'Komite Etik', 'PIC', 'Direktur', 'Administrator'];
+        roles.forEach(r => aksesConfigGlobal[r] = []);
+
+        data.forEach(row => {
+            if (row.is_granted) {
+                if (!aksesConfigGlobal[row.nama_role]) {
+                    aksesConfigGlobal[row.nama_role] = [];
+                }
+                aksesConfigGlobal[row.nama_role].push(row.nama_modul);
+            }
+        });
+        console.log("RBAC berhasil disinkronkan dari Database.");
+    }
+}
+
+async function simpanChecklistHakAkses() {
+    const btn = event.target; 
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '⏳ Menyimpan ke Database...';
+
+    const payload = [];
+    const checkboxes = document.querySelectorAll('.chk-matrix');
+    
+    checkboxes.forEach(cb => {
+        payload.push({
+            nama_role: cb.getAttribute('data-role'),
+            nama_modul: cb.value,
+            is_granted: cb.checked,
+            diperbarui_oleh: currentUser?.id 
+        });
+        
+        if (cb.checked) {
+            if (!aksesConfigGlobal[cb.getAttribute('data-role')].includes(cb.value)) {
+                aksesConfigGlobal[cb.getAttribute('data-role')].push(cb.value);
+            }
+        } else {
+            aksesConfigGlobal[cb.getAttribute('data-role')] = aksesConfigGlobal[cb.getAttribute('data-role')].filter(m => m !== cb.value);
+        }
+    });
+
+    const { error } = await supabaseClient
+        .from('hak_akses_matriks')
+        .upsert(payload, { onConflict: 'nama_role,nama_modul' });
+
+    btn.disabled = false;
+    btn.textContent = originalText;
+
+    if (error) {
+        showToast("Gagal menyimpan RBAC: " + error.message, true);
+    } else {
+        showToast("✅ Konfigurasi Hak Akses berhasil disimpan ke Database!");
+    }
 }
 
 async function muatUserManagement() {
