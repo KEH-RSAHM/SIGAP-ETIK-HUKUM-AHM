@@ -621,6 +621,83 @@
             width: 100% !important;
             padding-top: 25px !important;
         }
+
+        /* ========================================================= */
+        /* 8. OVERRIDE WARNA ASAL: PEMAKSAAN TEMA MAROON & GOLD      */
+        /* ========================================================= */
+        
+        /* Mengubah Tombol Utama menjadi Maroon */
+        button.btn-primary, .btn-primary-hero { 
+            background-color: var(--primary) !important; 
+            color: #ffffff !important; 
+            border: none !important;
+        }
+        button.btn-primary:hover, .btn-primary-hero:hover { 
+            background-color: var(--primary-hover) !important; 
+        }
+        
+        /* Mengubah Tombol Aksi (Search, Verify, Eskalasi) menjadi Emas */
+        button.btn-verify, button.btn-search, button.btn-escalate, button.btn-pic, button.btn-otorisasi { 
+            background-color: var(--accent) !important; 
+            color: #111111 !important; 
+            font-weight: 800 !important;
+        }
+        button.btn-verify:hover, button.btn-search:hover, button.btn-escalate:hover, button.btn-pic:hover, button.btn-otorisasi:hover { 
+            background-color: var(--accent-hover) !important; 
+            color: #ffffff !important;
+        }
+
+        /* Mengubah Menu Sidebar yang sedang Aktif */
+        .tab-btn.active {
+            border-left: 4px solid var(--accent) !important;
+        }
+        /* Menu Sidebar Aktif (Light Mode) */
+        body.light-theme .tab-btn.active {
+            background: rgba(128, 0, 0, 0.08) !important; 
+            color: var(--primary) !important;
+        }
+        /* Menu Sidebar Aktif (Dark Mode) */
+        body:not(.light-theme) .tab-btn.active {
+            background: var(--sidebar-active-bg) !important;
+            color: var(--sidebar-active-text) !important;
+        }
+
+        /* Mengubah Header Tabel menjadi Maroon */
+        .dashboard-table th {
+            background-color: var(--primary) !important;
+            color: #ffffff !important;
+            border-color: var(--primary-hover) !important;
+        }
+
+        /* Memaksa Judul Card & Form menggunakan warna Tema */
+        body.light-theme .card h2, body.light-theme .card h3, body.light-theme .card h4, body.light-theme .header h2 {
+            color: var(--primary) !important;
+        }
+        body:not(.light-theme) .card h2, body:not(.light-theme) .card h3, body:not(.light-theme) .card h4, body:not(.light-theme) .header h2 {
+            color: var(--accent) !important;
+        }
+
+        /* Mengubah Kotak Info Peringatan yang asalnya Biru/Hijau */
+        .info-header, .active-header, div[style*="background: linear-gradient"] {
+            border-color: rgba(128, 0, 0, 0.3) !important;
+        }
+        body.light-theme .info-header, body.light-theme .active-header {
+            background-color: rgba(128, 0, 0, 0.04) !important;
+        }
+        .header-rekomendasi, .header-keputusan {
+            color: var(--primary) !important;
+        }
+
+        /* Mengubah Warna Garis Saat Mengisi Form (Fokus) */
+        input:focus, textarea:focus, select:focus { 
+            outline: none !important; 
+            box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.4) !important; 
+            border-color: var(--accent) !important; 
+        }
+
+        /* Mengubah Icon Checklist */
+        .timeline li.done::before { background: var(--accent) !important; border-color: var(--accent) !important; }
+        .timeline li.done { color: var(--accent) !important; }
     </style>
 </head>
 
