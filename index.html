@@ -1300,6 +1300,42 @@
                 <h2>Panel Admin</h2>
                 <p>Manajemen Publikasi, Edukasi, dan Korespondensi Masuk</p>
             </div>
+            <!-- KODE BARU: PANEL MANAJEMEN DATA MASTER -->
+            <div class="card card-large" style="margin-bottom: 20px;">
+                <h3 style="margin-top:0; border-bottom:1px solid var(--primary); padding-bottom:8px;">⚙️ Manajemen Parameter & Data Master</h3>
+                <p style="font-size:13px; color:var(--muted); margin-bottom:16px;">Kelola opsi dropdown untuk Kategori, Sub Kategori, Hasil Verifikasi, Eskalasi, SLA, Urgensi, dan PIC.</p>
+                
+                <div class="form-row">
+                    <div class="form-group" style="flex: 2;">
+                        <label>Pilih Tabel Referensi</label>
+                        <select id="adm-param-pilih" onchange="loadParamValues()">
+                            <option value="">-- Pilih Tabel Master --</option>
+                            <option value="kategori_aduan">Kategori Aduan (ref_kategori_aduan)</option>
+                            <option value="sub_kategori">Sub Kategori (ref_sub_kategori)</option>
+                            <option value="hasil_verifikasi">Hasil Verifikasi (ref_hasil_verifikasi)</option>
+                            <option value="eskalasi">Level Eskalasi (ref_eskalasi_level)</option>
+                            <option value="urgensi">Tingkat Urgensi (ref_urgensi)</option>
+                            <option value="sla_hari">SLA Hari Kerja (ref_sla_hari)</option>
+                            <option value="pic">Direktori PIC (ref_pic)</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 3;">
+                        <label>Tambah Data Baru</label>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="adm-param-baru" placeholder="Ketik nilai/opsi baru..." style="flex: 1;">
+                            <button class="btn-success" style="width: auto; margin-top: 0;" onclick="tambahParameter()">➕ Tambah</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="background: var(--surface-soft); border: 1px solid var(--input-border); border-radius: 8px; padding: 15px; margin-top: 10px;">
+                    <h4 style="margin: 0 0 10px 0; font-size: 13px; color: var(--primary);">Daftar Nilai Saat Ini:</h4>
+                    <ul id="adm-param-list" class="param-list" style="max-height: 250px; overflow-y: auto; background: var(--input-bg); border-radius: 6px; border: 1px solid var(--input-border);">
+                        <li style="padding:10px; color:var(--muted); text-align:center;">Pilih tabel referensi di atas terlebih dahulu...</li>
+                    </ul>
+                </div>
+            </div>
+            <!-- AKHIR KODE BARU -->
             <div class="card card-large">
                 <h3 style="margin-top:0; border-bottom:1px solid var(--primary); padding-bottom:8px;">📤 Upload Publikasi & Edukasi</h3>
                 <div class="form-row">
