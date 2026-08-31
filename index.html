@@ -1444,14 +1444,16 @@
 let aksesConfigGlobal = JSON.parse(localStorage.getItem('akses_config_sigap')) || {
     'Pelapor': ['pelapor', 'lacak', 'dashboard', 'informasi', 'korespondensi'],
     'Operator': ['pelapor', 'operator', 'lacak', 'dashboard', 'informasi', 'korespondensi'],
-    'Komite': ['eskalasi', 'dashboard', 'informasi', 'korespondensi'],
-    'PIC': ['pic', 'dashboard', 'informasi', 'korespondensi'],
+    'Komite Etik': ['eskalasi', 'dashboard', 'informasi', 'korespondensi'],
+    'PIC': ['pic', 'dashboard', 'informasi', 'korespondensi', 'pic_bukti'],
     'Direktur': ['otorisasi', 'dashboard', 'informasi', 'korespondensi'],
-    'Administrator': ['penetapan', 'laporan', 'admin', 'dashboard', 'informasi', 'korespondensi']
+    'Administrator': ['penetapan', 'laporan', 'admin', 'dashboard', 'informasi', 'korespondensi', 'pic_bukti']
 };
-if (aksesConfigGlobal['PIC'] && !aksesConfigGlobal['PIC'].includes('pic_bukti')) {
-    aksesConfigGlobal['PIC'].push('pic_bukti');
-    if (aksesConfigGlobal['Administrator']) aksesConfigGlobal['Administrator'].push('pic_bukti');
+
+// Skrip migrasi jika ada data lama di localStorage (opsional agar tidak error)
+if (aksesConfigGlobal['Komite']) {
+    aksesConfigGlobal['Komite Etik'] = aksesConfigGlobal['Komite'];
+    delete aksesConfigGlobal['Komite'];
     localStorage.setItem('akses_config_sigap', JSON.stringify(aksesConfigGlobal));
 }
 
