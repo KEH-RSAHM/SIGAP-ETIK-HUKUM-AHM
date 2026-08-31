@@ -224,6 +224,96 @@
             #app-screen { padding-left: 0 !important; }
         }
         @media print { .no-print{display:none !important;} #print-area{display:block;} body{background:white;} }
+    /* ========================================= */
+        /* 7. HERO CARDS: FITUR, ETIK & HUKUM        */
+        /* ========================================= */
+        .hero-card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            max-width: 1320px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        
+        .card-hero-style {
+            position: relative;
+            border-radius: 24px;
+            overflow: hidden;
+            min-height: 380px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 30px;
+            text-decoration: none;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.25);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .card-hero-style:hover {
+            transform: translateY(-12px);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.4);
+        }
+        
+        .card-hero-bg {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover;
+            z-index: 1;
+            transition: transform 0.7s ease;
+        }
+        
+        .card-hero-style:hover .card-hero-bg {
+            transform: scale(1.08);
+        }
+        
+        .card-hero-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to top, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0.5) 60%, rgba(15,23,42,0.1) 100%);
+            z-index: 2;
+        }
+        
+        .card-hero-content {
+            position: relative;
+            z-index: 3;
+        }
+        
+        .card-hero-content h3 {
+            color: #ffffff !important;
+            font-size: 1.6rem;
+            margin: 0 0 12px 0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            line-height: 1.3;
+        }
+        
+        .card-hero-content p {
+            color: #cbd5e1 !important;
+            font-size: 0.95rem;
+            line-height: 1.7;
+            margin: 0;
+        }
+        
+        .card-hero-badge {
+            display: inline-block;
+            background: var(--accent);
+            color: #111;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        
+        /* Mempercantik Judul Utama di Landing Page */
+        .landing-section-title { max-width: 800px; margin: 0 auto; text-align: center; }
+        .landing-section-title h2 { font-size: clamp(2rem, 3vw, 3rem); margin-bottom: 15px; color: var(--text); }
+        .landing-section-title p { color: var(--muted); line-height: 1.8; font-size: 1.1rem; }
+    
     </style>
 </head>
 
@@ -298,31 +388,81 @@
             <div class="card"><h4 style="margin-top:0;">Tabel Detail</h4><div style="overflow-x:auto;"><table class="dashboard-table"><thead><tr><th>Tanggal</th><th>Rating</th><th>Aspek Dinilai</th><th>Ulasan</th></tr></thead><tbody id="rekap-table-body"></tbody></table></div></div>
         </section>
 
-        <!-- SECTION FITUR & MODUL -->
-        <section id="features" class="feature-section">
-            <div class="landing-section-title"><h2>Fitur Unggulan SIGAP</h2><p>Dirancang untuk alur pelaporan etika, verifikasi, eskalasi, hingga penerbitan keputusan resmi.</p></div>
-            <div class="feature-grid">
-                <div class="feature-card"><div class="icon">🛡️</div><h3>Keamanan & Audit</h3><p>Role-based access, verifikasi internal, dan jejak audit untuk setiap langkah penanganan aduan.</p></div>
-                <div class="feature-card"><div class="icon">⚡</div><h3>Alur Aduan Terstruktur</h3><p>Aduan Masuk, Verifikasi, Eskalasi, Penanganan Aduan, hingga Otorisasi dan Penerbitan Sk Penetapan oleh Direktur bekerja dalam satu proses terintegrasi.</p></div>
-                <div class="feature-card"><div class="icon">📄</div><h3>Dokumentasi Formal</h3><p>Penerbitan SK, rekap laporan, dan export PDF untuk keputusan hukum dan etik.</p></div>
+        <!-- SECTION NILAI ETIK, HUKUM & FITUR (GAYA HERO CARD) -->
+        <section id="features" style="padding: 80px 0; background: rgba(0,0,0,0.02);">
+            <div class="landing-section-title" style="margin-bottom: 60px; padding: 0 20px;">
+                <h2 style="font-family: 'Times New Roman', serif; color: var(--accent);">Integritas, Keadilan & Transparansi</h2>
+                <p style="font-style: italic; max-width: 650px; margin: 0 auto;">
+                    "Hukum yang mengayomi berawal dari etika yang dijunjung tinggi."<br>
+                    Sistem SIGAP menjamin setiap laporan diproses secara objektif, aman, dan terstruktur.
+                </p>
             </div>
-        </section>
-        
-        <section id="modules" class="feature-section">
-            <div class="landing-section-title"><h2>Modul Inti SIGAP</h2><p>Solusi lengkap dari pengajuan aduan hingga keputusan dan arsip SK.</p></div>
-            <div class="feature-grid">
-                <div class="feature-card"><div class="icon">📥</div><h3>Pelaporan Aduan</h3><p>Formulir aman untuk mengirim aduan etik dengan bukti dan deskripsi lengkap.</p></div>
-                <div class="feature-card"><div class="icon">✅</div><h3>Verifikasi Operator</h3><p>Operator memeriksa dan mengklasifikasikan aduan sebelum diteruskan ke komite.</p></div>
-                <div class="feature-card"><div class="icon">📤</div><h3>Eskalasi & Penugasan</h3><p>Komite meneruskan kasus ke PIC terkait sesuai urgensi, SLA, dan dokumentasi proses.</p></div>
+
+            <div class="hero-card-grid">
+                <!-- Card 1: Etik & Hukum -->
+                <div class="card-hero-style">
+                    <img src="https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&q=80&w=800" class="card-hero-bg" alt="Keadilan">
+                    <div class="card-hero-overlay"></div>
+                    <div class="card-hero-content">
+                        <span class="card-hero-badge">Asas Keadilan</span>
+                        <h3>Penegakan Etik & Hukum Instansi</h3>
+                        <p>Setiap aduan dikawal ketat berlandaskan asas praduga tak bersalah dan kode etik. Integritas tanpa kompromi untuk perlindungan bersama.</p>
+                    </div>
+                </div>
+
+                <!-- Card 2: Keamanan & Audit -->
+                <div class="card-hero-style">
+                    <img src="https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?auto=format&fit=crop&q=80&w=800" class="card-hero-bg" alt="Keamanan">
+                    <div class="card-hero-overlay"></div>
+                    <div class="card-hero-content">
+                        <span class="card-hero-badge" style="background: #1e3a8a; color:white;">Proteksi Identitas</span>
+                        <h3>Keamanan Data & Audit Terpusat</h3>
+                        <p>Hak akses berlapis (RBAC) memastikan data pelapor dan terlapor dikelola sangat rahasia. Semua tindakan terekam jelas dalam jejak audit.</p>
+                    </div>
+                </div>
+
+                <!-- Card 3: Alur Terstruktur -->
+                <div class="card-hero-style">
+                    <img src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=800" class="card-hero-bg" alt="Proses">
+                    <div class="card-hero-overlay"></div>
+                    <div class="card-hero-content">
+                        <span class="card-hero-badge" style="background: #065f46; color:white;">Integrasi Sistem</span>
+                        <h3>Alur Kerja Terstruktur & Pasti</h3>
+                        <p>Mulai dari pelaporan, verifikasi awal, eskalasi komite, hingga penerbitan Surat Keputusan (SK) oleh Direktur berjalan dalam satu pintu.</p>
+                    </div>
+                </div>
             </div>
-        </section>
-        
-        <section id="security" class="feature-section">
-            <div class="landing-section-title"><h2>Keamanan & Kontrol</h2><p>Atur siapa melihat apa melalui akses per peran, dan kelola koneksi backend dengan aman.</p></div>
-            <div class="feature-grid">
-                <div class="feature-card"><div class="icon">🔐</div><h3>Hak Akses Modular</h3><p>Role Pelapor, Operator, Komite, PIC, Direktur, dan Admin dikontrol secara detail.</p></div>
-                <div class="feature-card"><div class="icon">🧠</div><h3>SuperAdmin Dashboard</h3><p>Kelola hak akses, konfigurasi backend, dan preferensi tampilan secara terpusat.</p></div>
-                <div class="feature-card"><div class="icon">⚙️</div><h3>Parameter Sistem</h3><p>Atur kategori aduan, level eskalasi, SLA, dan detail instansi untuk operasi RSJD.</p></div>
+            
+            <div class="hero-card-grid" style="margin-top: 10px;">
+                <!-- Card 4: Modul Pelaporan -->
+                <div class="card-hero-style" style="min-height: 220px;">
+                    <div class="card-hero-overlay" style="background: linear-gradient(135deg, rgba(30,58,138,0.9), rgba(15,23,42,0.95));"></div>
+                    <div class="card-hero-content">
+                        <div style="font-size:36px; margin-bottom:12px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">📥</div>
+                        <h3 style="font-size:1.3rem;">Portal Aduan Terenkripsi</h3>
+                        <p style="font-size:0.9rem;">Formulir cerdas untuk pelapor yang menangkap kronologi, bukti, dan identitas dengan proteksi maksimal.</p>
+                    </div>
+                </div>
+
+                <!-- Card 5: Verifikasi & Eskalasi -->
+                <div class="card-hero-style" style="min-height: 220px;">
+                    <div class="card-hero-overlay" style="background: linear-gradient(135deg, rgba(6,95,70,0.9), rgba(15,23,42,0.95));"></div>
+                    <div class="card-hero-content">
+                        <div style="font-size:36px; margin-bottom:12px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">⚖️</div>
+                        <h3 style="font-size:1.3rem;">Panel Sidang & Verifikasi</h3>
+                        <p style="font-size:0.9rem;">Instrumen bagi Komite dan PIC untuk melakukan telaah kasus, pemeriksaan bukti, dan rekomendasi sanksi.</p>
+                    </div>
+                </div>
+
+                <!-- Card 6: SK & Publikasi -->
+                <div class="card-hero-style" style="min-height: 220px;">
+                    <div class="card-hero-overlay" style="background: linear-gradient(135deg, rgba(128,0,0,0.9), rgba(15,23,42,0.95));"></div>
+                    <div class="card-hero-content">
+                        <div style="font-size:36px; margin-bottom:12px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">📄</div>
+                        <h3 style="font-size:1.3rem;">Penerbitan SK & Arsip</h3>
+                        <p style="font-size:0.9rem;">Pembuatan dokumen formal otomatis dengan integrasi kop surat dan data keputusan final secara real-time.</p>
+                    </div>
+                </div>
             </div>
         </section>
 
