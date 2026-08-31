@@ -2285,6 +2285,12 @@ function renderChecklistSuperAdmin() {
 
 // --- KODE BARU DIMULAI DARI SINI ---
 async function loadRBACDatabase() {
+    // 1. PENGAMANAN: Selalu inisialisasi array kosong agar JS tidak crash
+    const roles = ['Pelapor', 'Operator', 'Komite Etik', 'PIC', 'Direktur', 'Administrator', 'SuperAdmin'];
+    roles.forEach(r => {
+        if (!aksesConfigGlobal[r]) aksesConfigGlobal[r] = [];
+    });
+
     const { data, error } = await supabaseClient
         .from('hak_akses_matriks')
         .select('nama_role, nama_modul, is_granted');
@@ -2295,7 +2301,7 @@ async function loadRBACDatabase() {
     }
 
     if (data && data.length > 0) {
-        const roles = ['Pelapor', 'Operator', 'Komite Etik', 'PIC', 'Direktur', 'Administrator'];
+        // Kosongkan ulang konfigurasi sebelum diisi dari database
         roles.forEach(r => aksesConfigGlobal[r] = []);
 
         data.forEach(row => {
@@ -2311,42 +2317,72 @@ async function loadRBACDatabase() {
 }
 
 async function simpanChecklistHakAkses() {
-    const btn = event.target; 
-    const originalText = btn.textContent;
-    btn.disabled = true;
-    btn.textContent = '⏳ Menyimpan ke Database...';
-
-    const payload = [];
-    const checkboxes = document.querySelectorAll('.chk-matrix');
+    const btn = event ? event.target : document.querySelector('button[onclick="simpanChecklistHakAkses()"]'); 
+    const originalText = "Simpan Konfigurasi Hak Akses";
     
-    checkboxes.forEach(cb => {
-        payload.push({
-            nama_role: cb.getAttribute('data-role'),
-            nama_modul: cb.value,
-            is_granted: cb.checked,
-            diperbarui_oleh: currentUser?.id 
-        });
-        
-        if (cb.checked) {
-            if (!aksesConfigGlobal[cb.getAttribute('data-role')].includes(cb.value)) {
-                aksesConfigGlobal[cb.getAttribute('data-role')].push(cb.value);
-            }
-        } else {
-            aksesConfigGlobal[cb.getAttribute('data-role')] = aksesConfigGlobal[cb.getAttribute('data-role')].filter(m => m !== cb.value);
+    try {
+        if(btn) {
+            btn.disabled = true;
+            btn.textContent = '⏳ Menyimpan ke Database...';
         }
-    });
 
-    const { error } = await supabaseClient
-        .from('hak_akses_matriks')
-        .upsert(payload, { onConflict: 'nama_role,nama_modul' });
+        const payload = [];
+        const checkboxes = document.querySelectorAll('.chk-matrix');
+        
+        checkboxes.forEach(cb => {
+            const roleName = cb.getAttribute('data-role');
+            const modulName = cb.value;
+            
+            payload.push({
+                nama_role: roleName,
+                nama_modul: modulName,
+                is_granted: cb.checked,
+                diperbarui_oleh: currentUser?.id || null
+            });
+            
+            // PENGAMANAN: Buat array jika ternyata masih kosong
+            if (!aksesConfigGlobal[roleName]) {
+                aksesConfigGlobal[roleName] = [];
+            }
+            
+            // Perbarui memori lokal
+            if (cb.checked) {
+                if (!aksesConfigGlobal[roleName].includes(modulName)) {
+                    aksesConfigGlobal[roleName].push(modulName);
+                }
+            } else {
+                aksesConfigGlobal[roleName] = aksesConfigGlobal[roleName].filter(m => m !== modulName);
+            }
+        });
 
-    btn.disabled = false;
-    btn.textContent = originalText;
+        // Tembak data (Push) ke Supabase
+        const { error } = await supabaseClient
+            .from('hak_akses_matriks')
+            .upsert(payload, { onConflict: 'nama_role,nama_modul' });
 
-    if (error) {
-        showToast("Gagal menyimpan RBAC: " + error.message, true);
-    } else {
-        showToast("✅ Konfigurasi Hak Akses berhasil disimpan ke Database!");
+        // Kembalikan kondisi tombol
+        if(btn) {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+
+        if (error) {
+            // Tampilkan error jika ditolak oleh Database/RLS
+            showToast("Gagal menyimpan RBAC: " + error.message, true);
+            console.error("Supabase Error:", error);
+        } else {
+            showToast("✅ Konfigurasi Hak Akses berhasil disimpan ke Database!");
+            localStorage.setItem('akses_config_sigap', JSON.stringify(aksesConfigGlobal));
+        }
+        
+    } catch (err) {
+        // Tampilkan error jika JavaScript crash
+        if(btn) {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+        showToast("Terjadi kesalahan sistem: " + err.message, true);
+        console.error("System Crash:", err);
     }
 }
 
