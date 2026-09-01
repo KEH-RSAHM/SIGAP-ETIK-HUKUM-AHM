@@ -1548,10 +1548,16 @@ let currentUser = null;
 let currentProfile = null;
 
 function showToast(msg, isError=false){
+    // Menerjemahkan error "Failed to fetch" menjadi bahasa yang mudah dipahami
+    if (msg === 'Failed to fetch' || (msg && msg.includes('Failed to fetch'))) {
+        msg = 'Gagal terhubung ke server. Periksa koneksi internet HP atau buka di browser Chrome/Safari bawaan.';
+        isError = true;
+    }
+
     let el=document.getElementById('sigap-toast');
-    if(!el){ el=document.createElement('div'); el.id='sigap-toast'; el.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:'+(isError?'#ef4444':'#800000')+';color:white;padding:14px 22px;border-radius:12px;z-index:99999999;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,0.3);max-width:90vw;text-align:center;'; document.body.appendChild(el); }
+    if(!el){ el=document.createElement('div'); el.id='sigap-toast'; el.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:'+(isError?'#ef4444':'#800000')+';color:white;padding:14px 22px;border-radius:12px;z-index:99999999;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,0.3);width:max-content;max-width:90vw;text-align:center;line-height:1.5;'; document.body.appendChild(el); }
     el.style.background=isError?'#ef4444':'#800000'; el.textContent=msg; el.style.display='block'; el.style.opacity='1';
-    clearTimeout(el._t); el._t=setTimeout(()=>{ el.style.opacity='0'; setTimeout(()=>el.style.display='none',300); },4000);
+    clearTimeout(el._t); el._t=setTimeout(()=>{ el.style.opacity='0'; setTimeout(()=>el.style.display='none',300); },5000);
 }
 
 function genKode(){ const d=new Date(); return `SIGAP-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}-${Math.random().toString(36).substring(2,6).toUpperCase()}`; }
@@ -2123,6 +2129,7 @@ async function sinkronHeader(aduanId, context){
 
 function autoDeteksiJenisDokumen(aduanId){}
 
+// 1. PERBAIKAN FUNGSI SIMPAN ESKALASI
 async function simpanEskalasi(){
     const aduanId=document.getElementById('esk-pilih-aduan')?.value; if(!aduanId){ showToast('Pilih aduan', true); return; }
     const payload={ aduan_id:aduanId, level_eskalasi_id: document.getElementById('esk-level')?.value || null, pic_tujuan_id: document.getElementById('esk-nama')?.value || null, notif_email: document.getElementById('notif-email')?.checked || false, notif_wa: document.getElementById('notif-wa')?.checked || false, notif_telegram: document.getElementById('notif-telegram')?.checked || false, urgensi_id: document.getElementById('esk-urgensi')?.value || null, sla_hari_id: document.getElementById('esk-waktu')?.value || null, instruksi: document.getElementById('esk-deskripsi')?.value || '', assigned_by: currentUser?.id };
@@ -2130,8 +2137,10 @@ async function simpanEskalasi(){
     const { data:sla } = await supabaseClient.from('ref_sla_hari').select('hari').eq('id', payload.sla_hari_id).single();
     if(sla){ const d=new Date(); d.setDate(d.getDate()+(sla.hari||7)); payload.deadline_date=d.toISOString().slice(0,10); }
 
-    const { error } = await supabaseClient.from('eskalasi').insert(payload);
+    // PERBAIKAN: Gunakan .upsert() bukan .insert() agar tidak error duplicate key
+    const { error } = await supabaseClient.from('eskalasi').upsert(payload, { onConflict: 'aduan_id' });
     if(error){ showToast(error.message, true); return; }
+    
     await supabaseClient.from('aduan').update({ status:'tereskalasi' }).eq('id', aduanId); showToast('✅ Eskalasi berhasil'); 
     document.getElementById('esk-pilih-aduan').value = ''; document.getElementById('info-header-eskalasi').style.display = 'none';
     await loadAllData();
@@ -2153,6 +2162,7 @@ async function loadBuktiPIC() {
     tbody.innerHTML = data.map(a => `<tr><td><b>${a.kode_tracking || '-'}</b></td><td>${a.nama_terlapor || '-'}</td><td style="max-width: 240px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${a.deskripsi_kejadian || ''}">${(a.deskripsi_kejadian || '-').substring(0, 60)}...</td><td>${a.link_cloud_drive ? `<a href="${a.link_cloud_drive}" target="_blank" class="btn-small btn-primary" style="text-decoration:none; display:inline-block;">🔗 Buka Link</a>` : '<span style="color:var(--muted);font-size:11px;font-style:italic;">Tidak ada link</span>'}</td><td>${a.file_bukti_url ? `<a href="${a.file_bukti_url}" target="_blank" class="btn-small btn-success" style="text-decoration:none; display:inline-block;">⬇️ Unduh File</a><br><small style="font-size:10px; color:var(--muted);">${a.file_bukti_nama || 'Lampiran'}</small>` : '<span style="color:var(--muted);font-size:11px;font-style:italic;">Tidak ada file</span>'}</td></tr>`).join('');
 }
 
+// 2. PERBAIKAN FUNGSI SIMPAN PENANGANAN PIC
 async function simpanPenanganan(){
     const aduanId=document.getElementById('pic-pilih-aduan')?.value; if(!aduanId){ showToast('Pilih laporan', true); return; }
     const tanggapanAkhir=document.getElementById('pic-tanggapan-akhir')?.value.trim(); if(!tanggapanAkhir){ showToast('Rekomendasi akhir wajib', true); return; }
@@ -2160,8 +2170,11 @@ async function simpanPenanganan(){
     const todos=[]; document.querySelectorAll('.pic-todo').forEach(cb=>{ if(cb.checked){ todos.push(cb.closest('label')?.textContent?.trim() || 'todo'); } });
 
     const payload={ aduan_id:aduanId, pic_id: currentUser?.id, tgl_mulai: document.getElementById('pic-tgl-mulai')?.value || null, tgl_selesai: document.getElementById('pic-tgl-selesai')?.value || null, todo_pemanggilan: todos.some(t=>t.toLowerCase().includes('pemanggilan')), todo_pemeriksaan: todos.some(t=>t.toLowerCase().includes('pemeriksaan')), todo_sidang_etik: todos.some(t=>t.toLowerCase().includes('sidang')), todo_rekomendasi_akhir: todos.some(t=>t.toLowerCase().includes('rekomendasi')), todos_json: todos, tanggapan_proses: document.getElementById('pic-tanggapan-proses')?.value || '', tanggapan_akhir: tanggapanAkhir, jenis_surat: (document.getElementById('pic-jenis-surat')?.value || 'none').replace('🛑 ','').replace('✅ ','').replace(/[^a-z_]/g,'') || 'none', dokumentasi_url: dok.url, dokumentasi_path: dok.path };
-    const { error } = await supabaseClient.from('penanganan_pic').insert(payload);
+    
+    // PERBAIKAN: Gunakan .upsert() bukan .insert() agar tidak error duplicate key
+    const { error } = await supabaseClient.from('penanganan_pic').upsert(payload, { onConflict: 'aduan_id' });
     if(error){ showToast(error.message, true); return; }
+    
     await supabaseClient.from('aduan').update({ status:'menunggu_otorisasi' }).eq('id', aduanId); showToast('✅ Penanganan PIC disimpan'); 
     document.getElementById('pic-pilih-aduan').value = ''; document.getElementById('info-header-pic').style.display = 'none';
     await loadAllData();
@@ -2174,6 +2187,7 @@ function downloadSuratPIC(type){
     else if(window.htmlDocx){ const blob=htmlDocx.asBlob(el.innerHTML); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='rekomendasi-pic.docx'; a.click(); }
 }
 
+// 3. PERBAIKAN FUNGSI SIMPAN OTORISASI
 async function simpanOtorisasi(){
     const aduanId=document.getElementById('ot-pilih-aduan')?.value; if(!aduanId){ showToast('Pilih laporan', true); return; }
     const keputusan=document.getElementById('ot-keputusan')?.value; if(!keputusan){ showToast('Keputusan wajib', true); return; }
@@ -2181,8 +2195,11 @@ async function simpanOtorisasi(){
     const file=document.getElementById('kop-input')?.files?.[0]; let kop={url:null, path:null}; if(file){ kop=await uploadFile('kop-surat', file); }
 
     const payload={ aduan_id:aduanId, pimpinan_id: currentUser?.id, keputusan: mapKeputusan[keputusan] || 'terbukti', catatan_final: document.getElementById('ot-catatan')?.value || '', is_approved: document.getElementById('ot-approved')?.checked || false, kop_surat_url: kop.url, kop_surat_path: kop.path };
-    const { error } = await supabaseClient.from('otorisasi').insert(payload);
+    
+    // PERBAIKAN: Gunakan .upsert() bukan .insert() agar tidak error duplicate key
+    const { error } = await supabaseClient.from('otorisasi').upsert(payload, { onConflict: 'aduan_id' });
     if(error){ showToast(error.message, true); return; }
+    
     const newStatus = payload.is_approved ? 'disahkan' : 'diproses_pic';
     await supabaseClient.from('aduan').update({ status:newStatus }).eq('id', aduanId);
     showToast(payload.is_approved ? '✅ Disahkan' : 'Catatan disimpan'); 
@@ -2306,6 +2323,7 @@ async function muatPreviewSK(aduanId){
 }
 function switchJenisDokumen(){ muatPreviewSK(document.getElementById('pen-pilih-aduan')?.value); }
 
+// 4. PERBAIKAN FUNGSI SIMPAN PENETAPAN SK
 async function simpanPenetapan(){
     const aduanId=document.getElementById('pen-pilih-aduan')?.value; if(!aduanId){ showToast('Pilih laporan', true); return; }
     const noSK=document.getElementById('pen-no-sk')?.value.trim(); const tgl=document.getElementById('pen-tgl')?.value; const hal=document.getElementById('pen-hal-sk')?.value.trim(); const isi=document.getElementById('pen-isi-keputusan')?.value.trim();
@@ -2322,8 +2340,10 @@ async function simpanPenetapan(){
     const jenisMap={ 'sk':'sk', 'penghentian':'penghentian', 'tidak_ada_sanksi':'tidak_ada_sanksi', '✅ Surat Keterangan Tidak Ada Pengenaan Sanksi':'tidak_ada_sanksi', '🛑 Surat Keterangan Penghentian Proses Aduan':'penghentian' };
     const payload={ aduan_id:aduanId, jenis_dokumen: jenisMap[jenisRaw] || 'sk', no_sk:noSK, tgl_penetapan:tgl, hal_sk:hal, tingkat_kerahasiaan: document.getElementById('pen-kerahasiaan')?.value || 'Terbatas', nama_pejabat:namaPejabat, jabatan_pejabat:jabatan, tempat_ditetapkan:tempat, isi_keputusan:isi, paper_size: document.getElementById('print-paper-size')?.value || 'A4', orientation: document.getElementById('print-orientation')?.value || 'Portrait', kop_header_option: document.getElementById('print-kop-header')?.value || 'Ya, KOP di setiap halaman', margin_top: parseInt(document.getElementById('print-margin-top')?.value||20), margin_bottom: parseInt(document.getElementById('print-margin-bottom')?.value||20), margin_left: parseInt(document.getElementById('print-margin-left')?.value||20), margin_right: parseInt(document.getElementById('print-margin-right')?.value||20), page_range: document.getElementById('print-page-range')?.value || 'Semua Halaman', custom_range: document.getElementById('print-custom-range')?.value || '', file_scan_sk_url: scan.url, file_scan_sk_path: scan.path, created_by: currentUser?.id };
 
-    const { error } = await supabaseClient.from('penetapan_sk').insert(payload);
+    // PERBAIKAN: Gunakan .upsert() bukan .insert() agar tidak error duplicate key
+    const { error } = await supabaseClient.from('penetapan_sk').upsert(payload, { onConflict: 'aduan_id' });
     if(error){ showToast(error.message, true); return; }
+    
     await supabaseClient.from('aduan').update({ status:'selesai_sk' }).eq('id', aduanId); showToast('✅ SK Terbitkan: '+noSK); 
     document.getElementById('pen-pilih-aduan').value = ''; document.getElementById('info-header-penetapan').style.display = 'none';
     await loadAllData();
