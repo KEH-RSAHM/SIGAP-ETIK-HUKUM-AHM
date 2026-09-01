@@ -14,7 +14,7 @@
     <style id="print-custom-style"></style>
     <style>
     /* ========================================= */
-        /* 1. TEMA WARNA: MAROON, HITAM, SILVER, EMAS*/
+        /* TEMA WARNA: MAROON, HITAM, SILVER, EMAS*/
         /* ========================================= */
         :root {
             --primary: #800000;          /* Maroon */
@@ -33,7 +33,6 @@
             --sidebar-active-bg: #800000;/* Maroon Saat Aktif */
             --sidebar-active-text: #d4af37;/* Emas Saat Aktif */
             
-            /* Warna Input Form */
             --input-bg: #1e1e1e;
             --input-border: #404040;
             --placeholder: rgba(156,163,175,0.8);
@@ -65,10 +64,7 @@
         .top-bar, .tab-container, .login-box, #app-screen, #landing-screen{position:relative; z-index:20}
         
         #landing-screen { display: block; min-height: 100vh; padding: 0; }
-        #landing-screen .top-bar div, 
-        #landing-screen .top-bar a {
-            color: #e5e7eb !important; 
-        }
+        #landing-screen .top-bar div, #landing-screen .top-bar a { color: #e5e7eb !important; }
         .landing-hero { display: flex; align-items: center; justify-content: space-between; gap: 40px; padding: 80px 48px 40px; max-width: 1320px; margin: 0 auto; }
         .landing-copy { max-width: 620px; }
         .landing-copy .eyebrow { display: inline-flex; align-items: center; gap: 8px; background: rgba(212,175,55,0.12); color: var(--accent); padding: 8px 14px; border-radius: 999px; font-size: 13px; margin-bottom: 22px; border: 1px solid rgba(212,175,55,0.3); }
@@ -88,21 +84,8 @@
         .hero-card .mini-card span { color: var(--text); font-size: 0.9rem; }
         .hero-stats { display: grid; gap: 12px; background: var(--surface-soft); border-radius: 24px; padding: 22px; border: 1px solid var(--border); }
         .hero-stats p { margin: 0; color: var(--text); font-size: 0.9rem; }
-        .hero-stats .meter { 
-            height: 12px; 
-            border-radius: 999px; 
-            background: rgba(255,255,255,0.1); 
-            border: 1px solid rgba(255,255,255,0.2); 
-            position: relative;
-            overflow: hidden;
-        }
-        .hero-stats .meter > div { 
-            position: absolute;
-            left: 0; top: 0;
-            height: 100%; 
-            border-radius: 999px; 
-            background: var(--accent); 
-        }
+        .hero-stats .meter { height: 12px; border-radius: 999px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); position: relative; overflow: hidden; }
+        .hero-stats .meter > div { position: absolute; left: 0; top: 0; height: 100%; border-radius: 999px; background: var(--accent); }
         .feature-section { padding: 0 48px 64px; max-width: 1320px; margin: 0 auto; }
         .feature-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 24px; margin-top: 40px; }
         .feature-card { background: var(--surface); border: 1px solid var(--border); border-radius: 28px; padding: 28px; min-height: 220px; display: flex; flex-direction: column; gap: 18px; }
@@ -138,10 +121,7 @@
         
         .card { background: var(--card); padding: 20px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); max-width: 900px; margin: 0 auto 20px auto; border: 1px solid var(--border); }
         .card-large { max-width: 1100px; }
-        .card canvas {
-            max-width: 100% !important;
-            max-height: 100% !important;
-        }
+        .card canvas { max-width: 100% !important; max-height: 100% !important; }
         
         .form-row { display: flex; gap: 15px; margin-bottom: 15px; align-items: flex-end;}
         .form-group { flex: 1; margin-bottom: 15px; }
@@ -155,13 +135,9 @@
         textarea { resize: vertical; min-height: 80px; }
         .file-hint { font-size: 11px; color: var(--muted); margin-top: 4px; display: block; }
         
-        .info-header { background-color: var(--surface-soft); border: 1px solid var(--border); padding: 12px 15px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; color: var(--text); display: none; line-height: 1.6;}
-        body.light-theme .info-header { background-color: #f8fafc; border: 1px solid #cbd5e1; color: #111827; }
-        
+        /* Tema Tombol Global */
         button { width: 100%; padding: 12px; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 10px; transition: transform .06s ease, box-shadow .12s ease }
         button:hover{ transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,0,0,0.3) }
-        
-        /* Tombol sesuai tema Maroon/Gold/Silver */
         button.btn-primary { background-color: var(--primary) !important; color: #ffffff !important; }
         button.btn-primary:hover { background-color: var(--primary-hover) !important; }
         button.btn-success { background-color: var(--accent) !important; color: #111 !important; }
@@ -193,11 +169,7 @@
         .sk-preview { background: white; color: black; font-family: 'Times New Roman', Times, serif; padding: 5mm 20mm 15mm 20mm; border: none; box-shadow: none; margin-bottom: 15px; font-size: 12pt; line-height: 1.8; text-align: justify; min-height: 297mm; overflow: visible; display: none; width: 100%; max-width: 100%; margin: 0 auto 15px; box-sizing: border-box; }
         .sk-preview h3 { text-align: center; margin: 0 0 5px 0; font-size: 15px; text-decoration: underline; color: black !important;}
         .sk-preview p.nomor { text-align: center; margin: 0 0 20px 0; color: black !important;}
-        .sk-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; border: none; }
-        .sk-table td { padding: 3px; vertical-align: top; border: none; color: black !important;}
-        .sk-table td:first-child { width: 25%; font-weight: bold; }
-        .sk-table td:nth-child(2) { width: 3%; }
-
+        
         .dashboard-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; background: var(--card); }
         .dashboard-table th, .dashboard-table td { border: 1px solid var(--border); padding: 8px; text-align: left; color: var(--text); }
         .dashboard-table th { background-color: var(--surface-soft); color: var(--text); }
@@ -265,7 +237,7 @@
         }
         @media (max-width: 480px) { .form-row { flex-direction: column; gap: 12px; align-items: stretch;} .sk-preview{ padding: 15px; height: 48vh } .card { margin-left: 8px; margin-right:8px } .login-box{ margin: 0 16px } .top-bar{ padding:10px } }
 
-        .card h1, .card h2, .card h3, .card h4, .card label, .card p, .card span, .card div, .checkbox-item, .checkbox-item span, .info-header strong, .role-title { color: var(--text) !important; }
+        .card h1, .card h2, .card h3, .card h4, .card label, .card p, .card span, .card div, .checkbox-item, .checkbox-item span, .role-title { color: var(--text) !important; }
         select option { background: var(--input-bg); color: var(--text); }
         body.light-theme select option { background: #ffffff; color: #111827; }
         .file-hint, .timeline-date, small { color: var(--muted) !important; }
@@ -288,9 +260,7 @@
         body.light-theme .tab-btn.active { background: #f8fafc !important; color: var(--primary) !important; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.05) !important;}
 
         input, select, textarea, .form-group input, .form-group select, .form-group textarea { background-color: var(--input-bg) !important; color: var(--text) !important; border-color: var(--input-border) !important; }
-        .info-header, .active-header, .timeline li, .param-list li { background-color: var(--surface-soft) !important; color: var(--text) !important; border-color: var(--border) !important; }
-        body.light-theme .info-header, body.light-theme .active-header { background-color: #f8fafc !important; color: #111827 !important; border-color: #cbd5e1 !important;}
-
+        
         /* Memaksa area Preview Surat Keputusan selalu berlatar putih dan teks hitam pekat */
         .sk-preview, #preview-sk-content, #sk-print-area, #sk-print-area *, #sk-isi-preview { 
             background-color: #ffffff !important; 
@@ -349,30 +319,30 @@
                 <img id="top-logo-img" src="" style="height:45px; width:auto; border-radius:8px; display:none; object-fit:contain;">
                 <div id="top-logo-default" style="width:45px; height:45px; border-radius:16px; background: var(--primary); display:flex; align-items:center; justify-content:center; font-weight:800; color:white;">S</div>
                 <div>
-                    <div style="font-weight:700; letter-spacing:.08em; color: var(--text);">SIGAP</div>
-                    <div style="font-size:11px; color:var(--muted); letter-spacing:.14em; text-transform:uppercase;">Sistem Pelaporan Etik & Hukum RSJD</div>
+                    <div style="font-weight:700; letter-spacing:.08em; color: #e5e7eb;">SIGAP</div>
+                    <div style="font-size:11px; color:#9ca3af; letter-spacing:.14em; text-transform:uppercase;">Sistem Pelaporan Etik & Hukum RSJD</div>
                 </div>
             </div>
-            <div style="display:flex; align-items:center; gap:16px; font-size:0.95rem; color:var(--text);">
+            <div style="display:flex; align-items:center; gap:16px; font-size:0.95rem; color:#e5e7eb;">
                 <a href="#features" style="text-decoration:none;color:inherit; transition: color 0.2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='inherit'">Fitur</a>
                 <a href="#survey-rekap-section" style="text-decoration:none;color:inherit; transition: color 0.2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='inherit'">Survey</a>
-                <button class="btn-primary" style="border-radius: 999px;" onclick="openLoginModal()">Masuk / Aduan</button>
-                <button onclick="toggleTheme()" style="background: transparent; border: 1px solid var(--accent); color: var(--accent); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold;">🌗 Tema</button>
+                <button class="btn-primary" style="border-radius: 999px; margin-top:0;" onclick="openLoginModal()">Masuk / Aduan</button>
+                <button onclick="toggleTheme()" style="background: transparent; border: 1px solid var(--accent); color: var(--accent); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top:0;">🌗 Tema</button>
             </div>
         </nav>
         
         <section class="landing-hero-grid">
             <div class="landing-copy">
                 <span class="eyebrow">SIGAP Etik dan Hukum Integrasi RSJD</span>
-                <h1 id="landing-title-text" style="font-size: clamp(2.8rem, 3.5vw, 4rem); line-height: 1.1; margin: 0; letter-spacing: -0.03em;">
+                <h1 id="landing-title-text" style="font-size: clamp(2.8rem, 3.5vw, 4rem); line-height: 0.95; margin: 0; letter-spacing: -0.04em;">
                     Sistem Integrasi <strong style="color: var(--accent);">Gerak Aduan Pelanggaran Etik</strong>
                 </h1>
-                <p id="landing-desc-text" style="color: var(--muted); font-size: 1.05rem; line-height: 1.8; max-width: 540px; margin: 24px 0 32px;">
+                <p id="landing-desc-text" style="color: var(--muted); font-size: 1.05rem; line-height: 1.9; max-width: 540px; margin: 24px 0 32px;">
                     Platform terpadu untuk integrasi pelaporan, gerak cepat verifikasi, penanganan aduan etik & hukum, hingga penerbitan SK penetapan dalam satu alur kerja transparan.
                 </p>
                 <div class="hero-actions">
-                    <button class="btn-primary" style="padding: 16px 28px; font-size: 15px; border-radius: 999px;" onclick="openLoginModal()">Buka Halaman Aduan</button>
-                    <button style="background: var(--surface-soft); color: var(--text); border: 1px solid var(--border); padding: 16px 28px; font-size: 15px; border-radius: 999px;" onclick="document.getElementById('features').scrollIntoView({ behavior: 'smooth' })">Pelajari Fitur</button>
+                    <button class="btn-primary" style="padding: 16px 28px; font-size: 15px; border-radius: 999px; margin-top:0;" onclick="openLoginModal()">Buka Halaman Aduan</button>
+                    <button style="background: var(--surface-soft); color: var(--text); border: 1px solid var(--border); padding: 16px 28px; font-size: 15px; border-radius: 999px; margin-top:0; font-weight:700; cursor:pointer;" onclick="document.getElementById('features').scrollIntoView({ behavior: 'smooth' })">Pelajari Fitur</button>
                 </div>
             </div>
             
@@ -385,12 +355,12 @@
                         <span style="background:rgba(212, 175, 55, 0.2); color:var(--accent); padding:4px 10px; border-radius:999px; font-size:0.75rem; border: 1px solid rgba(212, 175, 55, 0.3);">Realtime</span>
                     </div>
                     <div class="hero-card" style="margin-top:0;">
-                        <div class="mini-card" style="background: var(--surface-soft); padding: 12px 16px;">
+                        <div class="mini-card">
                             <div><span style="font-size:0.8rem; color:var(--text);">Total Aduan</span><strong id="landing-total" style="font-size:1.5rem; color:var(--text);">0</strong></div>
                         </div>
-                        <div class="hero-stats" style="background:var(--surface-soft); padding:0;">
+                        <div class="hero-stats">
                             <p style="margin-top:10px; color:var(--text);">Aduan Dalam Proses / Ditangani</p>
-                            <div class="meter"><div id="landing-meter" style="background: var(--accent);"></div></div>
+                            <div class="meter"><div id="landing-meter"></div></div>
                         </div>
                     </div>
                 </div>
@@ -598,28 +568,6 @@
             <button class="tab-btn" data-target="referensi" onclick="bukaTab('referensi')">📋 Mapping Tabel</button>
         </div>
 
-        <template id="header-template">
-            <div class="info-header active-header no-print">
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;">
-                    <div>
-                        <strong>Detail Aduan:</strong>
-                        Pelapor: <span class="h-pelapor">-</span> | 
-                        Tgl. Kejadian: <span class="h-tgl">-</span><br>
-                        Terlapor: <span class="h-terlapor">-</span> | 
-                        Jabatan: <span class="h-jabatan">-</span><br>
-                        <span style="font-size:12px;color:var(--muted)">SLA: <b><span class="h-sla">14</span> hari</b> | Sisa: <b><span class="h-sla-sisa">-</span></b> | Status: <span class="h-sla-status">-</span></span><br>
-                        <b>Deskripsi Kejadian:</b> <span class="h-deskripsi">-</span></div>
-                    <div class="rk-header">
-                        <strong>Rekomendasi & Keputusan:</strong><br>
-                        Rekomendasi PIC: <span class="h-rekomendasi highlight-rek" style="color:var(--accent);">-</span><br>
-                        Keputusan Otorisasi: <span class="h-keputusan" style="color:var(--success);font-weight:bold;">-</span>
-                    </div>
-                    <div style="grid-column:1 / -1; border-top:1px solid var(--border); padding-top:8px; margin-top:4px;">
-                    </div>
-                </div>
-            </div>
-        </template>
-
         <div id="section-pelapor" class="section active no-print">
             <div class="header"><h2>Portal Aduan Aman</h2><p>Formulir Pengiriman Laporan</p></div>
             <div class="card" style="display:grid; grid-template-columns: 1fr 1fr; gap:24px; align-items:start;">
@@ -666,12 +614,9 @@
                     <button class="btn-search btn-small" onclick="recallAduan('operator')">Recall Aduan Terkirim</button>
                     <span id="recall-info-operator" style="font-size:12px; color:var(--muted);">Klik recall untuk memuat item belum selesai.</span>
                 </div>
-                <div class="active-header info-header">
-                    <div><b>Rekomendasi PIC:</b> <span class="header-rekomendasi">-</span></div>
-                    <div style="margin-top:4px;"><b>Keputusan Otorisasi:</b> <span class="header-keputusan">-</span></div>
-                </div>
-                <div class="form-group"><label>Pilih Aduan Masuk</label><select id="op-pilih-aduan" onchange="sinkronHeader(this.value)"></select></div>
-                <div id="header-op"></div>
+                
+                <div class="form-group"><label>Pilih Aduan Masuk</label><select id="op-pilih-aduan" onchange="sinkronHeader(this.value, 'operator')"></select></div>
+                <div id="info-header-operator" style="display:none; margin-bottom:15px;"></div>
 
                 <div class="form-group"><label>Kriteria Pengecekan</label>
                     <div class="checkbox-group">
@@ -713,8 +658,9 @@
                     <button class="btn-search btn-small" onclick="recallAduan('eskalasi')">Recall Aduan Diverifikasi</button>
                     <span id="recall-info-eskalasi" style="font-size:12px; color:var(--muted);">Klik recall untuk muat antrean eskalasi.</span>
                 </div>
-                <div class="form-group"><label>Pilih Aduan (Terverifikasi)</label><select id="esk-pilih-aduan" onchange="sinkronHeader(this.value)"></select></div>
-                <div id="header-esk"></div>
+                
+                <div class="form-group"><label>Pilih Aduan (Terverifikasi)</label><select id="esk-pilih-aduan" onchange="sinkronHeader(this.value, 'eskalasi')"></select></div>
+                <div id="info-header-eskalasi" style="display:none; margin-bottom:15px;"></div>
 
                 <div style="background: var(--surface-soft); border:1px solid var(--border); border-radius:12px; padding:16px; margin:12px 0;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
@@ -732,7 +678,7 @@
                         <select id="esk-level" class="dyn-eskalasi"></select>
                     </div>
                     <div class="form-group"><label>Nama PIC Tujuan *</label>
-                        <select id="esk-nama" class="dyn-pic" onchange="updatePICContactPreview()"></select>
+                        <select id="esk-nama" class="dyn-pic"></select>
                     </div>
                 </div>
 
@@ -775,12 +721,9 @@
                     <button class="btn-search btn-small" onclick="recallAduan('pic')">Recall Aduan PIC</button>
                     <span id="recall-info-pic" style="font-size:12px; color:var(--muted);">Klik recall untuk muat tugas PIC belum selesai.</span>
                 </div>
-                <div class="active-header info-header">
-                    <div><b>Rekomendasi PIC:</b> <span class="header-rekomendasi">-</span></div>
-                    <div style="margin-top:4px;"><b>Keputusan Otorisasi:</b> <span class="header-keputusan">-</span></div>
-                </div>
-                <div class="form-group"><label>Pilih Laporan Ditugaskan</label><select id="pic-pilih-aduan" onchange="sinkronHeader(this.value)"></select></div>
-                <div id="header-pic"></div>
+                
+                <div class="form-group"><label>Pilih Laporan Ditugaskan</label><select id="pic-pilih-aduan" onchange="sinkronHeader(this.value, 'pic')"></select></div>
+                <div id="info-header-pic" style="display:none; margin-bottom:15px;"></div>
 
                 <div class="form-row">
                     <div class="form-group"><label>Tanggal Mulai</label><input type="date" id="pic-tgl-mulai" required></div>
@@ -860,18 +803,9 @@
                     <button class="btn-search btn-small" onclick="recallAduan('otorisasi')">Recall Aduan Otorisasi</button>
                     <span id="recall-info-otorisasi" style="font-size:12px; color:var(--muted);">Klik recall untuk muat dokumen yang menunggu otorisasi.</span>
                 </div>
-                <div class="active-header info-header">
-                    <div><b>Rekomendasi PIC:</b> <span class="header-rekomendasi">-</span></div>
-                    <div style="margin-top:4px;"><b>Keputusan Otorisasi:</b> <span class="header-keputusan">-</span></div>
-                </div>
-                <div class="form-group"><label>Pilih Laporan</label><select id="ot-pilih-aduan" onchange="sinkronHeader(this.value)"></select></div>
-                <div id="header-ot"></div>
-
-                <div id="surat-rekomendasi-ot-info" style="background: var(--surface-soft); border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:12px; display:none;">
-                    <div style="font-weight:700; font-size:13px; color:var(--text); margin-bottom:6px;">📄 Surat Rekomendasi dari PIC (Tercatat di Otorisasi):</div>
-                    <div id="ot-surat-jenis-badge" style="display:inline-block; background:var(--accent); color:#111; padding:3px 8px; border-radius:10px; font-size:11px; font-weight:700; margin-bottom:6px;">-</div>
-                    <div id="ot-surat-preview" style="background:var(--input-bg); border:1px solid var(--input-border); border-radius:8px; padding:12px; max-height:300px; overflow-y:auto; font-family:'Times New Roman', serif; font-size:11px; line-height:1.5; color:var(--text); margin-top:8px;"></div>
-                </div>
+                
+                <div class="form-group"><label>Pilih Laporan</label><select id="ot-pilih-aduan" onchange="sinkronHeader(this.value, 'otorisasi')"></select></div>
+                <div id="info-header-otorisasi" style="display:none; margin-bottom:15px;"></div>
 
                 <div class="form-group"><label>Keputusan Penetapan *</label>
                     <select id="ot-keputusan" onchange="sinkronKeputusanOtorisasi()">
@@ -918,11 +852,9 @@
                     <button class="btn-search btn-small" onclick="recallAduan('penetapan')">Recall Aduan SK</button>
                     <span id="recall-info-penetapan" style="font-size:12px; color:var(--muted);">Klik recall untuk muat laporan persiapan SK.</span>
                 </div>
-                <div class="active-header info-header">
-                    <div><b>Rekomendasi PIC:</b> <span class="header-rekomendasi">-</span></div>
-                    <div style="margin-top:4px;"><b>Keputusan Otorisasi:</b> <span class="header-keputusan">-</span></div>
-                </div>
-                <div class="form-group"><label>Pilih Laporan (Disahkan)</label><select id="pen-pilih-aduan" onchange="sinkronHeader(this.value); autoDeteksiJenisDokumen(this.value); muatPreviewSK(this.value);"></select></div>
+                
+                <div class="form-group"><label>Pilih Laporan (Disahkan)</label><select id="pen-pilih-aduan" onchange="sinkronHeader(this.value, 'penetapan'); switchJenisDokumen();"></select></div>
+                <div id="info-header-penetapan" style="display:none; margin-bottom:15px;"></div>
                 
                 <div style="background: var(--surface-soft); border:1px solid var(--border); border-radius:12px; padding:16px; margin:14px 0;">
                     <h4 style="margin:0 0 10px 0; font-size:14px; color:var(--text);">📑 Jenis Dokumen Final - Terintegrasi Surat Tindak Lanjut</h4>
@@ -1012,7 +944,6 @@
 
                 <hr>
                 <div class="form-group"><label>Upload Scan SK Bertanda Tangan (Final)</label><input type="file" id="pen-file" accept="image/*,.pdf" onchange="validasiUkuranFile(this, 5)"><span class="file-hint">Maks. 5MB.</span></div>
-                <button class="btn-admin" id="btn-pen-preview" onclick="muatPreviewSK(document.getElementById('pen-pilih-aduan').value)" style="margin-right:8px;">🔍 Preview SK</button>
                 <button class="btn-primary" id="btn-pen-simpan" onclick="simpanPenetapan()">Terbitkan & Arsipkan SK</button>
                 <button class="btn-admin btn-small" style="margin-left:8px;" onclick="kembalikanProses('penetapan')">↩ Kembalikan ke Otorisasi</button>
             </div>
@@ -1941,35 +1872,35 @@ async function loadDatasheets() {
     // Render Panel Operator
     const tbOp = document.getElementById('ds-operator');
     if (tbOp) {
-        const opData = data.filter(d => ['baru', 'diverifikasi', 'Terkirim', 'Diverifikasi'].includes(d.status));
+        const opData = data.filter(d => ['baru', 'diverifikasi', 'tereskalasi', 'diproses_pic', 'menunggu_otorisasi', 'disahkan', 'selesai_sk'].includes(d.status) || ['Terkirim', 'Diverifikasi'].includes(d.status));
         tbOp.innerHTML = opData.map(d => `<tr><td>${d.tanggal_kejadian ? new Date(d.tanggal_kejadian).toLocaleDateString('id-ID') : '-'}</td><td>${d.kategori_nama || '-'}</td><td>${d.nama_pelapor}</td><td>${d.nama_terlapor}</td><td><span class="badge">${d.status}</span></td></tr>`).join('') || '<tr><td colspan="5" style="text-align:center;">Tidak ada antrean verifikasi</td></tr>';
     }
 
     // Render Panel Eskalasi
     const tbEsk = document.getElementById('ds-eskalasi');
     if (tbEsk) {
-        const eskData = data.filter(d => ['diverifikasi', 'tereskalasi', 'Diverifikasi', 'Proses PIC / Dieskalasi'].includes(d.status));
+        const eskData = data.filter(d => ['diverifikasi', 'tereskalasi', 'diproses_pic', 'menunggu_otorisasi', 'disahkan', 'selesai_sk'].includes(d.status) || ['Diverifikasi', 'Proses PIC / Dieskalasi'].includes(d.status));
         tbEsk.innerHTML = eskData.map(d => `<tr><td>${d.tanggal_kejadian ? new Date(d.tanggal_kejadian).toLocaleDateString('id-ID') : '-'}</td><td>${d.nama_pelapor}</td><td>${d.nama_terlapor}</td><td>${d.urgensi_nama || '-'}</td><td><span class="badge">${d.status}</span></td></tr>`).join('') || '<tr><td colspan="5" style="text-align:center;">Tidak ada antrean eskalasi</td></tr>';
     }
 
     // Render Panel PIC
     const tbPic = document.getElementById('ds-pic');
     if (tbPic) {
-        const picData = data.filter(d => ['tereskalasi', 'diproses_pic', 'Proses PIC / Dieskalasi', 'menunggu_otorisasi', 'disahkan', 'selesai_sk'].includes(d.status));
+        const picData = data.filter(d => ['tereskalasi', 'diproses_pic', 'menunggu_otorisasi', 'disahkan', 'selesai_sk'].includes(d.status) || ['Proses PIC / Dieskalasi'].includes(d.status));
         tbPic.innerHTML = picData.map(d => `<tr><td><span style="font-size:11px;font-family:monospace;">${d.kode_tracking}</span></td><td>${d.nama_pelapor}</td><td>${d.nama_terlapor}</td><td><span class="badge">${d.status}</span></td></tr>`).join('') || '<tr><td colspan="4" style="text-align:center;">Tidak ada tugas penanganan</td></tr>';
     }
 
     // Render Panel Otorisasi
     const tbOto = document.getElementById('ds-otorisasi');
     if (tbOto) {
-        const otoData = data.filter(d => ['menunggu_otorisasi', 'disahkan', 'Menunggu Otorisasi', 'selesai_sk'].includes(d.status));
+        const otoData = data.filter(d => ['menunggu_otorisasi', 'disahkan', 'selesai_sk'].includes(d.status) || ['Menunggu Otorisasi'].includes(d.status));
         tbOto.innerHTML = otoData.map(d => `<tr><td>${new Date(d.created_at).toLocaleDateString('id-ID')}</td><td>${d.nama_pelapor}</td><td>${d.nama_terlapor}</td><td><span class="badge">${d.status}</span></td></tr>`).join('') || '<tr><td colspan="4" style="text-align:center;">Tidak ada antrean pengesahan</td></tr>';
     }
 
     // Render Panel Penetapan SK
     const tbPen = document.getElementById('ds-penetapan');
     if (tbPen) {
-        const penData = data.filter(d => ['disahkan', 'selesai_sk', 'Selesai (SK Diterbitkan)'].includes(d.status));
+        const penData = data.filter(d => ['disahkan', 'selesai_sk', 'Selesai (SK Diterbitkan)'].includes(d.status) || ['Disahkan'].includes(d.status));
         tbPen.innerHTML = penData.map(d => `<tr><td>${new Date(d.created_at).toLocaleDateString('id-ID')}</td><td>${d.nama_pelapor}</td><td>${d.nama_terlapor}</td><td><span class="badge">${d.status}</span></td><td><b>${d.no_sk || '-'}</b></td><td><button class="btn-small btn-primary" style="margin-bottom:4px;" onclick="bukaTab('cetak-sk'); document.getElementById('cetak-sk-pilih').value='${d.id}'; loadCetakSK('${d.id}');">Cetak SK</button></td></tr>`).join('') || '<tr><td colspan="6" style="text-align:center;">Tidak ada antrean penerbitan SK</td></tr>';
     }
 }
@@ -2096,24 +2027,98 @@ async function simpanVerifikasi(){
 
     const { error } = await supabaseClient.from('verifikasi').upsert(payload, { onConflict:'aduan_id' });
     if(error){ showToast(error.message, true); return; }
-    await supabaseClient.from('aduan').update({ status:'diverifikasi' }).eq('id', aduanId); showToast('✅ Verifikasi disimpan'); await loadAllData();
+    await supabaseClient.from('aduan').update({ status:'diverifikasi' }).eq('id', aduanId); showToast('✅ Verifikasi disimpan'); 
+    document.getElementById('op-pilih-aduan').value = ''; document.getElementById('info-header-operator').style.display = 'none';
+    await loadAllData();
 }
 
 async function recallAduan(ctx){ await loadAllData(); showToast('Data aduan di-refresh'); }
 
-async function sinkronHeader(aduanId){
-    if(!aduanId) return;
+// ==========================================
+// FUNGSI SINKRON HEADER (PERBAIKAN PROGRESSIVE DISCLOSURE)
+// ==========================================
+async function sinkronHeader(aduanId, context){
+    const headerContainer = document.getElementById(`info-header-${context}`);
+    if(!aduanId) {
+        if(headerContainer) headerContainer.style.display = 'none';
+        return;
+    }
+
     const { data } = await supabaseClient.from('v_aduan_lengkap').select('*').eq('id', aduanId).single();
     if(!data) return;
-    document.querySelectorAll('.h-pelapor').forEach(el=>el.textContent=data.nama_pelapor);
-    document.querySelectorAll('.h-tgl').forEach(el=>el.textContent=data.tanggal_kejadian);
-    document.querySelectorAll('.h-terlapor').forEach(el=>el.textContent=data.nama_terlapor);
-    document.querySelectorAll('.h-jabatan').forEach(el=>el.textContent=data.jabatan_terlapor||'-');
-    document.querySelectorAll('.h-deskripsi').forEach(el=>el.textContent=data.deskripsi_kejadian);
-    document.querySelectorAll('.h-sla').forEach(el=>el.textContent=data.sla_hari||14);
-    document.querySelectorAll('.h-rekomendasi, .header-rekomendasi').forEach(el=>el.textContent=data.tanggapan_akhir||'Belum ada');
-    document.querySelectorAll('.h-keputusan, .header-keputusan').forEach(el=>el.textContent=data.otorisasi_keputusan||'-');
-    document.querySelectorAll('.active-header').forEach(el=>el.style.display='block');
+
+    if(!headerContainer) return;
+
+    let html = `<div style="background:var(--surface-soft); border:1px solid var(--border); border-left:4px solid var(--accent); padding:12px 16px; border-radius:8px; font-size:13px; line-height:1.6; color:var(--text);">`;
+
+    // L1: Info Dasar (Selalu Muncul)
+    html += `<div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid var(--border); padding-bottom:6px;">
+                <div><b>Pelapor:</b> ${data.nama_pelapor || '-'}</div>
+                <div><b>Tgl Lapor:</b> ${new Date(data.created_at).toLocaleDateString('id-ID')}</div>
+             </div>`;
+    html += `<div><b>Terlapor:</b> ${data.nama_terlapor || '-'} <span style="color:var(--muted)">(${data.jabatan_terlapor || '-'})</span></div>`;
+    html += `<div><b>Deskripsi Kejadian:</b> ${data.deskripsi_kejadian || '-'}</div>`;
+
+    // L2: Info Verifikasi (Muncul di Eskalasi ke atas)
+    if (['eskalasi', 'pic', 'otorisasi', 'penetapan'].includes(context)) {
+        html += `<div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--border);">
+                    <div style="display:flex; justify-content:space-between;">
+                        <div><b>Kategori:</b> ${data.kategori_nama || '-'}</div>
+                        <div><b>Hasil Verifikasi:</b> <span style="color:var(--accent); font-weight:bold;">${data.hasil_verifikasi_nama || 'Valid'}</span></div>
+                    </div>
+                 </div>`;
+    }
+
+    // L3: Info Eskalasi & SLA (Muncul di PIC ke atas)
+    if (['pic', 'otorisasi', 'penetapan'].includes(context)) {
+        // Hitung SLA
+        let slaText = "-"; let slaColor = "var(--text)";
+        let slaHari = data.sla_hari || 14; // Default 14 jika null
+        if (data.created_at) {
+            let start = new Date(data.created_at);
+            let deadline = new Date(start);
+            deadline.setDate(deadline.getDate() + parseInt(slaHari));
+            let now = new Date();
+            let diffDays = Math.ceil((deadline - now) / (1000 * 60 * 60 * 24));
+            
+            if (diffDays < 0) { slaText = `Terlambat ${Math.abs(diffDays)} Hari`; slaColor = "#ef4444"; }
+            else if (diffDays === 0) { slaText = `Hari Terakhir (Batas Waktu)`; slaColor = "#f59e0b"; }
+            else { slaText = `Tepat Waktu (Sisa ${diffDays} Hari)`; slaColor = "#10b981"; }
+        }
+
+        html += `<div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--border);">
+                    <div style="display:flex; justify-content:space-between;">
+                        <div><b>Level Urgensi:</b> ${data.urgensi_nama || '-'}</div>
+                        <div><b>Target SLA:</b> ${slaHari} Hari</div>
+                    </div>
+                    <div><b>Status Penanganan:</b> <span style="color:${slaColor}; font-weight:bold; background:rgba(0,0,0,0.2); padding:2px 6px; border-radius:4px;">${slaText}</span></div>
+                 </div>`;
+    }
+
+    // L4: Info PIC (Muncul di Otorisasi ke atas)
+    if (['otorisasi', 'penetapan'].includes(context)) {
+        html += `<div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--border);">
+                    <div><b>Rekomendasi Akhir PIC:</b> <span style="color:var(--accent); font-style:italic;">"${data.tanggapan_akhir || 'Belum ada rekomendasi'}"</span></div>
+                 </div>`;
+    }
+
+    // L5: Info Otorisasi (Muncul di Penetapan SK)
+    if (['penetapan'].includes(context)) {
+        let jenisSurat = data.jenis_surat || 'SK Biasa';
+        if (jenisSurat === 'penghentian') jenisSurat = 'Surat Keterangan Penghentian';
+        if (jenisSurat === 'tidak_ada_sanksi') jenisSurat = 'Surat Keterangan Tidak Ada Sanksi';
+
+        html += `<div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--border);">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div><b>Keputusan Direktur:</b> <span style="color:#10b981; font-weight:bold;">${data.otorisasi_keputusan || '-'}</span></div>
+                        <div><span style="background:var(--primary); color:white; padding:4px 8px; border-radius:4px; font-size:11px;">Surat: ${jenisSurat}</span></div>
+                    </div>
+                 </div>`;
+    }
+
+    html += `</div>`;
+    headerContainer.innerHTML = html;
+    headerContainer.style.display = 'block';
 }
 
 function autoDeteksiJenisDokumen(aduanId){}
@@ -2127,7 +2132,9 @@ async function simpanEskalasi(){
 
     const { error } = await supabaseClient.from('eskalasi').insert(payload);
     if(error){ showToast(error.message, true); return; }
-    await supabaseClient.from('aduan').update({ status:'tereskalasi' }).eq('id', aduanId); showToast('✅ Eskalasi berhasil'); await loadAllData();
+    await supabaseClient.from('aduan').update({ status:'tereskalasi' }).eq('id', aduanId); showToast('✅ Eskalasi berhasil'); 
+    document.getElementById('esk-pilih-aduan').value = ''; document.getElementById('info-header-eskalasi').style.display = 'none';
+    await loadAllData();
 }
 
 function updatePICContactPreview(){}
@@ -2155,7 +2162,9 @@ async function simpanPenanganan(){
     const payload={ aduan_id:aduanId, pic_id: currentUser?.id, tgl_mulai: document.getElementById('pic-tgl-mulai')?.value || null, tgl_selesai: document.getElementById('pic-tgl-selesai')?.value || null, todo_pemanggilan: todos.some(t=>t.toLowerCase().includes('pemanggilan')), todo_pemeriksaan: todos.some(t=>t.toLowerCase().includes('pemeriksaan')), todo_sidang_etik: todos.some(t=>t.toLowerCase().includes('sidang')), todo_rekomendasi_akhir: todos.some(t=>t.toLowerCase().includes('rekomendasi')), todos_json: todos, tanggapan_proses: document.getElementById('pic-tanggapan-proses')?.value || '', tanggapan_akhir: tanggapanAkhir, jenis_surat: (document.getElementById('pic-jenis-surat')?.value || 'none').replace('🛑 ','').replace('✅ ','').replace(/[^a-z_]/g,'') || 'none', dokumentasi_url: dok.url, dokumentasi_path: dok.path };
     const { error } = await supabaseClient.from('penanganan_pic').insert(payload);
     if(error){ showToast(error.message, true); return; }
-    await supabaseClient.from('aduan').update({ status:'menunggu_otorisasi' }).eq('id', aduanId); showToast('✅ Penanganan PIC disimpan'); await loadAllData();
+    await supabaseClient.from('aduan').update({ status:'menunggu_otorisasi' }).eq('id', aduanId); showToast('✅ Penanganan PIC disimpan'); 
+    document.getElementById('pic-pilih-aduan').value = ''; document.getElementById('info-header-pic').style.display = 'none';
+    await loadAllData();
 }
 function previewSuratPIC(){}
 function downloadSuratPIC(type){
@@ -2176,7 +2185,9 @@ async function simpanOtorisasi(){
     if(error){ showToast(error.message, true); return; }
     const newStatus = payload.is_approved ? 'disahkan' : 'diproses_pic';
     await supabaseClient.from('aduan').update({ status:newStatus }).eq('id', aduanId);
-    showToast(payload.is_approved ? '✅ Disahkan' : 'Catatan disimpan'); await loadAllData();
+    showToast(payload.is_approved ? '✅ Disahkan' : 'Catatan disimpan'); 
+    document.getElementById('ot-pilih-aduan').value = ''; document.getElementById('info-header-otorisasi').style.display = 'none';
+    await loadAllData();
 }
 
 function sinkronKeputusanOtorisasi(){
@@ -2210,11 +2221,35 @@ async function hapusKopSurat() {
     globalKopSuratUrl = null; terapkanKopSurat(); showToast('✅ Kop surat telah dikembalikan ke bawaan sistem');
 }
 
+// ==========================================
+// PERBAIKAN FITUR KEMBALIKAN KE TAHAP SEBELUMNYA
+// ==========================================
 async function kembalikanProses(dari){
-    const map={ 'otorisasi':'ot-pilih-aduan', 'penetapan':'pen-pilih-aduan' }; const aduanId=document.getElementById(map[dari])?.value;
-    if(!aduanId){ showToast('Pilih aduan dulu', true); return; }
-    const target = dari==='otorisasi' ? 'diproses_pic' : 'menunggu_otorisasi';
-    await supabaseClient.from('aduan').update({ status:target }).eq('id', aduanId); showToast('↩ Dikembalikan ke '+target); await loadAllData();
+    const map = {
+        'eskalasi': { id: 'esk-pilih-aduan', target: 'diverifikasi', msg: 'Verifikasi' },
+        'pic': { id: 'pic-pilih-aduan', target: 'tereskalasi', msg: 'Komite (Eskalasi)' },
+        'otorisasi': { id: 'ot-pilih-aduan', target: 'diproses_pic', msg: 'PIC' },
+        'penetapan': { id: 'pen-pilih-aduan', target: 'menunggu_otorisasi', msg: 'Otorisasi' }
+    };
+    
+    const config = map[dari];
+    if(!config) return;
+    
+    const aduanId = document.getElementById(config.id)?.value;
+    if(!aduanId){ showToast('Pilih laporan yang akan dikembalikan terlebih dahulu', true); return; }
+
+    if(!confirm(`Anda yakin ingin mengembalikan laporan ini ke tahap ${config.msg}?`)) return;
+
+    const { error } = await supabaseClient.from('aduan').update({ status: config.target }).eq('id', aduanId);
+    if(error){ showToast(error.message, true); return; }
+    
+    showToast(`↩ Berhasil dikembalikan ke panel ${config.msg}`);
+    
+    document.getElementById(config.id).value = '';
+    const headerEl = document.getElementById(`info-header-${dari}`);
+    if(headerEl) headerEl.style.display = 'none';
+
+    await loadAllData();
 }
 
 function generateAutoSK(){
@@ -2222,14 +2257,51 @@ function generateAutoSK(){
     if(noEl) noEl.value=no; if(tglEl) tglEl.value=new Date().toISOString().slice(0,10); showToast('No SK: '+no); muatPreviewSK(document.getElementById('pen-pilih-aduan')?.value);
 }
 
+// ==========================================
+// PERBAIKAN PREVIEW SK SIAP CETAK DI PANEL ADMIN (PENETAPAN)
+// ==========================================
 async function muatPreviewSK(aduanId){
     if(!aduanId) return;
     const { data } = await supabaseClient.from('v_aduan_lengkap').select('*').eq('id', aduanId).single(); if(!data) return;
     const isiEl=document.getElementById('pen-isi-keputusan'); if(isiEl && !isiEl.value){ isiEl.value=data.tanggapan_akhir || data.otorisasi_catatan || ''; }
+    
+    // Auto Update Text Preview berdasarkan pilihan
     const preview=document.getElementById('preview-sk-content');
     if(preview){
-        const noSK=document.getElementById('pen-no-sk')?.value || data.no_sk || '-'; const hal=document.getElementById('pen-hal-sk')?.value || 'Hasil Penanganan'; const tgl=document.getElementById('pen-tgl')?.value || new Date().toISOString().slice(0,10); const isi=document.getElementById('pen-isi-keputusan')?.value || '';
-        preview.innerHTML=`<h3 style="text-align:center; color:black;">SURAT KEPUTUSAN<br>No: ${noSK}</h3><p style="color:black;">Hal: ${hal}</p><p style="color:black;">Tgl: ${tgl}</p><div style="border:1px solid #ddd; padding:12px; white-space:pre-wrap; color:black;">${isi}</div>`;
+        const noSK=document.getElementById('pen-no-sk')?.value || data.no_sk || '-/KEH/RSJD-AHM/2026'; 
+        const hal=document.getElementById('pen-hal-sk')?.value || 'Hasil Penanganan Aduan'; 
+        const tgl=document.getElementById('pen-tgl')?.value || new Date().toISOString().slice(0,10); 
+        const tglFormat = new Date(tgl).toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
+        const isi=document.getElementById('pen-isi-keputusan')?.value || '';
+        const jenis=document.getElementById('pen-jenis-dokumen')?.value || 'sk';
+        
+        let judulSK = 'SURAT KEPUTUSAN PENETAPAN';
+        if(jenis==='penghentian') judulSK='SURAT KETERANGAN PENGHENTIAN PROSES ADUAN'; 
+        else if(jenis==='tidak_ada_sanksi') judulSK='SURAT KETERANGAN TIDAK ADA PENGENAAN SANKSI';
+        
+        preview.innerHTML=`
+            <h3 style="text-align:center; font-family:'Times New Roman', Times, serif; font-size:14pt; margin-bottom:0; text-decoration:underline; color:black;">${judulSK}</h3>
+            <p style="text-align:center; font-family:'Times New Roman', Times, serif; font-size:12pt; margin-top:5px; margin-bottom:20px; color:black;">Nomor: ${noSK}</p>
+            <table style="font-size:12pt; font-family:'Times New Roman', Times, serif; margin-bottom:16px; width:100%; color:black;">
+                <tr><td style="width:120px;">Tentang</td><td>: ${hal}</td></tr>
+                <tr><td>Sifat</td><td>: ${document.getElementById('pen-kerahasiaan')?.value || 'Terbatas'}</td></tr>
+            </table>
+            <div style="font-size:12pt; font-family:'Times New Roman', Times, serif; line-height:1.5; color:black; margin-bottom:20px; text-align:justify;">
+                <p><strong>Menimbang:</strong> Bahwa berdasarkan laporan aduan nomor ${data.kode_tracking || '-'} tentang ${data.kategori_nama || '-'} yang melibatkan ${data.nama_terlapor || '-'}, telah dilakukan proses verifikasi, eskalasi, dan sidang etik sesuai prosedur.</p>
+                <p><strong>Mengingat:</strong> 1. Undang-undang tentang Rumah Sakit; 2. Peraturan Kode Etik; 3. SOP SIGAP RSJD AHM.</p>
+                <p><strong>Memutuskan:</strong></p>
+                <div style="padding-left:10px; white-space:pre-wrap;">${isi}</div>
+            </div>
+            <div style="margin-top:40px; display:flex; justify-content:flex-end; font-family:'Times New Roman', Times, serif; font-size:12pt; color:black;">
+                <div style="text-align:center; width:300px;">
+                    <p style="margin:0;">Ditetapkan di : Samarinda</p>
+                    <p style="margin:0; border-bottom: 1px solid #000; padding-bottom:10px;">Pada Tanggal : ${tglFormat}</p>
+                    <p style="margin:10px 0 70px 0;">DIREKTUR,</p>
+                    <p style="margin:0; font-weight:bold; text-decoration:underline;">dr. Indah Puspitasari, MARS</p>
+                    <p style="margin:0;">NIP. 196705301998032003</p>
+                </div>
+            </div>
+        `;
     }
 }
 function switchJenisDokumen(){ muatPreviewSK(document.getElementById('pen-pilih-aduan')?.value); }
@@ -2252,7 +2324,9 @@ async function simpanPenetapan(){
 
     const { error } = await supabaseClient.from('penetapan_sk').insert(payload);
     if(error){ showToast(error.message, true); return; }
-    await supabaseClient.from('aduan').update({ status:'selesai_sk' }).eq('id', aduanId); showToast('✅ SK Terbitkan: '+noSK); await loadAllData();
+    await supabaseClient.from('aduan').update({ status:'selesai_sk' }).eq('id', aduanId); showToast('✅ SK Terbitkan: '+noSK); 
+    document.getElementById('pen-pilih-aduan').value = ''; document.getElementById('info-header-penetapan').style.display = 'none';
+    await loadAllData();
 }
 
 async function ambilTemplateSanksi() {
@@ -2371,35 +2445,42 @@ async function loadCetakLaporan(){
     let query=supabaseClient.from('v_aduan_lengkap').select('*').order('created_at',{ascending:false}).limit(200);
     if(kategori) query=query.eq('kategori_id', kategori); if(status) query=query.eq('status', status);
     const { data, error } = await query; if(error){ showToast(error.message, true); return; }
-    let rows=data||[]; if(search) rows=rows.filter(r=> (r.nama_terlapor||'').toLowerCase().includes(search) || (r.kode_tracking||'').toLowerCase().includes(search));
-    cacheLaporan=rows;
+    let rows=data||[]; if(search) rows=rows.filter(r=> (r.nama_terlapor||'').toLowerCase().includes(search) || (r.nama_pelapor||'').toLowerCase().includes(search) || (r.kode_tracking||'').toLowerCase().includes(search) || (r.lokasi_kejadian||'').toLowerCase().includes(search) || (r.kategori_nama||'').toLowerCase().includes(search) || (r.status||'').toLowerCase().includes(search) );
+   cacheLaporan=rows;
 
     document.getElementById('lap-print-periode').textContent=periode; document.getElementById('lap-print-total').textContent=rows.length; document.getElementById('lap-print-tglcetak').textContent=new Date().toLocaleDateString('id-ID');
     document.getElementById('stat-baru').textContent=rows.filter(r=>r.status==='baru').length; document.getElementById('stat-proses').textContent=rows.filter(r=>['diverifikasi','tereskalasi','diproses_pic','menunggu_otorisasi'].includes(r.status)).length; document.getElementById('stat-selesai').textContent=rows.filter(r=>['selesai_sk','disahkan'].includes(r.status)).length;
 
     if(tbody){
-        tbody.innerHTML=rows.map((r,i)=>`<tr><td>${i+1}</td><td>${r.created_at?new Date(r.created_at).toLocaleDateString('id-ID'):'-'}</td><td><b>${r.kode_tracking}</b></td><td>${r.nama_pelapor}</td><td>${r.nama_terlapor}<br><small>${r.jabatan_terlapor||''}</small></td><td>${r.lokasi_kejadian}<br><small>${r.kategori_nama||''}</small></td><td><span style="background:#e2e8f0; color:#111; padding:2px 6px; border-radius:4px; font-size:10px;">${r.status}</span><br><small>${r.no_sk||''}</small></td><td style="max-width:200px;">${(r.tanggapan_akhir||r.otorisasi_catatan||'').substring(0,100)}</td></tr>`).join('') || '<tr><td colspan="8" style="text-align:center;">Tidak ada data</td></tr>';
+        tbody.innerHTML=rows.map((r,i)=>`<tr><td>${i+1}</td><td>${r.created_at?new Date(r.created_at).toLocaleDateString('id-ID'):'-'}</td><td><b>${r.kode_tracking}</b></td><td>${r.nama_pelapor}</td><td>${r.nama_terlapor}<br><small>${r.jabatan_terlapor||''}</small></td><td>${r.lokasi_kejadian}<br><small>${r.kategori_nama||''}</small></td><td><span style="background:#e2e8f0; color:#111; padding:2px 6px; border-radius:4px; font-size:10px;">${r.status}</span><br><small>${r.no_sk||''}</small></td><td style="max-width:200px;">${(r.tanggapan_akhir||r.otorisasi_catatan||'').substring(0,100)}</td></tr>`).join('') || '<tr><td colspan="8" style="text-align:center; color:var(--muted);">Tidak ada data</td></tr>';
     }
     document.getElementById('cetak-sign-tgl').textContent=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'}); document.getElementById('cetak-sign-nama').textContent=document.getElementById('cetak-lap-nama')?.value||'Nama Pejabat'; document.getElementById('cetak-sign-nip').textContent=document.getElementById('cetak-lap-nip')?.value||'-'; document.getElementById('cetak-sign-jabatan').textContent=(document.getElementById('cetak-lap-jabatan')?.value||'Ketua Komite Etik')+','; showToast('Laporan: '+rows.length+' data');
 }
 
 function resetCetakLaporan(){ ['cetak-lap-periode','cetak-lap-kategori','cetak-lap-status','cetak-lap-search'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=id==='cetak-lap-periode'?'semua':''; }); loadCetakLaporan(); }
+
 function cetakLaporan_Print(){
     const area=document.getElementById('laporan-print-area'); const win=window.open('', '_blank');
-    win.document.write('<html><head><title>Laporan</title><style>body{font-family:Arial;font-size:12px;} table{width:100%;border-collapse:collapse;} th,td{border:1px solid #000;padding:6px;} th{background:#f1f5f9;}</'+'style></head><body>'+area.innerHTML+'</body></html>');
+    win.document.write('<html><head><title>Laporan</title><style>body{font-family:Arial;font-size:12px;color:black;} table{width:100%;border-collapse:collapse;} th,td{border:1px solid #000;padding:6px;color:black;} th{background:#f1f5f9;}</style></head><body>'+area.innerHTML+'</body></html>');
     win.document.close(); setTimeout(()=>win.print(),500);
 }
+
 function cetakLaporan_PDF(){
     const area=document.getElementById('laporan-print-area'); const isLand=(document.getElementById('cetak-lap-paper')?.value||'A4').includes('L');
     if(window.html2pdf) html2pdf().set({margin:10, filename:'Laporan-SIGAP-'+new Date().toISOString().slice(0,10)+'.pdf', html2canvas:{scale:2}, jsPDF:{unit:'mm', format:'a4', orientation:isLand?'landscape':'portrait'}}).from(area).save();
 }
+
 function cetakLaporan_Excel(){
     if(!window.XLSX){ showToast('XLSX tidak tersedia', true); return; }
     const ws_data=[['No','Tgl Lapor','Kode','Pelapor','Terlapor','Jabatan','Lokasi','Kategori','Status','No SK','Ringkasan']];
     cacheLaporan.forEach((r,i)=>{ ws_data.push([i+1, r.created_at?new Date(r.created_at).toLocaleDateString('id-ID'):'', r.kode_tracking, r.nama_pelapor, r.nama_terlapor, r.jabatan_terlapor, r.lokasi_kejadian, r.kategori_nama, r.status, r.no_sk, (r.tanggapan_akhir||'').substring(0,200)]); });
     const ws=XLSX.utils.aoa_to_sheet(ws_data); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Laporan'); XLSX.writeFile(wb, 'Laporan-SIGAP-'+new Date().toISOString().slice(0,10)+'.xlsx');
 }
-function cetakLaporan_DOCX(){ const area=document.getElementById('laporan-print-area'); if(window.htmlDocx){ const blob=htmlDocx.asBlob(area.innerHTML); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='Laporan-SIGAP.docx'; a.click(); } }
+
+function cetakLaporan_DOCX(){ 
+    const area=document.getElementById('laporan-print-area'); 
+    if(window.htmlDocx){ const blob=htmlDocx.asBlob(area.innerHTML); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='Laporan-SIGAP.docx'; a.click(); } 
+}
 
 async function cariStatusLaporan(){
     const kode = document.getElementById('lacak-id')?.value.trim(); 
@@ -2453,7 +2534,7 @@ async function cariStatusLaporan(){
                 <tr><td style="border-bottom:1px solid var(--border); padding:6px 0;">Terlapor</td><td style="border-bottom:1px solid var(--border); padding:6px 0;">${d.nama_terlapor} - ${d.jabatan_terlapor||''}</td></tr>
                 <tr><td style="border-bottom:1px solid var(--border); padding:6px 0;">Kategori</td><td style="border-bottom:1px solid var(--border); padding:6px 0;">${d.kategori_nama||'-'}</td></tr>
                 <tr><td style="border-bottom:1px solid var(--border); padding:6px 0;">Rekomendasi PIC</td><td style="border-bottom:1px solid var(--border); padding:6px 0;">${d.tanggapan_akhir||'-'}</td></tr>
-                <tr><td style="padding:6px 0;">No SK Final</td><td style="padding:6px 0; font-weight:bold;">${d.no_sk||'-'}</td></tr>
+                <tr><td style="padding:6px 0;">No SK Final</td><td style="padding:6px 0; font-weight:bold; color:var(--accent);">${d.no_sk||'-'}</td></tr>
             </table>
         </div>
     `).join('');
@@ -2474,7 +2555,7 @@ async function muatLaporanFormal(){
 
 function cetakLaporan(){
     const area=document.getElementById('print-area'); const win=window.open('', '_blank');
-    win.document.write('<html><head><title>Laporan</title><style>body{font-family:Arial;font-size:12px;} table{width:100%;border-collapse:collapse;} th,td{border:1px solid #000;padding:6px;} th{background:#f1f5f9;}</'+'style></head><body>'+area.innerHTML+'</body></html>');
+    win.document.write('<html><head><title>Laporan</title><style>body{font-family:Arial;font-size:12px;} table{width:100%;border-collapse:collapse;} th,td{border:1px solid #000;padding:6px;} th{background:#f1f5f9;}</style></head><body>'+area.innerHTML+'</body></html>');
     win.document.close(); setTimeout(()=>win.print(),500);
 }
 
@@ -2502,6 +2583,7 @@ async function loadKorespondensiHistory(){
     const { data } = await supabaseClient.from('korespondensi').select('*').order('created_at',{ascending:false}).limit(10);
     const hist=document.getElementById('kor-history-list'); if(hist && data){ hist.innerHTML=data.map(k=>`<div style="border-bottom:1px solid var(--border); padding:8px 0; color:var(--text);"><b>${k.nama}</b> <small style="color:var(--muted);">${new Date(k.created_at).toLocaleString('id-ID')}</small><br>${k.pesan}${k.balasan?'<br><small style="color:var(--accent);">Balasan: '+k.balasan+'</small>':''}</div>`).join('') || 'Belum ada pesan'; }
 }
+
 async function kirimSurvey(){
     const rating=document.getElementById('srv-rating')?.value; const ulasan=document.getElementById('srv-ulasan')?.value.trim(); const aspek=[]; document.querySelectorAll('.srv-aspek:checked').forEach(cb=>aspek.push(cb.value));
     if(!rating){ showToast('Pilih rating', true); return; }
@@ -2514,8 +2596,8 @@ async function loadParamValues(){
     const kategori=document.getElementById('adm-param-pilih')?.value; const listEl=document.getElementById('adm-param-list'); if(!listEl||!kategori) return;
     const tableMap={ 'kategori_aduan':'ref_kategori_aduan', 'sub_kategori':'ref_sub_kategori', 'pic':'ref_pic', 'eskalasi':'ref_eskalasi_level', 'urgensi':'ref_urgensi', 'sla_hari':'ref_sla_hari', 'hasil_verifikasi':'ref_hasil_verifikasi' };
     const table=tableMap[kategori]||'ref_params'; let data=[];
-    if(table==='ref_params'){ const { data:d } = await supabaseClient.from('ref_params').select('*').eq('kategori', kategori); data=d||[]; listEl.innerHTML=data.map(r=>`<li style="display:flex; justify-content:space-between; padding:6px; border-bottom:1px solid var(--border); color:var(--text);"><span>${r.value}</span><button onclick="hapusParamDB('${r.id}','${kategori}')" style="background:#ef4444; color:white; border:none; border-radius:4px; padding:2px 8px;">x</button></li>`).join('') || '<li style="padding:10px; color:var(--muted);">Kosong</li>'; }
-    else { const { data:d } = await supabaseClient.from(table).select('*').order('created_at'); data=d||[]; listEl.innerHTML=data.map(r=>`<li style="display:flex; justify-content:space-between; padding:6px; border-bottom:1px solid var(--border); color:var(--text);"><span>${r.nama||r.label||r.hari}</span><button onclick="hapusParamDB('${r.id}','${kategori}')" style="background:#ef4444; color:white; border:none; border-radius:4px; padding:2px 8px;">x</button></li>`).join('') || '<li style="padding:10px; color:var(--muted);">Kosong</li>'; }
+    if(table==='ref_params'){ const { data:d } = await supabaseClient.from('ref_params').select('*').eq('kategori', kategori); data=d||[]; listEl.innerHTML=data.map(r=>`<li style="display:flex; justify-content:space-between; padding:6px; border-bottom:1px solid var(--border); color:var(--text);"><span>${r.value}</span><button onclick="hapusParamDB('${r.id}','${kategori}')" style="background:#ef4444; color:white; border:none; border-radius:4px; padding:2px 8px;">x</button></li>`).join('') || '<li style="padding:10px; color:var(--muted); text-align:center;">Kosong</li>'; }
+    else { const { data:d } = await supabaseClient.from(table).select('*').order('created_at'); data=d||[]; listEl.innerHTML=data.map(r=>`<li style="display:flex; justify-content:space-between; padding:6px; border-bottom:1px solid var(--border); color:var(--text);"><span>${r.nama||r.label||r.hari}</span><button onclick="hapusParamDB('${r.id}','${kategori}')" style="background:#ef4444; color:white; border:none; border-radius:4px; padding:2px 8px;">x</button></li>`).join('') || '<li style="padding:10px; color:var(--muted); text-align:center;">Kosong</li>'; }
 }
 
 async function tambahParameter(){
@@ -2536,7 +2618,7 @@ async function hapusParamDB(id, kategori){
 
 async function loadAdminPublikasi(){
     const { data } = await supabaseClient.from('publikasi').select('*').order('created_at',{ascending:false}).limit(50);
-    const listEl=document.getElementById('adm-pub-manage-list'); if(listEl){ listEl.innerHTML=(data||[]).map(p=>`<div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid var(--border); color:var(--text);"><div><b>${p.judul}</b><br><small style="color:var(--muted);">${p.kategori||''}</small></div><button onclick="hapusPublikasi('${p.id}')" class="btn-danger btn-small" style="width:max-content !important;">Hapus</button></div>`).join('') || '<p style="color:var(--muted); text-align:center; padding:20px;">Belum ada publikasi</p>'; }
+    const listEl=document.getElementById('adm-pub-manage-list'); if(listEl){ listEl.innerHTML=(data||[]).map(p=>`<div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid var(--border); color:var(--text); align-items:center;"><div><b>${p.judul}</b><br><small style="color:var(--muted);">${p.kategori||''}</small></div><button onclick="hapusPublikasi('${p.id}')" class="btn-danger btn-small" style="width:max-content !important;">Hapus</button></div>`).join('') || '<p style="color:var(--muted); text-align:center; padding:20px;">Belum ada publikasi</p>'; }
     const listPub=document.getElementById('list-publikasi'); if(listPub){ listPub.innerHTML=(data||[]).map(p=>`<li style="padding:8px; border-bottom:1px solid var(--border);"><a href="${p.file_url||'#'}" target="_blank" style="color:var(--accent); font-weight:bold; text-decoration:none;">📄 ${p.judul}</a> <small style="color:var(--muted);">(${p.kategori||''})</small></li>`).join('') || '<li><span style="color:var(--muted);">Belum ada publikasi</span></li>'; }
 }
 
@@ -2838,4 +2920,4 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 });
 </script>
 </body>
-</html>
+</html> 
