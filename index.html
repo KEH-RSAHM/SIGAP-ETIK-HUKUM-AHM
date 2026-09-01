@@ -1092,19 +1092,55 @@
                     <tbody id="cetak-lap-tbody"><tr><td colspan="8" style="text-align:center; padding:20px; color:#64748b;">Klik Terapkan Filter untuk memuat data laporan...</td></tr></tbody>
                 </table>
 
-                <div style="margin-top:30px; display:flex; justify-content:space-between; font-size:11px;">
-                    <div style="width:200px; text-align:center; color:black !important;">
-                        <p>Mengetahui,</p>
-                        <p style="margin:20px 0 60px 0;">Direktur RSJD AHM</p>
-                        <p style="font-weight:bold; text-decoration:underline;">dr. Indah Puspitasari, MARS</p>
+                <!-- WRAPPER PREVIEW KERTAS (PDF VIEWER STYLE) -->
+            <div style="width: 100%; overflow-x: auto; background: var(--surface-soft); padding: 30px 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px;">
+                <div style="text-align: center; margin-bottom: 15px; color: var(--muted); font-size: 12px;">Mode Pratinjau Kertas Asli (WYSIWYG)</div>
+                
+                <!-- AREA KERTAS -->
+                <div id="sk-print-area" style="background:white; color:black; box-shadow:0 15px 35px rgba(0,0,0,0.4); margin: 0 auto; box-sizing: border-box; position: relative; transition: all 0.3s ease;">
+                    
+                    <div id="sk-kop-container" style="text-align:center; border-bottom:3px double #000; padding-bottom:12px; margin-bottom:16px;">
+                        <img id="sk-kop-img" src="" style="max-width:100%; max-height:120px; display:none; margin:0 auto 10px;">
+                        <div id="sk-kop-text-default">
+                            <h3 style="margin:0; font-size:16px; font-weight:bold; color:black !important;">RUMAH SAKIT JIWA DAERAH ATMA HUSADA MAHAKAM</h3>
+                            <p style="margin:2px 0; font-size:11px; color:black !important;">Jl. Kakap No.23, Kel. Sei Dama, Kec. Samarinda Ilir, Kota Samarinda 75115<br>Telp: 0541 743364 | Email: rsjdahm@gmail.com</p>
+                        </div>
                     </div>
-                    <div style="width:220px; text-align:center; color:black !important;">
-                        <p id="cetak-sign-kota">Samarinda, <span id="cetak-sign-tgl">-</span></p>
-                        <p id="cetak-sign-jabatan" style="margin:5px 0 60px 0;">Ketua Komite Etik,</p>
-                        <p style="font-weight:bold; text-decoration:underline;" id="cetak-sign-nama">Nama Pejabat</p>
-                        <p>NIP. <span id="cetak-sign-nip">-</span></p>
+                    
+                    <div style="text-align:center; margin:20px 0;">
+                        <h2 id="sk-judul-preview" style="font-size:18px; text-decoration:underline; margin:0; color:black !important;">SURAT KEPUTUSAN</h2>
+                        <p id="sk-nomor-preview" style="font-size:13px; margin:6px 0; color:black !important;">Nomor: <span id="sk-no-text">-/SK/RSJD-AHM/2026</span></p>
+                    </div>
+                    
+                    <table style="font-size:12px; margin-bottom:16px; width:100%; color:black;">
+                        <tr><td style="width:120px;">Tentang</td><td>: <span id="sk-hal-preview">Hasil Penanganan Aduan</span></td></tr>
+                        <tr><td>Tanggal</td><td>: <span id="sk-tgl-preview">Samarinda, --</span></td></tr>
+                        <tr><td>Sifat</td><td>: <span id="sk-sifat-preview">Terbatas</span></td></tr>
+                    </table>
+                    
+                    <div style="font-size:12px; line-height:1.8; text-align:justify; color:black;">
+                        <p><strong>Menimbang:</strong> Bahwa berdasarkan laporan aduan nomor <span id="sk-aduan-kode">-</span> tentang <span id="sk-aduan-kategori">-</span> yang melibatkan <span id="sk-terlapor-nama">-</span>, telah dilakukan proses verifikasi, eskalasi, dan sidang etik sesuai prosedur.</p>
+                        <p><strong>Mengingat:</strong> 1. Undang-undang tentang Rumah Sakit; 2. Peraturan Kode Etik; 3. SOP SIGAP RSJD AHM.</p>
+                        <p><strong>Memutuskan:</strong></p>
+                        
+                        <div id="sk-isi-preview" style="padding-left:10px; min-height:120px; white-space:pre-wrap; margin-bottom:20px;">Isi keputusan akan muncul di sini setelah memilih SK...</div>
+                        
+                        <div style="margin-top:30px; display:flex; justify-content:flex-end;">
+                            <div style="text-align:center; width:260px;">
+                                <p style="margin:0;">Ditetapkan di <span id="sk-tempat-preview">Samarinda</span></p>
+                                <p style="margin:0; border-bottom: 1px solid #000; padding-bottom:6px; margin-bottom:10px;">Pada tanggal <span id="sk-tgl2-preview">--</span></p>
+                                <p style="margin:10px 0 60px 0;"><span id="sk-jabatan-preview">Direktur</span>,</p>
+                                <p style="margin:0; font-weight:bold; text-decoration:underline;" id="sk-pejabat-preview">dr. Indah Puspitasari, MARS</p>
+                                <p style="margin:0;">NIP. <span id="sk-nip-preview">196705301998032003</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="sk-lampiran" style="margin-top:40px; font-size:11px; border-top:1px dashed #ccc; padding-top:10px; color:black;">
+                        <p><strong>Tembusan:</strong> 1. Direksi RSJD AHM 2. Komite Etik 3. Arsip</p>
                     </div>
                 </div>
+            </div>
             </div>
         </div>
 
