@@ -200,13 +200,13 @@
         @media print {
             body { margin: 0; background: white; }
             body * { visibility: hidden; }
-            #print-area, #print-area * { visibility: visible; }
-            #print-area { position: static; left: auto; top: auto; width: auto; min-height: auto; margin: 0; padding: 0; background: white; color: black; overflow: visible; }
+            #sk-print-area, #sk-print-area * { visibility: visible; }
+            #sk-print-area { position: static; left: auto; top: auto; width: 100%; min-height: auto; margin: 0; padding: 0; background: white; color: black; overflow: visible; }
             .no-print { display: none !important; }
             .card { box-shadow: none !important; border: none !important; }
             table, tr, td, th { page-break-inside: avoid; }
             tr { page-break-after: auto; }
-            @page { size: A4 landscape; margin: 10mm; }
+            @page { size: A4 portrait; margin: 12mm; }
             .dashboard-table th { background-color: #eee !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; -moz-print-color-adjust: exact; }
             .dashboard-table th, .dashboard-table td { border: 1px solid #000; padding: 6px; }
             #sk-print-area *, #laporan-print-area * { color: #000 !important; background: #fff !important; }
@@ -265,6 +265,32 @@
         .sk-preview, #preview-sk-content, #sk-print-area, #sk-print-area *, #sk-isi-preview { 
             background-color: #ffffff !important; 
             color: #000000 !important; 
+        }
+
+        #sk-print-area {
+            width: 210mm !important;
+            max-width: 100%;
+            box-sizing: border-box;
+            background: #fff !important;
+            color: #000 !important;
+        }
+
+        #sk-kop-container {
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0 0 10px 0;
+            border-bottom: 3px double #000;
+        }
+
+        #sk-kop-container img {
+            display: block;
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+            object-fit: contain;
+            margin: 0 auto 10px;
         }
         
         /* Memaksa Halaman Cetak Laporan selalu background putih & teks hitam pekat */
@@ -1048,6 +1074,49 @@
             </div>
         </div>
 
+        <div id="section-dashboard" class="section no-print">
+            <div class="header">
+                <h2>Dashboard Statistik</h2>
+                <p>Infografis Data Aduan Terkini</p>
+            </div>
+            <div class="card card-large">
+                <div style="display:flex; gap:15px; flex-wrap:wrap; margin-bottom: 20px;">
+                    <div class="stat-box" style="background:#e0f2fe; color:#0369a1;">
+                        <h3 id="dash-tot">0</h3><p>Total Laporan Masuk</p>
+                    </div>
+                    <div class="stat-box" style="background:#fef9c3; color:#854d0e;">
+                        <h3 id="dash-pros">0</h3><p>Sedang Diproses</p>
+                    </div>
+                    <div class="stat-box" style="background:#dcfce7; color:#166534;">
+                        <h3 id="dash-sel">0</h3><p>Selesai Ditangani</p>
+                    </div>
+                </div>
+                <div style="display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:20px; margin-bottom:24px;">
+                    <div style="background: rgba(15,23,42,0.04); border-radius: 20px; padding: 18px; position: relative; height: 320px;">
+                        <h3 style="font-size:14px; margin-bottom:12px;">Distribusi Kategori (Bar)</h3>
+                        <canvas id="dashboard-chart"></canvas>
+                    </div>
+                    <div style="background: rgba(15,23,42,0.04); border-radius: 20px; padding: 18px; position: relative; height: 320px;">
+                        <h3 style="font-size:14px; margin-bottom:12px;">Distribusi Kategori (Pie)</h3>
+                        <canvas id="dashboard-pie"></canvas>
+                    </div>
+                    <div style="background: rgba(15,23,42,0.04); border-radius: 20px; padding: 18px; position: relative; height: 320px;">
+                        <h3 style="font-size:14px; margin-bottom:12px;">Status Aduan (Doughnut)</h3>
+                        <canvas id="dashboard-doughnut"></canvas>
+                    </div>
+                    <div style="background: rgba(15,23,42,0.04); border-radius: 20px; padding: 18px; position: relative; height: 320px;">
+                        <h3 style="font-size:14px; margin-bottom:12px;">Tren Bulanan (Line)</h3>
+                        <canvas id="dashboard-line"></canvas>
+                    </div>
+                </div>
+                <h3 style="font-size:14px; margin-bottom:10px;">Distribusi Berdasarkan Kategori Utama:</h3>
+                <table class="dashboard-table">
+                    <thead><tr><th>Kategori Pelanggaran</th><th>Jumlah Laporan</th></tr></thead>
+                    <tbody id="dash-kat-body"><tr><td colspan="2" style="text-align:center;">Memuat data...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
         <div id="section-laporan" class="section">
             <div class="header no-print"><h2>Laporan Rekapitulasi Data</h2><p>Cetak Laporan Riwayat Penanganan</p></div>
             <div class="card card-large no-print">
@@ -1716,6 +1785,7 @@ function bukaTab(target) {
     document.getElementById('mobile-overlay')?.classList.remove('show');
 
     if(target === 'cetak-sk') syncCetakSKList();
+    if(target === 'laporan') muatLaporanFormal();
     if(target === 'cetak-laporan') loadCetakLaporan();
     if(target === 'superadmin') renderChecklistSuperAdmin();
     if(target === 'referensi') loadMappingTabel();
@@ -1954,57 +2024,89 @@ async function loadAduanOptions() {
 }
 
 async function updateDashboardStats(){
-    const { data:stats } = await supabaseClient.from('v_dashboard_stats').select('*').single();
-    if(stats){
-        const set=(id,val)=>{ const el=document.getElementById(id); if(el) el.textContent=val??0; };
-        set('dash-tot', stats.total_aduan); set('stat-baru', stats.baru); set('stat-proses', (stats.diverifikasi||0)+(stats.tereskalasi||0)+(stats.diproses_pic||0)+(stats.menunggu_otorisasi||0));
-        set('stat-selesai', stats.selesai_sk); set('stat-rating', stats.avg_rating||'-');
-        document.querySelectorAll('.mini-card strong').forEach((el,i)=>{ if(i===0) el.textContent=stats.total_aduan||0; if(i===1) el.textContent=stats.selesai_sk||0; });
+    const set=(id,val)=>{ const el=document.getElementById(id); if(el) el.textContent = (val ?? 0).toString(); };
+
+    try {
+        const { data:stats } = await supabaseClient.from('v_dashboard_stats').select('*').single();
+        if(stats){
+            set('dash-tot', stats.total_aduan || 0);
+            set('dash-pros', (stats.diverifikasi||0)+(stats.tereskalasi||0)+(stats.diproses_pic||0)+(stats.menunggu_otorisasi||0));
+            set('dash-sel', stats.selesai_sk || 0);
+            set('stat-baru', stats.baru || 0);
+            set('stat-proses', (stats.diverifikasi||0)+(stats.tereskalasi||0)+(stats.diproses_pic||0)+(stats.menunggu_otorisasi||0));
+            set('stat-selesai', stats.selesai_sk || 0);
+            set('stat-rating', stats.avg_rating || '-');
+            document.querySelectorAll('.mini-card strong').forEach((el,i)=>{ if(i===0) el.textContent=stats.total_aduan||0; if(i===1) el.textContent=stats.selesai_sk||0; });
+            return;
+        }
+    } catch (e) {
+        console.warn('Dashboard stats tidak tersedia:', e);
     }
+
+    set('dash-tot', 0); set('dash-pros', 0); set('dash-sel', 0);
+    set('stat-baru', 0); set('stat-proses', 0); set('stat-selesai', 0); set('stat-rating', '-');
+    document.querySelectorAll('.mini-card strong').forEach((el) => { el.textContent = '0'; });
 }
 
 async function renderDashboardCharts() {
-    const { data } = await supabaseClient.from('v_aduan_lengkap').select('kategori_nama, status, created_at');
-    if(!data || data.length === 0) return;
+    const emptyState = () => {
+        const tbody = document.getElementById('dash-kat-body');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="2" style="text-align:center;">Belum ada data laporan.</td></tr>';
 
-    const katCount = {}; const statusCount = {}; const monthCount = {}; const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
-    data.forEach(row => {
-        const k = row.kategori_nama || 'Lain-lain'; katCount[k] = (katCount[k] || 0) + 1;
-        const s = row.status || 'Baru'; statusCount[s] = (statusCount[s] || 0) + 1;
-        if(row.created_at) { const d = new Date(row.created_at); const m = `${monthNames[d.getMonth()]} ${d.getFullYear()}`; monthCount[m] = (monthCount[m] || 0) + 1; }
-    });
-
-    const tbody = document.getElementById('dash-kat-body');
-    if(tbody) tbody.innerHTML = Object.entries(katCount).map(([k, v]) => `<tr><td>${k}</td><td>${v} Laporan</td></tr>`).join('');
-
-    Object.values(dashCharts).forEach(c => { if(c) c.destroy(); });
-
-    const createChart = (id, type, labels, dataArr, title, useMultiColor = true) => {
-        const ctx = document.getElementById(id); if(!ctx) return null;
-        const colors = ['rgba(128, 0, 0, 0.8)', 'rgba(212, 175, 55, 0.8)', 'rgba(192, 192, 192, 0.8)', 'rgba(42, 42, 42, 0.8)', 'rgba(90, 0, 0, 0.8)'];
-        const bgColors = useMultiColor ? colors.slice(0, labels.length) : colors[0];
-        
-        let config = { 
-            type: type, 
-            data: { labels: labels, datasets: [{ label: title, data: dataArr, backgroundColor: bgColors, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }] }, 
-            options: { 
-                responsive: true, 
-                maintainAspectRatio: false,
-                layout: { padding: 15 },
-                plugins: { legend: { position: 'bottom', labels: { color: 'var(--text)', font: {size: 10} } } }
-            } 
-        };
-
-        if(type === 'doughnut') config.options.cutout = '60%';
-        if(type === 'pie' || type === 'doughnut') config.options.radius = '85%';
-
-        return new Chart(ctx, config);
+        Object.values(dashCharts).forEach(c => { if(c) c.destroy(); });
+        dashCharts = {};
     };
 
-    dashCharts.bar = createChart('dashboard-chart', 'bar', Object.keys(katCount), Object.values(katCount), 'Jumlah Aduan');
-    dashCharts.pie = createChart('dashboard-pie', 'pie', Object.keys(katCount), Object.values(katCount), 'Distribusi Kategori');
-    dashCharts.doughnut = createChart('dashboard-doughnut', 'doughnut', Object.keys(statusCount), Object.values(statusCount), 'Status Aduan');
-    dashCharts.line = createChart('dashboard-line', 'line', Object.keys(monthCount).reverse(), Object.values(monthCount).reverse(), 'Tren Laporan per Bulan', false);
+    try {
+        const { data } = await supabaseClient.from('v_aduan_lengkap').select('kategori_nama, status, created_at');
+        if(!data || data.length === 0) {
+            emptyState();
+            return;
+        }
+
+        const katCount = {}; const statusCount = {}; const monthCount = {}; const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+        data.forEach(row => {
+            const k = row.kategori_nama || 'Lain-lain'; katCount[k] = (katCount[k] || 0) + 1;
+            const s = row.status || 'Baru'; statusCount[s] = (statusCount[s] || 0) + 1;
+            if(row.created_at) { const d = new Date(row.created_at); const m = `${monthNames[d.getMonth()]} ${d.getFullYear()}`; monthCount[m] = (monthCount[m] || 0) + 1; }
+        });
+
+        const tbody = document.getElementById('dash-kat-body');
+        if(tbody) tbody.innerHTML = Object.entries(katCount).map(([k, v]) => `<tr><td>${k}</td><td>${v} Laporan</td></tr>`).join('') || '<tr><td colspan="2" style="text-align:center;">Belum ada data laporan.</td></tr>';
+
+        Object.values(dashCharts).forEach(c => { if(c) c.destroy(); });
+        dashCharts = {};
+
+        const createChart = (id, type, labels, dataArr, title, useMultiColor = true) => {
+            const ctx = document.getElementById(id); if(!ctx) return null;
+            const colors = ['rgba(128, 0, 0, 0.8)', 'rgba(212, 175, 55, 0.8)', 'rgba(192, 192, 192, 0.8)', 'rgba(42, 42, 42, 0.8)', 'rgba(90, 0, 0, 0.8)'];
+            const bgColors = useMultiColor ? colors.slice(0, labels.length) : colors[0];
+            
+            let config = { 
+                type: type, 
+                data: { labels: labels, datasets: [{ label: title, data: dataArr, backgroundColor: bgColors, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }] }, 
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    layout: { padding: 15 },
+                    plugins: { legend: { position: 'bottom', labels: { color: 'var(--text)', font: {size: 10} } } }
+                } 
+            };
+
+            if(type === 'doughnut') config.options.cutout = '60%';
+            if(type === 'pie' || type === 'doughnut') config.options.radius = '85%';
+
+            return new Chart(ctx, config);
+        };
+
+        dashCharts.bar = createChart('dashboard-chart', 'bar', Object.keys(katCount), Object.values(katCount), 'Jumlah Aduan');
+        dashCharts.pie = createChart('dashboard-pie', 'pie', Object.keys(katCount), Object.values(katCount), 'Distribusi Kategori');
+        dashCharts.doughnut = createChart('dashboard-doughnut', 'doughnut', Object.keys(statusCount), Object.values(statusCount), 'Status Aduan');
+        dashCharts.line = createChart('dashboard-line', 'line', Object.keys(monthCount).reverse(), Object.values(monthCount).reverse(), 'Tren Laporan per Bulan', false);
+    } catch (e) {
+        console.warn('Dashboard chart tidak tersedia:', e);
+        emptyState();
+    }
 }
 
 async function kirimLaporan(){
@@ -2264,8 +2366,205 @@ async function kembalikanProses(dari){
 }
 
 function generateAutoSK(){
-    const no=`00${Math.floor(Math.random()*90+10)}/SK/RSJD-AHM/${new Date().getFullYear()}`; const tglEl=document.getElementById('pen-tgl'); const noEl=document.getElementById('pen-no-sk');
-    if(noEl) noEl.value=no; if(tglEl) tglEl.value=new Date().toISOString().slice(0,10); showToast('No SK: '+no); muatPreviewSK(document.getElementById('pen-pilih-aduan')?.value);
+    const year = new Date().getFullYear();
+    const noEl = document.getElementById('pen-no-sk');
+    const tglEl = document.getElementById('pen-tgl');
+
+    function normalizeSkNumber(value) {
+        const text = String(value || '').trim();
+        if (!text) return null;
+
+        const patterns = [
+            /^(\d{1,4})\/KEH\/RSJDAHM\/(\d{4})$/i,
+            /^(\d{1,4})\/KEH\/RSJD-AHM\/(\d{4})$/i,
+            /^(\d{1,4})\/SK\/RSJDAHM\/(\d{4})$/i,
+            /^(\d{1,4})\/SK\/RSJD-AHM\/(\d{4})$/i
+        ];
+
+        for (const pattern of patterns) {
+            const match = text.match(pattern);
+            if (match) {
+                return { nomor: Number(match[1]), tahun: Number(match[2]) };
+            }
+        }
+
+        return null;
+    }
+
+    async function fillAutoNumber() {
+        let nextSeq = 1;
+        try {
+            const { data, error } = await supabaseClient
+                .from('penetapan_sk')
+                .select('no_sk')
+                .order('created_at', { ascending: false })
+                .limit(50);
+
+            if (!error && Array.isArray(data)) {
+                const parsed = data
+                    .map(item => item && item.no_sk ? String(item.no_sk).trim() : '')
+                    .map(normalizeSkNumber)
+                    .filter(Boolean)
+                    .filter(item => item.tahun === year)
+                    .sort((a, b) => b.nomor - a.nomor);
+
+                if (parsed.length) nextSeq = parsed[0].nomor + 1;
+            }
+        } catch (e) {
+            console.warn('Gagal membaca nomor SK terakhir:', e);
+        }
+
+        const no = `${String(nextSeq).padStart(4, '0')}/KEH/RSJDAHM/${year}`;
+        if (noEl) noEl.value = no;
+        if (tglEl) tglEl.value = new Date().toISOString().slice(0, 10);
+        showToast('No SK otomatis: ' + no);
+        muatPreviewSK(document.getElementById('pen-pilih-aduan')?.value);
+    }
+
+    fillAutoNumber();
+}
+
+function renderSkDocContent({
+    noSK,
+    hal,
+    tgl,
+    tglFormat,
+    isi,
+    jenis,
+    pejabat,
+    jabatan,
+    nip,
+    tempat,
+    kategori,
+    terlapor,
+    kodeTracking,
+    isCompact = false
+}) {
+    const judulSK = jenis === 'penghentian'
+        ? 'SURAT KETERANGAN PENGHENTIAN PROSES ADUAN'
+        : jenis === 'tidak_ada_sanksi'
+            ? 'SURAT KETERANGAN TIDAK ADA PENGENAAN SANKSI'
+            : 'SURAT KEPUTUSAN';
+
+    const isiKeputusan = (isi || '').trim() || '-';
+    const paragrafMenimbang = `Bahwa berdasarkan laporan aduan nomor ${kodeTracking || '-'} tentang ${kategori || '-'} yang melibatkan ${terlapor || '-'} telah dilakukan proses verifikasi, pemeriksaan, dan penetapan hasil penanganan sesuai mekanisme yang berlaku dalam sistem SIGAP RSJD AHM.`;
+    const paragrafMengingat = `1. Undang-Undang Nomor 44 Tahun 2009 tentang Rumah Sakit; 2. Peraturan Menteri Kesehatan terkait pelayanan kesehatan dan kode etik profesi; 3. Pedoman Etik dan Hukum RSJD Atma Husada Mahakam; 4. SOP penanganan aduan etik dan hukum internal rumah sakit.`;
+
+    if (jenis === 'sk') {
+        return `
+            <div style="font-family:'Times New Roman', Times, serif; color:#000; width:100%; line-height:1.35; font-size:12pt;">
+                <div style="text-align:center; margin-bottom:18px;">
+                    <h3 style="margin:0; font-size:13pt; font-weight:bold; text-decoration:underline;">SURAT KEPUTUSAN PENETAPAN</h3>
+                    <p style="margin:4px 0 12px; font-size:11pt;">Nomor: ${noSK}</p>
+                    <p style="margin:0; font-size:11pt; text-decoration:underline;">Tentang</p>
+                    <p style="margin:3px 0 0; font-size:11pt; text-decoration:underline;">Penetapan Hasil Penanganan Aduan Terlapor: ${terlapor || '-'}</p>
+                </div>
+
+                <p style="margin:0 0 22px; text-align:center; font-weight:bold; font-size:12pt;">DIREKTUR RUMAH SAKIT JIWA DAERAH ATMA HUSADA MAHAKAM</p>
+
+                <table style="width:100%; border-collapse:collapse; table-layout:fixed; font-size:11pt;">
+                    <tr>
+                        <td style="width:96px; vertical-align:top; padding:2px 8px 4px 0;">MENIMBANG</td>
+                        <td style="width:24px; vertical-align:top; padding:2px 0 4px;">:</td>
+                        <td style="vertical-align:top; padding:2px 0 4px; text-align:justify;">1. Bahwa berdasarkan data aduan masuk pada sistem aplikasi tentang ${kategori || '-'} yang melibatkan ${terlapor || '-'} telah dilakukan proses verifikasi serta rangkaian penanganan aduan, dipandang perlu menetapkan keputusan sanksi.<br>2. Bahwa berdasarkan hasil pemeriksaan dan pertimbangan yang objektif, keputusan ini perlu ditetapkan secara resmi.</td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align:top; padding:5px 8px 4px 0;">MENGINGAT</td>
+                        <td style="vertical-align:top; padding:5px 0 4px;">:</td>
+                        <td style="vertical-align:top; padding:5px 0 4px; text-align:justify;">1. Peraturan internal organisasi/instansi.<br>2. Pedoman dan standardisasi operasional penanganan aduan Etik dan Hukum pada aplikasi SIGAP.<br>3. Peraturan perundang-undangan yang berlaku.</td>
+                    </tr>
+                </table>
+
+                <p style="margin:20px 0 16px; text-align:center; font-weight:bold;">MEMUTUSKAN:</p>
+                <table style="width:100%; border-collapse:collapse; table-layout:fixed; font-size:11pt;">
+                    <tr>
+                        <td style="width:96px; vertical-align:top; padding:2px 8px 5px 0;">MENETAPKAN</td>
+                        <td style="width:24px; vertical-align:top; padding:2px 0 5px;">:</td>
+                        <td style="vertical-align:top; padding:2px 0 5px; text-align:justify;">Keputusan Hasil Penanganan Aduan Nomor: ${kodeTracking || '-'}</td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align:top; padding:2px 8px 5px 0;">PERTAMA</td>
+                        <td style="vertical-align:top; padding:2px 0 5px;">:</td>
+                        <td style="vertical-align:top; padding:2px 0 5px; text-align:justify;">Menyatakan bahwa Terlapor di bawah ini:<br>
+                            <span style="display:inline-block; padding-left:14px;">- Nama Terlapor&nbsp;&nbsp;&nbsp;&nbsp;: ${terlapor || '-'}</span><br>
+                            <span style="display:inline-block; padding-left:14px;">- Jabatan&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: ${jabatan || '-'}</span><br>
+                            <span style="display:inline-block; padding-left:14px;">- Lokasi/Unit Kerja : ${kategori || '-'}</span><br>
+                            Dinyatakan terbukti secara sah dan meyakinkan melakukan pemenuhan unsur kategori perkara yang ditangani dengan tingkat urgensi penanganan.</td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align:top; padding:2px 8px 5px 0;">KEDUA</td>
+                        <td style="vertical-align:top; padding:2px 0 5px;">:</td>
+                        <td style="vertical-align:top; padding:2px 0 5px; text-align:justify;">Hasil Ketetapan Eksekusi/Tindak Lanjut:<br><span style="display:inline-block; padding-left:14px; white-space:pre-wrap;">"${isiKeputusan}"</span></td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align:top; padding:2px 8px 5px 0;">KETIGA</td>
+                        <td style="vertical-align:top; padding:2px 0 5px;">:</td>
+                        <td style="vertical-align:top; padding:2px 0 5px; text-align:justify;">Keputusan penetapan ini bersifat mutlak mengikat, diterbitkan secara resmi melalui otorisasi kelembagaan.</td>
+                    </tr>
+                </table>
+
+                <div style="margin:30px 0 0 auto; width:260px; text-align:center; font-size:11pt;">
+                    <p style="margin:0;">Ditetapkan di: ${tempat || 'Samarinda'}</p>
+                    <p style="margin:2px 0 0;">Pada Tanggal: ${tglFormat || '—'}</p>
+                    <p style="margin:0 0 56px;">${(jabatan || 'Direktur').toUpperCase()},</p>
+                    <p style="margin:0; font-weight:bold; text-decoration:underline;">${pejabat || 'dr. Indah Puspitasari, MARS'}</p>
+                    <p style="margin:2px 0 0;">NIP. ${nip || '196705301998032003'}</p>
+                </div>
+            </div>
+        `;
+    }
+
+    const body = `
+        <div style="font-family:'Times New Roman', Times, serif; color:#000; width:100%; max-width:100%; line-height:1.6; font-size:12pt; text-align:justify;">
+            <div style="text-align:center; margin-bottom:8px;">
+                <h3 style="margin:0; font-size:14pt; text-transform:uppercase; font-weight:bold; letter-spacing:0.04em; text-decoration:underline;">${judulSK}</h3>
+                <p style="margin:8px 0 0; font-size:12pt;">Nomor: ${noSK}</p>
+            </div>
+
+            <table style="width:100%; border-collapse:collapse; font-size:12pt; margin:14px 0 18px; color:#000;">
+                <tr>
+                    <td style="width:110px; vertical-align:top; padding:2px 0;">Tentang</td>
+                    <td style="padding:2px 0;">: ${hal || 'Hasil Penanganan Aduan'}</td>
+                </tr>
+                <tr>
+                    <td style="width:110px; vertical-align:top; padding:2px 0;">Tanggal</td>
+                    <td style="padding:2px 0;">: ${tglFormat || '—'}</td>
+                </tr>
+                <tr>
+                    <td style="width:110px; vertical-align:top; padding:2px 0;">Sifat</td>
+                    <td style="padding:2px 0;">: Terbatas</td>
+                </tr>
+            </table>
+
+            <div style="margin-top:10px;">
+                <p style="margin:0 0 8px; padding-left:0; text-indent:0; font-weight:bold;">Menimbang:</p>
+                <p style="margin:0 0 8px; padding-left:28px; text-indent:0; text-align:justify;">${paragrafMenimbang}</p>
+                <p style="margin:0 0 8px; padding-left:28px; text-indent:0; text-align:justify;">Bahwa berdasarkan hasil pemeriksaan dan pertimbangan yang objektif, maka pelaksanaan tindak lanjut terhadap peristiwa dan temuan tersebut perlu ditetapkan secara formal melalui keputusan ini.</p>
+
+                <p style="margin:10px 0 8px; padding-left:0; text-indent:0; font-weight:bold;">Mengingat:</p>
+                <p style="margin:0 0 8px; padding-left:28px; text-indent:0; text-align:justify;">${paragrafMengingat}</p>
+
+                <p style="margin:10px 0 8px; padding-left:0; text-indent:0; font-weight:bold;">Menetapkan:</p>
+                <p style="margin:0 0 4px; padding-left:28px; text-indent:0; text-align:justify;">Pertama, keputusan ini ditetapkan sebagai bentuk penetapan hasil penanganan aduan etik dan hukum.</p>
+                <p style="margin:0 0 4px; padding-left:28px; text-indent:0; text-align:justify;">Kedua, tindak lanjut yang ditetapkan dalam keputusan ini menjadi dasar pelaksanaan pengawasan, pembinaan, dan evaluasi lanjutan.</p>
+
+                <p style="margin:10px 0 8px; padding-left:0; text-indent:0; font-weight:bold; text-transform:uppercase;">Diktum</p>
+                <p style="margin:0 0 8px; padding-left:28px; text-indent:0; text-align:justify;">${isiKeputusan}</p>
+            </div>
+
+            <div style="margin-top:30px; display:flex; justify-content:flex-end;">
+                <div style="width:290px; text-align:center; font-size:12pt;">
+                    <p style="margin:0;">Ditetapkan di: ${tempat || 'Samarinda'}</p>
+                    <p style="margin:6px 0 0; border-bottom:1px solid #000; padding-bottom:8px;">Pada tanggal: ${tglFormat || '—'}</p>
+                    <p style="margin:12px 0 70px; text-transform:uppercase; font-weight:normal;">${jabatan || 'Direktur'}</p>
+                    <p style="margin:0; font-weight:bold; text-decoration:underline;">${pejabat || 'dr. Indah Puspitasari, MARS'}</p>
+                    <p style="margin:4px 0 0;">NIP. ${nip || '196705301998032003'}</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    return body;
 }
 
 async function muatPreviewSK(aduanId){
@@ -2286,34 +2585,22 @@ async function muatPreviewSK(aduanId){
         const jabatan = document.getElementById('pen-jabatan')?.value || 'Direktur';
         const nip = document.getElementById('pen-nip')?.value || '196705301998032003';
         const tempat = document.getElementById('pen-tempat')?.value || 'Samarinda';
-        
-        let judulSK = 'SURAT KEPUTUSAN PENETAPAN';
-        if(jenis==='penghentian') judulSK='SURAT KETERANGAN PENGHENTIAN PROSES ADUAN'; 
-        else if(jenis==='tidak_ada_sanksi') judulSK='SURAT KETERANGAN TIDAK ADA PENGENAAN SANKSI';
-        
-        preview.innerHTML=`
-            <h3 style="text-align:center; font-family:'Times New Roman', Times, serif; font-size:14pt; margin-bottom:0; text-decoration:underline; color:black;">${judulSK}</h3>
-            <p style="text-align:center; font-family:'Times New Roman', Times, serif; font-size:12pt; margin-top:5px; margin-bottom:20px; color:black;">Nomor: ${noSK}</p>
-            <table style="font-size:12pt; font-family:'Times New Roman', Times, serif; margin-bottom:16px; width:100%; color:black;">
-                <tr><td style="width:120px;">Tentang</td><td>: ${hal}</td></tr>
-                <tr><td>Sifat</td><td>: ${document.getElementById('pen-kerahasiaan')?.value || 'Terbatas'}</td></tr>
-            </table>
-            <div style="font-size:12pt; font-family:'Times New Roman', Times, serif; line-height:1.5; color:black; margin-bottom:20px; text-align:justify;">
-                <p><strong>Menimbang:</strong> Bahwa berdasarkan laporan aduan nomor ${data.kode_tracking || '-'} tentang ${data.kategori_nama || '-'} yang melibatkan ${data.nama_terlapor || '-'}, telah dilakukan proses verifikasi, eskalasi, dan sidang etik sesuai prosedur.</p>
-                <p><strong>Mengingat:</strong> 1. Undang-undang tentang Rumah Sakit; 2. Peraturan Kode Etik; 3. SOP SIGAP RSJD AHM.</p>
-                <p><strong>Memutuskan:</strong></p>
-                <div style="padding-left:10px; white-space:pre-wrap;">${isi}</div>
-            </div>
-            <div style="margin-top:40px; display:flex; justify-content:flex-end; font-family:'Times New Roman', Times, serif; font-size:12pt; color:black;">
-                <div style="text-align:center; width:300px;">
-                    <p style="margin:0;">Ditetapkan di : ${tempat}</p>
-                    <p style="margin:0; border-bottom: 1px solid #000; padding-bottom:10px;">Pada Tanggal : ${tglFormat}</p>
-                    <p style="margin:10px 0 70px 0; text-transform:uppercase;">${jabatan},</p>
-                    <p style="margin:0; font-weight:bold; text-decoration:underline;">${pejabat}</p>
-                    <p style="margin:0;">NIP. ${nip}</p>
-                </div>
-            </div>
-        `;
+
+        preview.innerHTML = renderSkDocContent({
+            noSK,
+            hal,
+            tgl,
+            tglFormat,
+            isi,
+            jenis,
+            pejabat,
+            jabatan,
+            nip,
+            tempat,
+            kategori: data.kategori_nama || '-',
+            terlapor: data.nama_terlapor || '-',
+            kodeTracking: data.kode_tracking || '-'
+        });
     }
 }
 function switchJenisDokumen(){ muatPreviewSK(document.getElementById('pen-pilih-aduan')?.value); }
@@ -2373,22 +2660,21 @@ async function ambilTemplateSanksi() {
         const nip = document.getElementById('pen-nip')?.value || '196705301998032003';
         const tempat = document.getElementById('pen-tempat')?.value || 'Samarinda';
 
-        preview.innerHTML = `
-            <h3 style="text-align:center; font-family:'Times New Roman', Times, serif; font-size:14pt; margin-bottom:0; text-decoration:underline; color:black;">SURAT KEPUTUSAN PENETAPAN</h3>
-            <p style="text-align:center; font-family:'Times New Roman', Times, serif; font-size:12pt; margin-top:5px; margin-bottom:30px; color:black;">Nomor: ${noSK}</p>
-            
-            <div style="color:black;">${temp}</div>
-            
-            <div style="margin-top:40px; display:flex; justify-content:flex-end; font-family:'Times New Roman', Times, serif; font-size:12pt; color:black;">
-                <div style="text-align:center; width:300px;">
-                    <p style="margin:0;">Ditetapkan di : ${tempat}</p>
-                    <p style="margin:0; border-bottom: 1px solid #000; padding-bottom:10px;">Pada Tanggal : ${tglFormat}</p>
-                    <p style="margin:10px 0 70px 0; text-transform:uppercase;">${jabatan},</p>
-                    <p style="margin:0; font-weight:bold; text-decoration:underline;">${pejabat}</p>
-                    <p style="margin:0;">NIP. ${nip}</p>
-                </div>
-            </div>
-        `;
+        preview.innerHTML = renderSkDocContent({
+            noSK,
+            hal: document.getElementById('pen-hal-sk')?.value || 'Hasil Penanganan Aduan',
+            tgl,
+            tglFormat,
+            isi: isiKeputusan,
+            jenis: document.getElementById('pen-jenis-dokumen')?.value || 'sk',
+            pejabat,
+            jabatan,
+            nip,
+            tempat,
+            kategori: data.kategori_nama || '-',
+            terlapor: data.nama_terlapor || '-',
+            kodeTracking: data.kode_tracking || '-'
+        });
     }
     
     const halSK = document.getElementById('pen-hal-sk');
@@ -2566,6 +2852,126 @@ function cetakSK_DOCX(){
 }
 
 let cacheLaporan=[];
+function normalizeLaporanStatus(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    const lower = raw.toLowerCase();
+    if (['baru', 'terkirim'].includes(lower)) return 'Terkirim';
+    if (['proses pic / dieskalasi', 'diproses_pic', 'tereskalasi'].includes(lower)) return 'Proses PIC / Dieskalasi';
+    if (['selesai_sk', 'disahkan', 'selesai (sk diterbitkan)'].includes(lower)) return 'Selesai (SK Diterbitkan)';
+    return raw;
+}
+
+async function muatLaporanFormal() {
+    const periode = document.getElementById('lap-filter-waktu')?.value || 'semua';
+    const kategori = document.getElementById('lap-filter-kategori')?.value || '';
+    const status = document.getElementById('lap-filter-status')?.value || '';
+    const tbody = document.getElementById('lap-tbody');
+
+    if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Memuat data laporan...</td></tr>';
+
+    try {
+        let query = supabaseClient.from('v_aduan_lengkap').select('*').order('created_at', { ascending: false });
+        if (kategori) query = query.eq('kategori_id', kategori);
+        if (status) {
+            const statusKey = normalizeLaporanStatus(status);
+            const statusVariants = new Set([
+                statusKey,
+                statusKey.toLowerCase(),
+                String(status || '').toLowerCase(),
+                String(status || '').trim(),
+                'baru', 'Terkirim', 'terkirim',
+                'diproses_pic', 'tereskalasi', 'Proses PIC / Dieskalasi',
+                'selesai_sk', 'disahkan', 'Selesai (SK Diterbitkan)'
+            ]);
+            const rows = await query;
+            let list = rows.data || [];
+            const filtered = list.filter(r => {
+                const raw = String(r.status || '');
+                return [...statusVariants].some(v => raw === v || raw.toLowerCase() === String(v).toLowerCase());
+            });
+            return renderLaporanTable(filtered, periode);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+        renderLaporanTable(data || [], periode);
+    } catch (e) {
+        console.error('Gagal memuat laporan formal:', e);
+        showToast(e.message || 'Gagal memuat laporan formal.', true);
+        if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--muted);">Gagal memuat data laporan.</td></tr>';
+    }
+}
+
+function renderLaporanTable(rows, periode) {
+    const tbody = document.getElementById('lap-tbody');
+    const periodeText = document.getElementById('lap-periode-text');
+    if (periodeText) periodeText.textContent = periode === 'semua' ? 'Semua Waktu' : periode === 'bulanan' ? 'Bulan Ini' : periode === 'semester' ? 'Semester Ini' : 'Tahun Ini';
+
+    const filteredRows = rows.filter((r) => {
+        if (periode === 'semua') return true;
+        const date = r.created_at ? new Date(r.created_at) : null;
+        if (!date || Number.isNaN(date.getTime())) return true;
+        const now = new Date();
+        if (periode === 'bulanan') {
+            return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+        }
+        if (periode === 'semester') {
+            const currentSemester = Math.floor(now.getMonth() / 6);
+            const rowSemester = Math.floor(date.getMonth() / 6);
+            return rowSemester === currentSemester && date.getFullYear() === now.getFullYear();
+        }
+        if (periode === 'tahunan') {
+            return date.getFullYear() === now.getFullYear();
+        }
+        return true;
+    });
+
+    if (tbody) {
+        tbody.innerHTML = filteredRows.map((r, i) => {
+            const status = r.status || '-';
+            const kategori = r.kategori_nama || '-';
+            const sk = r.no_sk || '-';
+            const ringkasan = (r.tanggapan_akhir || r.otorisasi_catatan || r.deskripsi_kejadian || '').replace(/\s+/g, ' ').trim();
+            return `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td>${r.created_at ? new Date(r.created_at).toLocaleDateString('id-ID') : '-'}</td>
+                    <td>${r.nama_pelapor || '-'}</td>
+                    <td>${r.nama_terlapor || '-'}</td>
+                    <td>${kategori}<br><small>${r.pic_ref_nama || '-'}</small></td>
+                    <td><span class="badge">${status}</span><br><small>${sk}</small></td>
+                    <td>${ringkasan ? ringkasan.substring(0, 120) : '-'}</td>
+                    <td>${r.tgl_penetapan ? new Date(r.tgl_penetapan).toLocaleDateString('id-ID') : '-'}</td>
+                    <td>${r.file_scan_sk_url ? '<a href="' + r.file_scan_sk_url + '" target="_blank" style="color: var(--accent);">Lihat</a>' : '-'}</td>
+                </tr>
+            `;
+        }).join('') || '<tr><td colspan="9" style="text-align:center; color:var(--muted);">Tidak ada data sesuai filter.</td></tr>';
+    }
+
+    const signTanggal = document.getElementById('sign-tanggal');
+    if (signTanggal) signTanggal.textContent = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    const signJabatan = document.getElementById('sign-jabatan');
+    if (signJabatan) signJabatan.textContent = (document.getElementById('lap-jabatan')?.value || 'Dibuat Oleh,');
+    const signNama = document.getElementById('sign-nama');
+    if (signNama) signNama.textContent = document.getElementById('lap-nama')?.value || 'Nama Pejabat';
+    const signNip = document.getElementById('sign-nip');
+    if (signNip) signNip.textContent = document.getElementById('lap-nip')?.value || '-';
+}
+
+function cetakLaporan() {
+    const area = document.getElementById('print-area');
+    if (!area) {
+        showToast('Area laporan tidak ditemukan.', true);
+        return;
+    }
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write('<html><head><title>Laporan SIGAP</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#000;} table{width:100%;border-collapse:collapse;font-size:12px;} th,td{border:1px solid #000;padding:6px;vertical-align:top;} th{background:#f3f4f6;} .badge{display:inline-block;padding:4px 6px;border-radius:4px;background:#f1f5f9;} a{color:#000;}</style></head><body>' + area.innerHTML + '</body></html>');
+    printWindow.document.close();
+    setTimeout(() => printWindow.print(), 500);
+}
+
 async function loadCetakLaporan(){
     const periode=document.getElementById('cetak-lap-periode')?.value||'semua'; const kategori=document.getElementById('cetak-lap-kategori')?.value||''; const status=document.getElementById('cetak-lap-status')?.value||''; const search=document.getElementById('cetak-lap-search')?.value?.toLowerCase()||'';
     const tbody=document.getElementById('cetak-lap-tbody'); if(tbody) tbody.innerHTML='<tr><td colspan="8" style="text-align:center;">Memuat...</td></tr>';
