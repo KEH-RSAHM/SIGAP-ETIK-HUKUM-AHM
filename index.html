@@ -6,6 +6,7 @@
     <title>SIGAP Etik dan Hukum - Sistem Integrasi Gerak Aduan Pelanggaran Etik dan Hukum | RSJD AHM</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./supabase-config.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
@@ -136,9 +137,11 @@
         .file-hint { font-size: 11px; color: var(--muted); margin-top: 4px; display: block; }
         
         /* Tema Tombol Global */
-        button { width: 100%; padding: 12px; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 10px; transition: transform .06s ease, box-shadow .12s ease }
+        button { padding: 12px; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 10px; transition: transform .06s ease, box-shadow .12s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: auto; }
         button:hover{ transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,0,0,0.3) }
         button.btn-primary { background-color: var(--primary) !important; color: #ffffff !important; }
+        .top-bar button, .hero-actions button, .hero-panel button, .login-box button, .tab-btn { width: auto; }
+        .btn-primary, .btn-success, .btn-submit, .btn-verify, .btn-search, .btn-danger, .btn-escalate, .btn-pic, .btn-otorisasi, .btn-admin, .btn-auto { min-width: fit-content; }
         button.btn-primary:hover { background-color: var(--primary-hover) !important; }
         button.btn-success { background-color: var(--accent) !important; color: #111 !important; }
         button.btn-success:hover { background-color: var(--accent-hover) !important; color: #fff !important; }
@@ -188,7 +191,8 @@
 
         hr { border: 0; border-top: 1px solid var(--border); margin: 20px 0; }
 
-        .top-bar { display: flex; justify-content: space-between; align-items: center; background: var(--surface); padding: 10px 16px; margin: 0 0 20px 0; border-radius: 12px; border: 1px solid var(--border);}
+        .top-bar { display: flex; justify-content: space-between; align-items: center; background: var(--surface); padding: 10px 16px; margin: 0 0 20px 0; border-radius: 12px; border: 1px solid var(--border); gap: 16px; flex-wrap: wrap; }
+        .top-bar > div:last-child { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .badge { background: var(--surface-soft); color: var(--text); padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; border: 1px solid var(--border);}
         .param-list { list-style: none; padding: 0; margin: 0; background: var(--input-bg); }
         .param-list li { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid var(--border); align-items: center; color: var(--text);}
@@ -238,9 +242,9 @@
         body.light-theme select option { background: #ffffff; color: #111827; }
         .file-hint, .timeline-date, small { color: var(--muted) !important; }
 
-        .landing-hero-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 40px; align-items: center; max-width: 1320px; margin: 0 auto; padding: 60px 48px 40px; }
-        .hero-visual { position: relative; border-radius: 24px; z-index: 1; }
-        .hero-visual-img { width: 100%; height: 420px; object-fit: cover; border-radius: 24px; box-shadow: 0 32px 80px rgba(0, 0, 0, 0.5); border: 1px solid var(--border); }
+        .landing-hero-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 40px; align-items: center; max-width: 1320px; margin: 0 auto; padding: 60px 48px 40px; width: 100%; }
+        .hero-visual { position: relative; border-radius: 24px; z-index: 1; width: 100%; }
+        .hero-visual-img { width: 100%; height: 420px; object-fit: cover; border-radius: 24px; box-shadow: 0 32px 80px rgba(0, 0, 0, 0.5); border: 1px solid var(--border); display: block; }
         .floating-element { animation: float-anim 6s ease-in-out infinite; }
         @keyframes float-anim { 0% { transform: translateY(0px); } 50% { transform: translateY(-18px); } 100% { transform: translateY(0px); } }
         .hero-panel.glass-panel { position: absolute; bottom: -40px; left: -40px; width: 380px; transform: scale(0.9); background: var(--surface); border: 1px solid var(--border); border-radius: 24px; padding: 24px; z-index: 2; box-shadow: 0 15px 35px rgba(0,0,0,0.5); }
@@ -1415,13 +1419,21 @@ let dbMappingData = [];
 let dashCharts = {};
 
 function getSupabaseRuntimeConfig() {
+    const globalConfig = (window.SIGAP_SUPABASE_CONFIG && typeof window.SIGAP_SUPABASE_CONFIG === 'object') ? window.SIGAP_SUPABASE_CONFIG : {};
+    const globalUrl = (globalConfig.url || window.SIGAP_SUPABASE_URL || '').trim();
+    const globalKey = (globalConfig.anonKey || globalConfig.key || window.SIGAP_SUPABASE_ANON_KEY || '').trim();
+
+    const queryParams = new URLSearchParams(window.location.search || '');
+    const queryUrl = (queryParams.get('supabaseUrl') || '').trim();
+    const queryKey = (queryParams.get('supabaseKey') || '').trim();
+
     const sessionUrl = sessionStorage.getItem('supa_url');
     const sessionKey = sessionStorage.getItem('supa_key');
     const legacyUrl = localStorage.getItem('supa_url');
     const legacyKey = localStorage.getItem('supa_key');
 
-    const url = (sessionUrl || legacyUrl || '').trim();
-    const key = (sessionKey || legacyKey || '').trim();
+    const url = (sessionUrl || queryUrl || globalUrl || legacyUrl || '').trim();
+    const key = (sessionKey || queryKey || globalKey || legacyKey || '').trim();
 
     return { url, key };
 }
@@ -1438,6 +1450,12 @@ function setSupabaseRuntimeConfig(url, key) {
     sessionStorage.setItem('supa_key', cleanKey);
     localStorage.removeItem('supa_url');
     localStorage.removeItem('supa_key');
+
+    if (window.SIGAP_SUPABASE_CONFIG) {
+        window.SIGAP_SUPABASE_CONFIG.url = cleanUrl;
+        window.SIGAP_SUPABASE_CONFIG.anonKey = cleanKey;
+    }
+
     return { url: cleanUrl, key: cleanKey };
 }
 
