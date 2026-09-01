@@ -65,6 +65,10 @@
         .top-bar, .tab-container, .login-box, #app-screen, #landing-screen{position:relative; z-index:20}
         
         #landing-screen { display: block; min-height: 100vh; padding: 0; }
+        #landing-screen .top-bar div, 
+        #landing-screen .top-bar a {
+            color: #e5e7eb !important; 
+        }
         .landing-hero { display: flex; align-items: center; justify-content: space-between; gap: 40px; padding: 80px 48px 40px; max-width: 1320px; margin: 0 auto; }
         .landing-copy { max-width: 620px; }
         .landing-copy .eyebrow { display: inline-flex; align-items: center; gap: 8px; background: rgba(212,175,55,0.12); color: var(--accent); padding: 8px 14px; border-radius: 999px; font-size: 13px; margin-bottom: 22px; border: 1px solid rgba(212,175,55,0.3); }
@@ -84,8 +88,21 @@
         .hero-card .mini-card span { color: var(--text); font-size: 0.9rem; }
         .hero-stats { display: grid; gap: 12px; background: var(--surface-soft); border-radius: 24px; padding: 22px; border: 1px solid var(--border); }
         .hero-stats p { margin: 0; color: var(--text); font-size: 0.9rem; }
-        .hero-stats .meter { height: 10px; width: 100%; background: var(--input-bg); border-radius:999px; overflow:hidden; margin-top: 12px; border: 1px solid var(--border); }
-        .hero-stats .meter > div { height:100%; width:76%; background: var(--accent); border-radius:999px; }
+        .hero-stats .meter { 
+            height: 12px; 
+            border-radius: 999px; 
+            background: rgba(255,255,255,0.1); 
+            border: 1px solid rgba(255,255,255,0.2); 
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-stats .meter > div { 
+            position: absolute;
+            left: 0; top: 0;
+            height: 100%; 
+            border-radius: 999px; 
+            background: var(--accent); 
+        }
         .feature-section { padding: 0 48px 64px; max-width: 1320px; margin: 0 auto; }
         .feature-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 24px; margin-top: 40px; }
         .feature-card { background: var(--surface); border: 1px solid var(--border); border-radius: 28px; padding: 28px; min-height: 220px; display: flex; flex-direction: column; gap: 18px; }
@@ -121,6 +138,10 @@
         
         .card { background: var(--card); padding: 20px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); max-width: 900px; margin: 0 auto 20px auto; border: 1px solid var(--border); }
         .card-large { max-width: 1100px; }
+        .card canvas {
+            max-width: 100% !important;
+            max-height: 100% !important;
+        }
         
         .form-row { display: flex; gap: 15px; margin-bottom: 15px; align-items: flex-end;}
         .form-group { flex: 1; margin-bottom: 15px; }
@@ -1906,11 +1927,58 @@ async function loadTemplateSKSanksi() {
     } catch(e) { console.warn("Template SK gagal dimuat"); }
 }
 
+// MENGAMBIL DATA UNTUK DATASHEET SETIAP PANEL
+async function loadDatasheets() {
+    const { data, error } = await supabaseClient.from('v_aduan_lengkap').select('*').order('created_at', { ascending: false }).limit(200);
+    if (error || !data) return;
+
+    // Render Panel Pelapor (Datasheet Umum)
+    const tbPelapor = document.getElementById('ds-pelapor');
+    if (tbPelapor) {
+        tbPelapor.innerHTML = data.map(d => `<tr><td>${new Date(d.created_at).toLocaleDateString('id-ID')}</td><td><span style="font-size:11px;font-family:monospace;">${d.kode_tracking}</span></td><td>${d.nama_pelapor}</td><td>${d.nama_terlapor}</td><td><span class="badge">${d.status}</span></td><td><button class="btn-small btn-primary" onclick="bukaTab('lacak'); document.getElementById('lacak-id').value='${d.kode_tracking}'; cariStatusLaporan();">Lacak</button></td></tr>`).join('') || '<tr><td colspan="6" style="text-align:center;">Belum ada data</td></tr>';
+    }
+
+    // Render Panel Operator
+    const tbOp = document.getElementById('ds-operator');
+    if (tbOp) {
+        const opData = data.filter(d => ['baru', 'diverifikasi', 'Terkirim', 'Diverifikasi'].includes(d.status));
+        tbOp.innerHTML = opData.map(d => `<tr><td>${d.tanggal_kejadian ? new Date(d.tanggal_kejadian).toLocaleDateString('id-ID') : '-'}</td><td>${d.kategori_nama || '-'}</td><td>${d.nama_pelapor}</td><td>${d.nama_terlapor}</td><td><span class="badge">${d.status}</span></td></tr>`).join('') || '<tr><td colspan="5" style="text-align:center;">Tidak ada antrean verifikasi</td></tr>';
+    }
+
+    // Render Panel Eskalasi
+    const tbEsk = document.getElementById('ds-eskalasi');
+    if (tbEsk) {
+        const eskData = data.filter(d => ['diverifikasi', 'tereskalasi', 'Diverifikasi', 'Proses PIC / Dieskalasi'].includes(d.status));
+        tbEsk.innerHTML = eskData.map(d => `<tr><td>${d.tanggal_kejadian ? new Date(d.tanggal_kejadian).toLocaleDateString('id-ID') : '-'}</td><td>${d.nama_pelapor}</td><td>${d.nama_terlapor}</td><td>${d.urgensi_nama || '-'}</td><td><span class="badge">${d.status}</span></td></tr>`).join('') || '<tr><td colspan="5" style="text-align:center;">Tidak ada antrean eskalasi</td></tr>';
+    }
+
+    // Render Panel PIC
+    const tbPic = document.getElementById('ds-pic');
+    if (tbPic) {
+        const picData = data.filter(d => ['tereskalasi', 'diproses_pic', 'Proses PIC / Dieskalasi', 'menunggu_otorisasi', 'disahkan', 'selesai_sk'].includes(d.status));
+        tbPic.innerHTML = picData.map(d => `<tr><td><span style="font-size:11px;font-family:monospace;">${d.kode_tracking}</span></td><td>${d.nama_pelapor}</td><td>${d.nama_terlapor}</td><td><span class="badge">${d.status}</span></td></tr>`).join('') || '<tr><td colspan="4" style="text-align:center;">Tidak ada tugas penanganan</td></tr>';
+    }
+
+    // Render Panel Otorisasi
+    const tbOto = document.getElementById('ds-otorisasi');
+    if (tbOto) {
+        const otoData = data.filter(d => ['menunggu_otorisasi', 'disahkan', 'Menunggu Otorisasi', 'selesai_sk'].includes(d.status));
+        tbOto.innerHTML = otoData.map(d => `<tr><td>${new Date(d.created_at).toLocaleDateString('id-ID')}</td><td>${d.nama_pelapor}</td><td>${d.nama_terlapor}</td><td><span class="badge">${d.status}</span></td></tr>`).join('') || '<tr><td colspan="4" style="text-align:center;">Tidak ada antrean pengesahan</td></tr>';
+    }
+
+    // Render Panel Penetapan SK
+    const tbPen = document.getElementById('ds-penetapan');
+    if (tbPen) {
+        const penData = data.filter(d => ['disahkan', 'selesai_sk', 'Selesai (SK Diterbitkan)'].includes(d.status));
+        tbPen.innerHTML = penData.map(d => `<tr><td>${new Date(d.created_at).toLocaleDateString('id-ID')}</td><td>${d.nama_pelapor}</td><td>${d.nama_terlapor}</td><td><span class="badge">${d.status}</span></td><td><b>${d.no_sk || '-'}</b></td><td><button class="btn-small btn-primary" style="margin-bottom:4px;" onclick="bukaTab('cetak-sk'); document.getElementById('cetak-sk-pilih').value='${d.id}'; loadCetakSK('${d.id}');">Cetak SK</button></td></tr>`).join('') || '<tr><td colspan="6" style="text-align:center;">Tidak ada antrean penerbitan SK</td></tr>';
+    }
+}
+
 async function loadAllData() {
     await Promise.all([
         loadRBACDatabase(), renderDashboardCharts(), loadSurveyLanding(), loadRefData(), loadAduanOptions(), updateDashboardStats(),
         loadAdminPublikasi(), renderPICDirectory(), loadParamValues(), loadBuktiPIC(), loadGlobalKop(), loadKustomisasiLanding(),
-        loadTemplateSKSanksi()
+        loadTemplateSKSanksi(), loadDatasheets()
     ]);
 }
 
@@ -1960,11 +2028,28 @@ async function renderDashboardCharts() {
 
     Object.values(dashCharts).forEach(c => { if(c) c.destroy(); });
 
+    // FIX CHART.JS AGAR TIDAK MELUAP
     const createChart = (id, type, labels, dataArr, title, useMultiColor = true) => {
         const ctx = document.getElementById(id); if(!ctx) return null;
         const colors = ['rgba(128, 0, 0, 0.8)', 'rgba(212, 175, 55, 0.8)', 'rgba(192, 192, 192, 0.8)', 'rgba(42, 42, 42, 0.8)', 'rgba(90, 0, 0, 0.8)'];
         const bgColors = useMultiColor ? colors.slice(0, labels.length) : colors[0];
-        return new Chart(ctx, { type: type, data: { labels: labels, datasets: [{ label: title, data: dataArr, backgroundColor: bgColors, borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false } });
+        
+        let config = { 
+            type: type, 
+            data: { labels: labels, datasets: [{ label: title, data: dataArr, backgroundColor: bgColors, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }] }, 
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false,
+                layout: { padding: 15 },
+                plugins: { legend: { position: 'bottom', labels: { color: 'var(--text)', font: {size: 10} } } }
+            } 
+        };
+
+        // Khusus pie dan doughnut, atur radius dan cutout agar presisi
+        if(type === 'doughnut') config.options.cutout = '60%';
+        if(type === 'pie' || type === 'doughnut') config.options.radius = '85%';
+
+        return new Chart(ctx, config);
     };
 
     dashCharts.bar = createChart('dashboard-chart', 'bar', Object.keys(katCount), Object.values(katCount), 'Jumlah Aduan');
@@ -1997,7 +2082,7 @@ async function kirimLaporan(){
         showToast('✅ Laporan terkirim! Kode: '+data.kode_tracking);
         ['input-nama','input-email','input-kontak','input-terlapor','input-jabatan','input-lokasi','input-tanggal','input-deskripsi','input-link'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
         const f=document.getElementById('input-file'); if(f) f.value=''; const lacak=document.getElementById('lacak-id'); if(lacak) lacak.value=data.kode_tracking;
-        await loadAllData(); bukaTab('lacak');
+        await loadAllData(); bukaTab('lacak'); cariStatusLaporan();
     }catch(e){ showToast('Gagal kirim: '+e.message, true); console.error(e); }
     finally{ btn.disabled=false; btn.textContent='Kirim Laporan'; }
 }
@@ -2051,7 +2136,7 @@ async function loadBuktiPIC() {
     const panelBukti = document.getElementById('panel-bukti-pic'); if (!panelBukti) return;
     const roleMap = Object.keys(aksesConfigGlobal).find(k => k.toLowerCase() === (currentProfile?.role || '').toLowerCase());
     const hakRole = aksesConfigGlobal[roleMap] || [];
-    if (!hakRole.includes('pic_bukti') && currentProfile?.role !== 'Administrator') { panelBukti.style.display = 'none'; return; }
+    if (!hakRole.includes('pic_bukti') && currentProfile?.role !== 'Administrator' && currentProfile?.role !== 'SuperAdmin') { panelBukti.style.display = 'none'; return; }
     
     panelBukti.style.display = 'block'; const tbody = document.getElementById('ds-bukti-pic');
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Memuat data bukti...</td></tr>';
@@ -2144,7 +2229,7 @@ async function muatPreviewSK(aduanId){
     const preview=document.getElementById('preview-sk-content');
     if(preview){
         const noSK=document.getElementById('pen-no-sk')?.value || data.no_sk || '-'; const hal=document.getElementById('pen-hal-sk')?.value || 'Hasil Penanganan'; const tgl=document.getElementById('pen-tgl')?.value || new Date().toISOString().slice(0,10); const isi=document.getElementById('pen-isi-keputusan')?.value || '';
-        preview.innerHTML=`<h3 style="text-align:center;">SURAT KEPUTUSAN<br>No: ${noSK}</h3><p>Hal: ${hal}</p><p>Tgl: ${tgl}</p><div style="border:1px solid #ddd; padding:12px; white-space:pre-wrap;">${isi}</div>`;
+        preview.innerHTML=`<h3 style="text-align:center; color:black;">SURAT KEPUTUSAN<br>No: ${noSK}</h3><p style="color:black;">Hal: ${hal}</p><p style="color:black;">Tgl: ${tgl}</p><div style="border:1px solid #ddd; padding:12px; white-space:pre-wrap; color:black;">${isi}</div>`;
     }
 }
 function switchJenisDokumen(){ muatPreviewSK(document.getElementById('pen-pilih-aduan')?.value); }
@@ -2199,12 +2284,12 @@ async function ambilTemplateSanksi() {
         const tglFormat = new Date(tgl).toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
 
         preview.innerHTML = `
-            <h3 style="text-align:center; font-family:'Times New Roman', Times, serif; font-size:14pt; margin-bottom:0; text-decoration:underline;">SURAT KEPUTUSAN PENETAPAN</h3>
-            <p style="text-align:center; font-family:'Times New Roman', Times, serif; font-size:12pt; margin-top:5px; margin-bottom:30px;">Nomor: ${noSK}</p>
+            <h3 style="text-align:center; font-family:'Times New Roman', Times, serif; font-size:14pt; margin-bottom:0; text-decoration:underline; color:black;">SURAT KEPUTUSAN PENETAPAN</h3>
+            <p style="text-align:center; font-family:'Times New Roman', Times, serif; font-size:12pt; margin-top:5px; margin-bottom:30px; color:black;">Nomor: ${noSK}</p>
             
-            ${temp}
+            <div style="color:black;">${temp}</div>
             
-            <div style="margin-top:40px; display:flex; justify-content:flex-end; font-family:'Times New Roman', Times, serif; font-size:12pt;">
+            <div style="margin-top:40px; display:flex; justify-content:flex-end; font-family:'Times New Roman', Times, serif; font-size:12pt; color:black;">
                 <div style="text-align:center; width:300px;">
                     <p style="margin:0;">Ditetapkan di : Samarinda</p>
                     <p style="margin:0; border-bottom: 1px solid #000; padding-bottom:10px;">Pada Tanggal : ${tglFormat}</p>
@@ -2433,324 +2518,324 @@ async function loadParamValues(){
     else { const { data:d } = await supabaseClient.from(table).select('*').order('created_at'); data=d||[]; listEl.innerHTML=data.map(r=>`<li style="display:flex; justify-content:space-between; padding:6px; border-bottom:1px solid var(--border); color:var(--text);"><span>${r.nama||r.label||r.hari}</span><button onclick="hapusParamDB('${r.id}','${kategori}')" style="background:#ef4444; color:white; border:none; border-radius:4px; padding:2px 8px;">x</button></li>`).join('') || '<li style="padding:10px; color:var(--muted);">Kosong</li>'; }
 }
 
-    async function tambahParameter(){
-        const kategori=document.getElementById('adm-param-pilih')?.value; const baru=document.getElementById('adm-param-baru')?.value.trim(); if(!baru){ showToast('Isi opsi baru', true); return; }
-        const tableMap={ 'kategori_aduan':{table:'ref_kategori_aduan', payload:{nama:baru}}, 'sub_kategori':{table:'ref_sub_kategori', payload:{nama:baru}}, 'pic':{table:'ref_pic', payload:{nama:baru}}, 'eskalasi':{table:'ref_eskalasi_level', payload:{nama:baru}}, 'urgensi':{table:'ref_urgensi', payload:{nama:baru, level:1}}, 'sla_hari':{table:'ref_sla_hari', payload:{hari:parseInt(baru)||7, label:baru+' Hari Kerja'}}, 'hasil_verifikasi':{table:'ref_hasil_verifikasi', payload:{nama:baru}} };
-        const conf=tableMap[kategori];
-        if(!conf){ const { error } = await supabaseClient.from('ref_params').insert({ kategori, value:baru }); if(error){ showToast(error.message, true); return; } }
-        else { const { error } = await supabaseClient.from(conf.table).insert(conf.payload); if(error){ showToast(error.message, true); return; } }
-        document.getElementById('adm-param-baru').value=''; await loadParamValues(); await loadRefData(); showToast('✅ Ditambahkan: '+baru);
+async function tambahParameter(){
+    const kategori=document.getElementById('adm-param-pilih')?.value; const baru=document.getElementById('adm-param-baru')?.value.trim(); if(!baru){ showToast('Isi opsi baru', true); return; }
+    const tableMap={ 'kategori_aduan':{table:'ref_kategori_aduan', payload:{nama:baru}}, 'sub_kategori':{table:'ref_sub_kategori', payload:{nama:baru}}, 'pic':{table:'ref_pic', payload:{nama:baru}}, 'eskalasi':{table:'ref_eskalasi_level', payload:{nama:baru}}, 'urgensi':{table:'ref_urgensi', payload:{nama:baru, level:1}}, 'sla_hari':{table:'ref_sla_hari', payload:{hari:parseInt(baru)||7, label:baru+' Hari Kerja'}}, 'hasil_verifikasi':{table:'ref_hasil_verifikasi', payload:{nama:baru}} };
+    const conf=tableMap[kategori];
+    if(!conf){ const { error } = await supabaseClient.from('ref_params').insert({ kategori, value:baru }); if(error){ showToast(error.message, true); return; } }
+    else { const { error } = await supabaseClient.from(conf.table).insert(conf.payload); if(error){ showToast(error.message, true); return; } }
+    document.getElementById('adm-param-baru').value=''; await loadParamValues(); await loadRefData(); showToast('✅ Ditambahkan: '+baru);
+}
+
+async function hapusParamDB(id, kategori){
+    if(!confirm('Hapus data ini?')) return;
+    const tableMap={ 'kategori_aduan':'ref_kategori_aduan', 'sub_kategori':'ref_sub_kategori', 'pic':'ref_pic', 'eskalasi':'ref_eskalasi_level', 'urgensi':'ref_urgensi', 'sla_hari':'ref_sla_hari', 'hasil_verifikasi':'ref_hasil_verifikasi' };
+    const table=tableMap[kategori]||'ref_params'; const { error } = await supabaseClient.from(table).delete().eq('id', id); if(error){ showToast(error.message, true); return; }
+    await loadParamValues(); await loadRefData(); showToast('Dihapus');
+}
+
+async function loadAdminPublikasi(){
+    const { data } = await supabaseClient.from('publikasi').select('*').order('created_at',{ascending:false}).limit(50);
+    const listEl=document.getElementById('adm-pub-manage-list'); if(listEl){ listEl.innerHTML=(data||[]).map(p=>`<div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid var(--border); color:var(--text);"><div><b>${p.judul}</b><br><small style="color:var(--muted);">${p.kategori||''}</small></div><button onclick="hapusPublikasi('${p.id}')" class="btn-danger btn-small" style="width:max-content !important;">Hapus</button></div>`).join('') || '<p style="color:var(--muted); text-align:center; padding:20px;">Belum ada publikasi</p>'; }
+    const listPub=document.getElementById('list-publikasi'); if(listPub){ listPub.innerHTML=(data||[]).map(p=>`<li style="padding:8px; border-bottom:1px solid var(--border);"><a href="${p.file_url||'#'}" target="_blank" style="color:var(--accent); font-weight:bold; text-decoration:none;">📄 ${p.judul}</a> <small style="color:var(--muted);">(${p.kategori||''})</small></li>`).join('') || '<li><span style="color:var(--muted);">Belum ada publikasi</span></li>'; }
+}
+
+async function hapusPublikasi(id){
+    if(!confirm('Hapus publikasi?')) return;
+    const { error } = await supabaseClient.from('publikasi').delete().eq('id', id); if(error){ showToast(error.message, true); return; }
+    await loadAdminPublikasi();
+}
+
+async function renderPICDirectory(){
+    const { data } = await supabaseClient.from('ref_pic').select('*').eq('is_active', true);
+    const el=document.getElementById('pic-directory-list'); if(el){ el.innerHTML=(data||[]).map(p=>`<div style="padding:10px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; color:var(--text);"><span>👤 ${p.nama} - ${p.jabatan||''}</span><span style="font-size:11px; color:var(--muted);">${p.email||''}</span></div>`).join('') || '<div style="padding:20px; text-align:center; color:var(--muted);">Belum ada PIC</div>'; }
+}
+
+async function loadAdminKorespondensi() {
+    let query = supabaseClient.from('korespondensi').select('*').order('created_at', { ascending: false }).limit(50);
+    const userRole = currentProfile?.role || 'Pelapor';
+    if (userRole.toLowerCase() !== 'administrator' && userRole.toLowerCase() !== 'superadmin') {
+        query = query.eq('target_role', userRole);
     }
 
-    async function hapusParamDB(id, kategori){
-        if(!confirm('Hapus data ini?')) return;
-        const tableMap={ 'kategori_aduan':'ref_kategori_aduan', 'sub_kategori':'ref_sub_kategori', 'pic':'ref_pic', 'eskalasi':'ref_eskalasi_level', 'urgensi':'ref_urgensi', 'sla_hari':'ref_sla_hari', 'hasil_verifikasi':'ref_hasil_verifikasi' };
-        const table=tableMap[kategori]||'ref_params'; const { error } = await supabaseClient.from(table).delete().eq('id', id); if(error){ showToast(error.message, true); return; }
-        await loadParamValues(); await loadRefData(); showToast('Dihapus');
-    }
-
-    async function loadAdminPublikasi(){
-        const { data } = await supabaseClient.from('publikasi').select('*').order('created_at',{ascending:false}).limit(50);
-        const listEl=document.getElementById('adm-pub-manage-list'); if(listEl){ listEl.innerHTML=(data||[]).map(p=>`<div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid var(--border); color:var(--text);"><div><b>${p.judul}</b><br><small style="color:var(--muted);">${p.kategori||''}</small></div><button onclick="hapusPublikasi('${p.id}')" style="background:#ef4444; color:white; border:none; border-radius:4px; padding:4px 8px;">Hapus</button></div>`).join('') || '<p style="color:var(--muted); text-align:center; padding:20px;">Belum ada publikasi</p>'; }
-        const listPub=document.getElementById('list-publikasi'); if(listPub){ listPub.innerHTML=(data||[]).map(p=>`<li style="padding:8px; border-bottom:1px solid var(--border);"><a href="${p.file_url||'#'}" target="_blank" style="color:var(--accent); font-weight:bold; text-decoration:none;">📄 ${p.judul}</a> <small style="color:var(--muted);">(${p.kategori||''})</small></li>`).join('') || '<li><span style="color:var(--muted);">Belum ada publikasi</span></li>'; }
-    }
-
-    async function hapusPublikasi(id){
-        if(!confirm('Hapus publikasi?')) return;
-        const { error } = await supabaseClient.from('publikasi').delete().eq('id', id); if(error){ showToast(error.message, true); return; }
-        await loadAdminPublikasi();
-    }
-
-    async function renderPICDirectory(){
-        const { data } = await supabaseClient.from('ref_pic').select('*').eq('is_active', true);
-        const el=document.getElementById('pic-directory-list'); if(el){ el.innerHTML=(data||[]).map(p=>`<div style="padding:10px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; color:var(--text);"><span>👤 ${p.nama} - ${p.jabatan||''}</span><span style="font-size:11px; color:var(--muted);">${p.email||''}</span></div>`).join('') || '<div style="padding:20px; text-align:center; color:var(--muted);">Belum ada PIC</div>'; }
-    }
-
-    async function loadAdminKorespondensi() {
-        let query = supabaseClient.from('korespondensi').select('*').order('created_at', { ascending: false }).limit(50);
-        const userRole = currentProfile?.role || 'Pelapor';
-        if (userRole.toLowerCase() !== 'administrator' && userRole.toLowerCase() !== 'superadmin') {
-            query = query.eq('target_role', userRole);
-        }
-
-        const { data, error } = await query;
-        if (error) { showToast('Gagal memuat pesan: ' + error.message, true); return; }
-        
-        const listEls = document.querySelectorAll('#admin-kor-list'); 
-        if (listEls.length === 0) return;
-        
-        const htmlOutput = (!data || data.length === 0) ? '<div style="padding:15px; text-align:center; color:var(--muted);">Belum ada pesan masuk untuk Anda.</div>' : data.map(k => `
-            <div style="border:1px solid var(--border); padding:16px; border-radius:8px; background:var(--surface-soft);">
-                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                    <strong style="color:var(--text);">${k.nama} 
-                        <span style="color:var(--muted); font-size:12px; font-weight:normal;">(${k.email || 'Tanpa Email'})</span><br>
-                        <span style="background:var(--primary); color:white; padding:2px 6px; border-radius:4px; font-size:10px;">Untuk: ${k.target_role || 'Umum'}</span>
-                    </strong>
-                    <small style="color:var(--muted);">${new Date(k.created_at).toLocaleString('id-ID')}</small>
-                </div>
-                <p style="margin:0 0 14px 0; font-size:13px; color:var(--text); line-height:1.6;">${k.pesan}</p>
-                <div style="background:var(--input-bg); border:1px solid var(--input-border); padding:12px; border-radius:6px;">
-                    ${k.balasan ? `<div style="color:var(--accent); font-size:12px;"><b>Sudah dibalas:</b> ${k.balasan}</div>` : `<textarea id="balas-${k.id}" placeholder="Tuliskan balasan resmi..." style="width:100%; min-height:70px; margin-bottom:8px; background:var(--input-bg); color:var(--text); border:1px solid var(--input-border); border-radius:6px; padding:10px;"></textarea><button class="btn-success btn-small" onclick="balasPesan('${k.id}')">Kirim Balasan</button>`}
-                </div>
-            </div>
-        `).join('');
-        
-        listEls.forEach(el => { el.innerHTML = htmlOutput; }); 
-        showToast('✅ Daftar Pesan diperbarui');
-    }
-
-    async function balasPesan(id) {
-        const balasan = document.getElementById(`balas-${id}`).value.trim(); if(!balasan) { showToast('Balasan tidak boleh kosong', true); return; }
-        const { error } = await supabaseClient.from('korespondensi').update({ balasan: balasan }).eq('id', id);
-        if(error) { showToast(error.message, true); return; }
-        showToast('✅ Balasan terkirim ke pengguna'); loadAdminKorespondensi(); loadKorespondensiHistory();
-    }
-
-    async function kirimSemuaBalasanSekaligus() {
-        const semuaKotakBalasan = document.querySelectorAll('textarea[id^="balas-"]'); let adaYangDikirim = false;
-        for (let kotak of semuaKotakBalasan) {
-            const id_pesan = kotak.id.replace('balas-', ''); const isi_balasan = kotak.value.trim();
-            if (isi_balasan !== '') { adaYangDikirim = true; await supabaseClient.from('korespondensi').update({ balasan: isi_balasan }).eq('id', id_pesan); }
-        }
-        if (!adaYangDikirim) { showToast('Harap isi setidaknya satu balasan terlebih dahulu.', true); return; }
-        showToast('✅ Semua balasan yang diisi berhasil dikirim'); loadAdminKorespondensi(); loadKorespondensiHistory(); 
-    }
-
-    async function uploadPublikasiBaru() {
-        const judul = document.getElementById('adm-pub-judul')?.value.trim(); const kategori = document.getElementById('adm-pub-kategori')?.value; const fileInput = document.getElementById('adm-pub-file'); const file = fileInput?.files?.[0];
-        if (!judul || !kategori || !file) { showToast('Lengkapi Judul, Kategori, dan pilih File PDF!', true); return; }
-        const btn = document.getElementById('btn-upload-pub'); btn.disabled = true; btn.textContent = '⏳ Mengunggah...';
-
-        try {
-            const uploadRes = await uploadFile('publikasi', file); if (!uploadRes.url) { throw new Error('Gagal mendapatkan URL file dari server.'); }
-            const payload = { judul: judul, kategori: kategori, file_url: uploadRes.url, file_path: uploadRes.path, created_by: currentUser?.id || null };
-            const { error } = await supabaseClient.from('publikasi').insert(payload); if (error) throw error;
-            showToast('✅ Publikasi berhasil diunggah!'); document.getElementById('adm-pub-judul').value = ''; fileInput.value = ''; await loadAdminPublikasi();
-        } catch (e) { showToast('Gagal: ' + e.message, true); console.error(e); } finally { btn.disabled = false; btn.textContent = '📤 Upload Dokumen'; }
-    }
-
-    async function loadPublikasiLanding() {
-        const container = document.getElementById('publikasi-list');
-        if (!container) return;
-        container.innerHTML = '<p style="text-align:center; color:var(--muted); grid-column:1/-1;">Memuat informasi & publikasi...</p>';
-
-        const { data, error } = await supabaseClient.from('publikasi').select('*').order('created_at', { ascending: false }).limit(6);
-
-        if (error || !data || data.length === 0) {
-            container.innerHTML = '<p style="text-align:center; color:var(--muted); grid-column:1/-1;">Belum ada data publikasi atau informasi tersedia.</p>';
-            return;
-        }
-
-        container.innerHTML = data.map(p => `
-            <div style="background:var(--surface-soft); border:1px solid var(--border); padding:20px; border-radius:12px; transition: transform 0.2s;">
-                <span style="font-size:11px; background:var(--primary); color:white; padding:4px 10px; border-radius:12px; font-weight:bold;">${p.kategori}</span>
-                <h4 style="margin:12px 0 8px 0; color:var(--text); font-size:16px;">${p.judul}</h4>
-                <p style="font-size:12px; color:var(--muted); margin-bottom:15px;">Diterbitkan: ${new Date(p.created_at).toLocaleDateString('id-ID')}</p>
-                <a href="${p.file_url}" target="_blank" style="display:inline-block; background:var(--accent); color:#111; text-decoration:none; padding:8px 16px; border-radius:6px; font-size:13px; font-weight:bold; transition: background 0.3s;">Lihat Dokumen</a>
-            </div>
-        `).join('');
-    }
-
-    function simpanConfigSupabase() {
-        const url = document.getElementById('sa-supa-url').value.trim(); const key = document.getElementById('sa-supa-key').value.trim();
-        if (!url || !key) return showToast('URL dan Anon Key harus diisi!', true);
-        localStorage.setItem('supa_url', url); localStorage.setItem('supa_key', key);
-        alert("Konfigurasi tersimpan. Halaman akan dimuat ulang."); location.reload();
-    }
-
-    function simpanSidebarPref() {
-        const mode = document.getElementById('sa-sidebar-mode').value; localStorage.setItem('sigap_sidebar_collapsed', (mode === 'collapsed').toString());
-        document.body.classList.toggle('sidebar-collapsed', mode === 'collapsed'); showToast('Pengaturan sidebar disimpan.');
-    }
-
-    function renderChecklistSuperAdmin() {
-        const container = document.getElementById('checklist-akses-container'); if(!container) return; container.innerHTML = '';
-        const rolesToManage = ['Pelapor', 'Operator', 'Komite Etik', 'PIC', 'Direktur', 'Administrator'];
-        rolesToManage.forEach(role => {
-            let htmlGrid = ''; const hakSaatIni = aksesConfigGlobal[role] || [];
-            daftarSemuaModul.forEach(modul => { const isChecked = hakSaatIni.includes(modul.id) ? 'checked' : ''; htmlGrid += `<label><input type="checkbox" class="chk-matrix" data-role="${role}" value="${modul.id}" ${isChecked}> ${modul.nama}</label>`; });
-            container.innerHTML += `<div class="role-card"><div class="role-title">Hak Akses: ${role}</div><div class="role-grid">${htmlGrid}</div></div>`;
-        });
-    }
-
-    async function loadRBACDatabase() {
-        const roles = ['Pelapor', 'Operator', 'Komite Etik', 'PIC', 'Direktur', 'Administrator', 'SuperAdmin'];
-        roles.forEach(r => { if (!aksesConfigGlobal[r]) aksesConfigGlobal[r] = []; });
-
-        const { data, error } = await supabaseClient.from('hak_akses_matriks').select('nama_role, nama_modul, is_granted');
-        if (error) { console.warn("Gagal memuat RBAC DB, menggunakan default:", error); return; }
-
-        if (data && data.length > 0) {
-            roles.forEach(r => aksesConfigGlobal[r] = []);
-            data.forEach(row => {
-                if (row.is_granted) {
-                    if (!aksesConfigGlobal[row.nama_role]) aksesConfigGlobal[row.nama_role] = [];
-                    aksesConfigGlobal[row.nama_role].push(row.nama_modul);
-                }
-            });
-            console.log("RBAC berhasil disinkronkan dari Database.");
-        }
-    }
-
-    async function simpanChecklistHakAkses() {
-        const btn = event ? event.target : document.querySelector('button[onclick="simpanChecklistHakAkses()"]'); 
-        const originalText = btn ? btn.textContent : "Simpan Konfigurasi Hak Akses";
-        
-        try {
-            if(btn) { btn.disabled = true; btn.textContent = '⏳ Menyimpan ke Database...'; }
-            const payload = []; const checkboxes = document.querySelectorAll('.chk-matrix');
-            
-            checkboxes.forEach(cb => {
-                const roleName = cb.getAttribute('data-role'); const modulName = cb.value;
-                payload.push({ nama_role: roleName, nama_modul: modulName, is_granted: cb.checked, diperbarui_oleh: currentUser?.id || null });
-                if (!aksesConfigGlobal[roleName]) aksesConfigGlobal[roleName] = [];
-                if (cb.checked) {
-                    if (!aksesConfigGlobal[roleName].includes(modulName)) aksesConfigGlobal[roleName].push(modulName);
-                } else {
-                    aksesConfigGlobal[roleName] = aksesConfigGlobal[roleName].filter(m => m !== modulName);
-                }
-            });
-
-            const { error } = await supabaseClient.from('hak_akses_matriks').upsert(payload, { onConflict: 'nama_role,nama_modul' });
-
-            if(btn) { btn.disabled = false; btn.textContent = originalText; }
-
-            if (error) { showToast("Gagal menyimpan RBAC: " + error.message, true); console.error("Supabase Error:", error); } 
-            else { showToast("✅ Konfigurasi Hak Akses berhasil disimpan ke Database!"); localStorage.setItem('akses_config_sigap', JSON.stringify(aksesConfigGlobal)); }
-            
-        } catch (err) {
-            if(btn) { btn.disabled = false; btn.textContent = originalText; }
-            showToast("Terjadi kesalahan sistem: " + err.message, true); console.error("System Crash:", err);
-        }
-    }
-
-    async function muatUserManagement() {
-        const tbody = document.querySelector('#user-management-table tbody'); if (!tbody) return; 
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Memuat data...</td></tr>';
-        
-        const { data, error } = await supabaseClient.from('profiles').select('*').order('created_at', { ascending: false });
-        if (error || !data) return tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Gagal memuat pengguna.</td></tr>';
-        
-        tbody.innerHTML = data.length ? data.map(user => `<tr>
-            <td>${user.full_name || '-'}</td>
-            <td>${user.email || '-'}</td>
-            <td><span style="background:var(--primary); color:#fff; padding:2px 6px; border-radius:4px; font-size:11px;">${user.role || '-'}</span></td>
-            <td>${user.is_active ? '✅ Aktif' : '❌ Nonaktif'}</td>
-            <td style="white-space:nowrap; display:flex; gap:6px;">
-                <button class="btn-small btn-primary" onclick="bukaEditUser('${user.id}', '${user.full_name || ''}', '${user.role || 'Pelapor'}')">✏️ Edit</button>
-                <button class="btn-small" style="background:var(--surface-soft); border:1px solid var(--border); color:var(--text);" onclick="toggleUserActive('${user.id}', ${user.is_active})">${user.is_active ? '🔒 Blokir' : '🔓 Aktifkan'}</button>
-                <button class="btn-small btn-danger" onclick="hapusUser('${user.id}')">🗑️ Hapus</button>
-            </td></tr>`).join('') : '<tr><td colspan="5" style="text-align:center;">Belum ada pengguna.</td></tr>';
-    }
-
-    function bukaEditUser(id, nama, role) {
-        document.getElementById('edit-user-id').value = id; document.getElementById('edit-user-nama').value = nama;
-        const sel = document.getElementById('edit-user-role');
-        for(let i=0; i<sel.options.length; i++) { if(sel.options[i].value.toLowerCase() === role.toLowerCase()) { sel.selectedIndex = i; break; } }
-        document.getElementById('edit-user-form').style.display = 'block'; document.getElementById('edit-user-form').scrollIntoView({behavior: 'smooth'});
-    }
-
-    async function simpanEditUser() {
-        const id = document.getElementById('edit-user-id').value; const nama = document.getElementById('edit-user-nama').value.trim(); const role = document.getElementById('edit-user-role').value;
-        if(!id || !nama) return showToast('Nama tidak boleh kosong!', true);
-        const { error } = await supabaseClient.from('profiles').update({ full_name: nama, role: role }).eq('id', id);
-        if(error) return showToast('Gagal update: ' + error.message, true);
-        showToast('✅ Data Pengguna berhasil diperbarui!'); document.getElementById('edit-user-form').style.display = 'none'; muatUserManagement();
-    }
-
-    async function toggleUserActive(userId, currentState) { if (!confirm(currentState ? 'Nonaktifkan (Blokir) akun ini?' : 'Aktifkan kembali akun ini?')) return; await supabaseClient.from('profiles').update({ is_active: !currentState }).eq('id', userId); muatUserManagement(); }
-    async function hapusUser(userId) { if (!confirm('Hapus pengguna ini dari profil? Peringatan: Supabase memerlukan penghapusan di menu Authentication juga.')) return; await supabaseClient.from('profiles').delete().eq('id', userId); muatUserManagement(); }
-
-    async function loadAduanSuperAdmin() {
-        const statusEl = document.getElementById('sa-aduan-status'); const tbody = document.querySelector('#sa-aduan-table tbody'); if (!tbody) return;
-        const statusFilter = statusEl ? statusEl.value : 'Terkirim'; tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Memuat...</td></tr>';
-        let query = supabaseClient.from('aduan').select('*').order('created_at', { ascending: false }).limit(200); if (statusFilter && statusFilter !== '__all__') query = query.eq('status', statusFilter);
-        const { data, error } = await query; if (error || !data.length) return tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Tidak ada aduan.</td></tr>';
-        tbody.innerHTML = data.map(a => `<tr><td><code style="font-size:11px;">${(a.id || '').toString().substring(0,8)}</code></td><td>${a.nama_pelapor || '-'}</td><td>${a.nama_terlapor || '-'}</td><td>${a.tanggal_kejadian ? new Date(a.tanggal_kejadian).toLocaleDateString('id-ID') : '-'}</td><td><span style="background:var(--surface-soft); color:var(--text); border:1px solid var(--border); padding:2px 8px; border-radius:12px; font-size:11px;">${a.status || '-'}</span></td><td><button class="btn-small btn-primary" onclick="editAduanSuperAdmin('${a.id}')">Edit</button> <button class="btn-small btn-danger" onclick="hapusAduanSuperAdmin('${a.id}')">Hapus</button></td></tr>`).join('');
-    }
-
-    async function editAduanSuperAdmin(id) {
-        const { data: aduan } = await supabaseClient.from('aduan').select('*').eq('id', id).single(); if (!aduan) return showToast('Aduan tidak ditemukan', true);
-        ['nama','email','kontak','terlapor','jabatan','lokasi'].forEach(k => { const el = document.getElementById(`input-${k}`); if(el) el.value = aduan[`nama_${k}`] || aduan[`email_${k}`] || aduan[k] || aduan[`${k}_kejadian`] || ''; });
-        if(document.getElementById('input-tanggal')) document.getElementById('input-tanggal').value = aduan.tanggal_kejadian?.substring(0,10) || '';
-        if(document.getElementById('input-deskripsi')) document.getElementById('input-deskripsi').value = aduan.deskripsi_kejadian || aduan.deskripsi || '';
-        window.editingId = id; bukaTab('pelapor'); window.scrollTo({ top: 0, behavior: 'smooth' }); showToast(`Aduan #${id.substring(0,8)} dimuat ke form.`);
-    }
-
-    async function hapusAduanSuperAdmin(id) { if (!confirm('Hapus aduan ini? Tindakan tidak dapat dibatalkan.')) return; await supabaseClient.from('aduan').delete().eq('id', id); showToast('Aduan dihapus'); loadAduanSuperAdmin(); }
-
-    let globalLandingConfig = {};
-    async function loadKustomisasiLanding() {
-        try { const { data } = await supabaseClient.from('system_settings').select('key_value').eq('key_name', 'landing_page_config').single(); if (data && data.key_value) { globalLandingConfig = JSON.parse(data.key_value); terapkanTampilanLanding(); } } catch (e) { }
-    }
-
-    function terapkanTampilanLanding() {
-        if (globalLandingConfig.title) { const t = document.getElementById('landing-title-text'); if (t) t.innerHTML = globalLandingConfig.title; const inputT = document.getElementById('set-landing-title'); if (inputT) inputT.value = globalLandingConfig.title; }
-        if (globalLandingConfig.desc) { const d = document.getElementById('landing-desc-text'); if (d) d.textContent = globalLandingConfig.desc; const inputD = document.getElementById('set-landing-desc'); if (inputD) inputD.value = globalLandingConfig.desc; }
-        const logoImg = document.getElementById('top-logo-img'); const logoDef = document.getElementById('top-logo-default');
-        if (globalLandingConfig.logoUrl) { if(logoImg) { logoImg.src = globalLandingConfig.logoUrl; logoImg.style.display = 'block'; } if(logoDef) { logoDef.style.display = 'none'; } } else { if(logoImg) { logoImg.src = ''; logoImg.style.display = 'none'; } if(logoDef) { logoDef.style.display = 'flex'; } }
-        const heroImg = document.getElementById('landing-hero-img'); if (globalLandingConfig.imgUrl && heroImg) { heroImg.src = globalLandingConfig.imgUrl; }
-    }
-
-    async function simpanKustomisasiLanding() {
-        const title = document.getElementById('set-landing-title').value.trim(); const desc = document.getElementById('set-landing-desc').value.trim(); const logoFile = document.getElementById('set-landing-logo')?.files?.[0]; const imgFile = document.getElementById('set-landing-img')?.files?.[0];
-        showToast('⏳ Menyimpan konfigurasi, mohon tunggu...'); let logoUrl = globalLandingConfig.logoUrl || null; let imgUrl = globalLandingConfig.imgUrl || null;
-        if (logoFile) { const resLogo = await uploadFile('publikasi', logoFile); if(resLogo.url) logoUrl = resLogo.url; }
-        if (imgFile) { const resImg = await uploadFile('publikasi', imgFile); if(resImg.url) imgUrl = resImg.url; }
-        const configData = { title, desc, logoUrl, imgUrl };
-        await supabaseClient.from('system_settings').upsert([{ key_name: 'landing_page_config', key_value: JSON.stringify(configData) }], { onConflict: 'key_name' });
-        globalLandingConfig = configData; terapkanTampilanLanding(); document.getElementById('set-landing-logo').value = ''; document.getElementById('set-landing-img').value = ''; showToast('✅ Tampilan Landing Page berhasil diperbarui!');
-    }
-
-    async function resetKustomisasiLanding() {
-        if(!confirm('Reset seluruh kustomisasi landing page ke bawaan aplikasi?')) return;
-        await supabaseClient.from('system_settings').delete().eq('key_name', 'landing_page_config'); globalLandingConfig = {};
-        document.getElementById('landing-title-text').innerHTML = 'Sistem Integrasi <strong style="color: var(--accent);">Gerak Aduan Pelanggaran Etik</strong>'; document.getElementById('landing-desc-text').textContent = 'Platform terpadu untuk integrasi pelaporan, gerak cepat verifikasi, penanganan aduan etik & hukum, hingga penerbitan SK penetapan dalam satu alur kerja transparan.';
-        const heroImg = document.getElementById('landing-hero-img'); if (heroImg) heroImg.src = 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&q=80&w=1200';
-        document.getElementById('set-landing-title').value = ''; document.getElementById('set-landing-desc').value = ''; terapkanTampilanLanding(); showToast('🗑️ Kustomisasi direset ke bawaan.');
-    }
-
-    function renderMappingTabel() {
-        const tbody = document.getElementById('mapping-tbody'); if(!tbody) return;
-        tbody.innerHTML = dbMappingData.map((d, i) => `<tr><td>${d.tabel}</td><td>${d.fungsi}</td><td>${d.kolom}</td><td style="white-space:nowrap;"><button class="btn-small btn-primary" onclick="editRowMapping(${i})">Edit</button> <button class="btn-small btn-danger" onclick="hapusRowMapping(${i})">Hapus</button></td></tr>`).join('') || '<tr><td colspan="4" style="text-align:center;">Tidak ada data mapping</td></tr>';
-    }
-
-    async function loadMappingTabel() {
-        const dataDefault = [{tabel: 'profiles', fungsi: 'Menyimpan data otentikasi dan role', kolom: 'id, email, full_name, role, is_active'}, {tabel: 'aduan', fungsi: 'Menyimpan entri laporan utama', kolom: 'id, nama_pelapor, terlapor, status, kategori_id...'}, {tabel: 'penanganan_pic', fungsi: 'Catatan tindak lanjut PIC', kolom: 'id, aduan_id, tanggapan_proses, tanggapan_akhir...'}];
-        try { const { data } = await supabaseClient.from('system_settings').select('key_value').eq('key_name', 'db_mapping').single(); dbMappingData = data?.key_value ? JSON.parse(data.key_value) : dataDefault; } catch(e) { dbMappingData = dataDefault; } renderMappingTabel();
-    }
-
-    async function simpanKeSupabaseMapping() { await supabaseClient.from('system_settings').upsert([{ key_name: 'db_mapping', key_value: JSON.stringify(dbMappingData) }], { onConflict: 'key_name' }); }
-    async function tambahRowMapping() { const tabel = prompt("Nama Tabel:"); if(!tabel) return; const fungsi = prompt("Fungsi / Deskripsi Utama:"); const kolom = prompt("Daftar Kolom (pisahkan dengan koma):"); dbMappingData.push({ tabel, fungsi, kolom }); renderMappingTabel(); await simpanKeSupabaseMapping(); }
-    async function editRowMapping(idx) { const cur = dbMappingData[idx]; const tabel = prompt("Nama Tabel:", cur.tabel); if(!tabel) return; const fungsi = prompt("Fungsi / Deskripsi Utama:", cur.fungsi); const kolom = prompt("Daftar Kolom:", cur.kolom); dbMappingData[idx] = { tabel, fungsi, kolom }; renderMappingTabel(); await simpanKeSupabaseMapping(); }
-    async function hapusRowMapping(idx) { if(!confirm("Hapus baris tabel ini?")) return; dbMappingData.splice(idx, 1); renderMappingTabel(); await simpanKeSupabaseMapping(); }
+    const { data, error } = await query;
+    if (error) { showToast('Gagal memuat pesan: ' + error.message, true); return; }
     
-    function toggleLayoutMode() {
-        const btn = document.getElementById('btn-toggle-layout');
-        const body = document.body;
-        body.classList.toggle('top-nav-mode');
-        
-        if (btn) {
-            if (body.classList.contains('top-nav-mode')) {
-                btn.innerHTML = '⇄ Mode Sidebar';
-                const sidebarEl = document.querySelector('.tab-container');
-                if(sidebarEl) sidebarEl.scrollLeft = 0;
-            } else {
-                btn.innerHTML = '⇄ Mode Topbar';
-            }
-        }
+    const listEls = document.querySelectorAll('#admin-kor-list'); 
+    if (listEls.length === 0) return;
+    
+    const htmlOutput = (!data || data.length === 0) ? '<div style="padding:15px; text-align:center; color:var(--muted);">Belum ada pesan masuk untuk Anda.</div>' : data.map(k => `
+        <div style="border:1px solid var(--border); padding:16px; border-radius:8px; background:var(--surface-soft);">
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                <strong style="color:var(--text);">${k.nama} 
+                    <span style="color:var(--muted); font-size:12px; font-weight:normal;">(${k.email || 'Tanpa Email'})</span><br>
+                    <span style="background:var(--primary); color:white; padding:2px 6px; border-radius:4px; font-size:10px;">Untuk: ${k.target_role || 'Umum'}</span>
+                </strong>
+                <small style="color:var(--muted);">${new Date(k.created_at).toLocaleString('id-ID')}</small>
+            </div>
+            <p style="margin:0 0 14px 0; font-size:13px; color:var(--text); line-height:1.6;">${k.pesan}</p>
+            <div style="background:var(--input-bg); border:1px solid var(--input-border); padding:12px; border-radius:6px;">
+                ${k.balasan ? `<div style="color:var(--accent); font-size:12px;"><b>Sudah dibalas:</b> ${k.balasan}</div>` : `<textarea id="balas-${k.id}" placeholder="Tuliskan balasan resmi..." style="width:100%; min-height:70px; margin-bottom:8px; background:var(--input-bg); color:var(--text); border:1px solid var(--input-border); border-radius:6px; padding:10px;"></textarea><button class="btn-success btn-small" onclick="balasPesan('${k.id}')">Kirim Balasan</button>`}
+            </div>
+        </div>
+    `).join('');
+    
+    listEls.forEach(el => { el.innerHTML = htmlOutput; }); 
+    showToast('✅ Daftar Pesan diperbarui');
+}
+
+async function balasPesan(id) {
+    const balasan = document.getElementById(`balas-${id}`).value.trim(); if(!balasan) { showToast('Balasan tidak boleh kosong', true); return; }
+    const { error } = await supabaseClient.from('korespondensi').update({ balasan: balasan }).eq('id', id);
+    if(error) { showToast(error.message, true); return; }
+    showToast('✅ Balasan terkirim ke pengguna'); loadAdminKorespondensi(); loadKorespondensiHistory();
+}
+
+async function kirimSemuaBalasanSekaligus() {
+    const semuaKotakBalasan = document.querySelectorAll('textarea[id^="balas-"]'); let adaYangDikirim = false;
+    for (let kotak of semuaKotakBalasan) {
+        const id_pesan = kotak.id.replace('balas-', ''); const isi_balasan = kotak.value.trim();
+        if (isi_balasan !== '') { adaYangDikirim = true; await supabaseClient.from('korespondensi').update({ balasan: isi_balasan }).eq('id', id_pesan); }
+    }
+    if (!adaYangDikirim) { showToast('Harap isi setidaknya satu balasan terlebih dahulu.', true); return; }
+    showToast('✅ Semua balasan yang diisi berhasil dikirim'); loadAdminKorespondensi(); loadKorespondensiHistory(); 
+}
+
+async function uploadPublikasiBaru() {
+    const judul = document.getElementById('adm-pub-judul')?.value.trim(); const kategori = document.getElementById('adm-pub-kategori')?.value; const fileInput = document.getElementById('adm-pub-file'); const file = fileInput?.files?.[0];
+    if (!judul || !kategori || !file) { showToast('Lengkapi Judul, Kategori, dan pilih File PDF!', true); return; }
+    const btn = document.getElementById('btn-upload-pub'); btn.disabled = true; btn.textContent = '⏳ Mengunggah...';
+
+    try {
+        const uploadRes = await uploadFile('publikasi', file); if (!uploadRes.url) { throw new Error('Gagal mendapatkan URL file dari server.'); }
+        const payload = { judul: judul, kategori: kategori, file_url: uploadRes.url, file_path: uploadRes.path, created_by: currentUser?.id || null };
+        const { error } = await supabaseClient.from('publikasi').insert(payload); if (error) throw error;
+        showToast('✅ Publikasi berhasil diunggah!'); document.getElementById('adm-pub-judul').value = ''; fileInput.value = ''; await loadAdminPublikasi();
+    } catch (e) { showToast('Gagal: ' + e.message, true); console.error(e); } finally { btn.disabled = false; btn.textContent = '📤 Upload Dokumen'; }
+}
+
+async function loadPublikasiLanding() {
+    const container = document.getElementById('publikasi-list');
+    if (!container) return;
+    container.innerHTML = '<p style="text-align:center; color:var(--muted); grid-column:1/-1;">Memuat informasi & publikasi...</p>';
+
+    const { data, error } = await supabaseClient.from('publikasi').select('*').order('created_at', { ascending: false }).limit(6);
+
+    if (error || !data || data.length === 0) {
+        container.innerHTML = '<p style="text-align:center; color:var(--muted); grid-column:1/-1;">Belum ada data publikasi atau informasi tersedia.</p>';
+        return;
     }
 
-    document.addEventListener('DOMContentLoaded', async ()=>{
-        if(localStorage.getItem('sigap-theme')==='light') document.body.classList.add('light-theme');
-        await checkSession(); 
-        await loadAllData(); 
-        await loadKustomisasiLanding();
-        await loadPublikasiLanding(); 
-        
-        ['login-email','login-pass'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('keydown', e=>{ if(e.key==='Enter') submitLogin(); }); });
-        const loginScreen=document.getElementById('login-screen'); if(loginScreen) loginScreen.addEventListener('click', e=>{ if(e.target===loginScreen) closeLogin(); });
+    container.innerHTML = data.map(p => `
+        <div style="background:var(--surface-soft); border:1px solid var(--border); padding:20px; border-radius:12px; transition: transform 0.2s;">
+            <span style="font-size:11px; background:var(--primary); color:white; padding:4px 10px; border-radius:12px; font-weight:bold;">${p.kategori}</span>
+            <h4 style="margin:12px 0 8px 0; color:var(--text); font-size:16px;">${p.judul}</h4>
+            <p style="font-size:12px; color:var(--muted); margin-bottom:15px;">Diterbitkan: ${new Date(p.created_at).toLocaleDateString('id-ID')}</p>
+            <a href="${p.file_url}" target="_blank" style="display:inline-block; background:var(--accent); color:#111; text-decoration:none; padding:8px 16px; border-radius:6px; font-size:13px; font-weight:bold; transition: background 0.3s;">Lihat Dokumen</a>
+        </div>
+    `).join('');
+}
+
+function simpanConfigSupabase() {
+    const url = document.getElementById('sa-supa-url').value.trim(); const key = document.getElementById('sa-supa-key').value.trim();
+    if (!url || !key) return showToast('URL dan Anon Key harus diisi!', true);
+    localStorage.setItem('supa_url', url); localStorage.setItem('supa_key', key);
+    alert("Konfigurasi tersimpan. Halaman akan dimuat ulang."); location.reload();
+}
+
+function simpanSidebarPref() {
+    const mode = document.getElementById('sa-sidebar-mode').value; localStorage.setItem('sigap_sidebar_collapsed', (mode === 'collapsed').toString());
+    document.body.classList.toggle('sidebar-collapsed', mode === 'collapsed'); showToast('Pengaturan sidebar disimpan.');
+}
+
+function renderChecklistSuperAdmin() {
+    const container = document.getElementById('checklist-akses-container'); if(!container) return; container.innerHTML = '';
+    const rolesToManage = ['Pelapor', 'Operator', 'Komite Etik', 'PIC', 'Direktur', 'Administrator'];
+    rolesToManage.forEach(role => {
+        let htmlGrid = ''; const hakSaatIni = aksesConfigGlobal[role] || [];
+        daftarSemuaModul.forEach(modul => { const isChecked = hakSaatIni.includes(modul.id) ? 'checked' : ''; htmlGrid += `<label><input type="checkbox" class="chk-matrix" data-role="${role}" value="${modul.id}" ${isChecked}> ${modul.nama}</label>`; });
+        container.innerHTML += `<div class="role-card"><div class="role-title">Hak Akses: ${role}</div><div class="role-grid">${htmlGrid}</div></div>`;
     });
+}
+
+async function loadRBACDatabase() {
+    const roles = ['Pelapor', 'Operator', 'Komite Etik', 'PIC', 'Direktur', 'Administrator', 'SuperAdmin'];
+    roles.forEach(r => { if (!aksesConfigGlobal[r]) aksesConfigGlobal[r] = []; });
+
+    const { data, error } = await supabaseClient.from('hak_akses_matriks').select('nama_role, nama_modul, is_granted');
+    if (error) { console.warn("Gagal memuat RBAC DB, menggunakan default:", error); return; }
+
+    if (data && data.length > 0) {
+        roles.forEach(r => aksesConfigGlobal[r] = []);
+        data.forEach(row => {
+            if (row.is_granted) {
+                if (!aksesConfigGlobal[row.nama_role]) aksesConfigGlobal[row.nama_role] = [];
+                aksesConfigGlobal[row.nama_role].push(row.nama_modul);
+            }
+        });
+        console.log("RBAC berhasil disinkronkan dari Database.");
+    }
+}
+
+async function simpanChecklistHakAkses() {
+    const btn = event ? event.target : document.querySelector('button[onclick="simpanChecklistHakAkses()"]'); 
+    const originalText = btn ? btn.textContent : "Simpan Konfigurasi Hak Akses";
+    
+    try {
+        if(btn) { btn.disabled = true; btn.textContent = '⏳ Menyimpan ke Database...'; }
+        const payload = []; const checkboxes = document.querySelectorAll('.chk-matrix');
+        
+        checkboxes.forEach(cb => {
+            const roleName = cb.getAttribute('data-role'); const modulName = cb.value;
+            payload.push({ nama_role: roleName, nama_modul: modulName, is_granted: cb.checked, diperbarui_oleh: currentUser?.id || null });
+            if (!aksesConfigGlobal[roleName]) aksesConfigGlobal[roleName] = [];
+            if (cb.checked) {
+                if (!aksesConfigGlobal[roleName].includes(modulName)) aksesConfigGlobal[roleName].push(modulName);
+            } else {
+                aksesConfigGlobal[roleName] = aksesConfigGlobal[roleName].filter(m => m !== modulName);
+            }
+        });
+
+        const { error } = await supabaseClient.from('hak_akses_matriks').upsert(payload, { onConflict: 'nama_role,nama_modul' });
+
+        if(btn) { btn.disabled = false; btn.textContent = originalText; }
+
+        if (error) { showToast("Gagal menyimpan RBAC: " + error.message, true); console.error("Supabase Error:", error); } 
+        else { showToast("✅ Konfigurasi Hak Akses berhasil disimpan ke Database!"); localStorage.setItem('akses_config_sigap', JSON.stringify(aksesConfigGlobal)); }
+        
+    } catch (err) {
+        if(btn) { btn.disabled = false; btn.textContent = originalText; }
+        showToast("Terjadi kesalahan sistem: " + err.message, true); console.error("System Crash:", err);
+    }
+}
+
+async function muatUserManagement() {
+    const tbody = document.querySelector('#user-management-table tbody'); if (!tbody) return; 
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Memuat data...</td></tr>';
+    
+    const { data, error } = await supabaseClient.from('profiles').select('*').order('created_at', { ascending: false });
+    if (error || !data) return tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Gagal memuat pengguna.</td></tr>';
+    
+    tbody.innerHTML = data.length ? data.map(user => `<tr>
+        <td>${user.full_name || '-'}</td>
+        <td>${user.email || '-'}</td>
+        <td><span style="background:var(--primary); color:#fff; padding:2px 6px; border-radius:4px; font-size:11px;">${user.role || '-'}</span></td>
+        <td>${user.is_active ? '✅ Aktif' : '❌ Nonaktif'}</td>
+        <td style="white-space:nowrap; display:flex; gap:6px;">
+            <button class="btn-small btn-primary" onclick="bukaEditUser('${user.id}', '${user.full_name || ''}', '${user.role || 'Pelapor'}')">✏️ Edit</button>
+            <button class="btn-small" style="background:var(--surface-soft); border:1px solid var(--border); color:var(--text);" onclick="toggleUserActive('${user.id}', ${user.is_active})">${user.is_active ? '🔒 Blokir' : '🔓 Aktifkan'}</button>
+            <button class="btn-small btn-danger" onclick="hapusUser('${user.id}')">🗑️ Hapus</button>
+        </td></tr>`).join('') : '<tr><td colspan="5" style="text-align:center;">Belum ada pengguna.</td></tr>';
+}
+
+function bukaEditUser(id, nama, role) {
+    document.getElementById('edit-user-id').value = id; document.getElementById('edit-user-nama').value = nama;
+    const sel = document.getElementById('edit-user-role');
+    for(let i=0; i<sel.options.length; i++) { if(sel.options[i].value.toLowerCase() === role.toLowerCase()) { sel.selectedIndex = i; break; } }
+    document.getElementById('edit-user-form').style.display = 'block'; document.getElementById('edit-user-form').scrollIntoView({behavior: 'smooth'});
+}
+
+async function simpanEditUser() {
+    const id = document.getElementById('edit-user-id').value; const nama = document.getElementById('edit-user-nama').value.trim(); const role = document.getElementById('edit-user-role').value;
+    if(!id || !nama) return showToast('Nama tidak boleh kosong!', true);
+    const { error } = await supabaseClient.from('profiles').update({ full_name: nama, role: role }).eq('id', id);
+    if(error) return showToast('Gagal update: ' + error.message, true);
+    showToast('✅ Data Pengguna berhasil diperbarui!'); document.getElementById('edit-user-form').style.display = 'none'; muatUserManagement();
+}
+
+async function toggleUserActive(userId, currentState) { if (!confirm(currentState ? 'Nonaktifkan (Blokir) akun ini?' : 'Aktifkan kembali akun ini?')) return; await supabaseClient.from('profiles').update({ is_active: !currentState }).eq('id', userId); muatUserManagement(); }
+async function hapusUser(userId) { if (!confirm('Hapus pengguna ini dari profil? Peringatan: Supabase memerlukan penghapusan di menu Authentication juga.')) return; await supabaseClient.from('profiles').delete().eq('id', userId); muatUserManagement(); }
+
+async function loadAduanSuperAdmin() {
+    const statusEl = document.getElementById('sa-aduan-status'); const tbody = document.querySelector('#sa-aduan-table tbody'); if (!tbody) return;
+    const statusFilter = statusEl ? statusEl.value : 'Terkirim'; tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Memuat...</td></tr>';
+    let query = supabaseClient.from('aduan').select('*').order('created_at', { ascending: false }).limit(200); if (statusFilter && statusFilter !== '__all__') query = query.eq('status', statusFilter);
+    const { data, error } = await query; if (error || !data.length) return tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Tidak ada aduan.</td></tr>';
+    tbody.innerHTML = data.map(a => `<tr><td><code style="font-size:11px;">${(a.id || '').toString().substring(0,8)}</code></td><td>${a.nama_pelapor || '-'}</td><td>${a.nama_terlapor || '-'}</td><td>${a.tanggal_kejadian ? new Date(a.tanggal_kejadian).toLocaleDateString('id-ID') : '-'}</td><td><span style="background:var(--surface-soft); color:var(--text); border:1px solid var(--border); padding:2px 8px; border-radius:12px; font-size:11px;">${a.status || '-'}</span></td><td><button class="btn-small btn-primary" onclick="editAduanSuperAdmin('${a.id}')">Edit</button> <button class="btn-small btn-danger" onclick="hapusAduanSuperAdmin('${a.id}')">Hapus</button></td></tr>`).join('');
+}
+
+async function editAduanSuperAdmin(id) {
+    const { data: aduan } = await supabaseClient.from('aduan').select('*').eq('id', id).single(); if (!aduan) return showToast('Aduan tidak ditemukan', true);
+    ['nama','email','kontak','terlapor','jabatan','lokasi'].forEach(k => { const el = document.getElementById(`input-${k}`); if(el) el.value = aduan[`nama_${k}`] || aduan[`email_${k}`] || aduan[k] || aduan[`${k}_kejadian`] || ''; });
+    if(document.getElementById('input-tanggal')) document.getElementById('input-tanggal').value = aduan.tanggal_kejadian?.substring(0,10) || '';
+    if(document.getElementById('input-deskripsi')) document.getElementById('input-deskripsi').value = aduan.deskripsi_kejadian || aduan.deskripsi || '';
+    window.editingId = id; bukaTab('pelapor'); window.scrollTo({ top: 0, behavior: 'smooth' }); showToast(`Aduan #${id.substring(0,8)} dimuat ke form.`);
+}
+
+async function hapusAduanSuperAdmin(id) { if (!confirm('Hapus aduan ini? Tindakan tidak dapat dibatalkan.')) return; await supabaseClient.from('aduan').delete().eq('id', id); showToast('Aduan dihapus'); loadAduanSuperAdmin(); }
+
+let globalLandingConfig = {};
+async function loadKustomisasiLanding() {
+    try { const { data } = await supabaseClient.from('system_settings').select('key_value').eq('key_name', 'landing_page_config').single(); if (data && data.key_value) { globalLandingConfig = JSON.parse(data.key_value); terapkanTampilanLanding(); } } catch (e) { }
+}
+
+function terapkanTampilanLanding() {
+    if (globalLandingConfig.title) { const t = document.getElementById('landing-title-text'); if (t) t.innerHTML = globalLandingConfig.title; const inputT = document.getElementById('set-landing-title'); if (inputT) inputT.value = globalLandingConfig.title; }
+    if (globalLandingConfig.desc) { const d = document.getElementById('landing-desc-text'); if (d) d.textContent = globalLandingConfig.desc; const inputD = document.getElementById('set-landing-desc'); if (inputD) inputD.value = globalLandingConfig.desc; }
+    const logoImg = document.getElementById('top-logo-img'); const logoDef = document.getElementById('top-logo-default');
+    if (globalLandingConfig.logoUrl) { if(logoImg) { logoImg.src = globalLandingConfig.logoUrl; logoImg.style.display = 'block'; } if(logoDef) { logoDef.style.display = 'none'; } } else { if(logoImg) { logoImg.src = ''; logoImg.style.display = 'none'; } if(logoDef) { logoDef.style.display = 'flex'; } }
+    const heroImg = document.getElementById('landing-hero-img'); if (globalLandingConfig.imgUrl && heroImg) { heroImg.src = globalLandingConfig.imgUrl; }
+}
+
+async function simpanKustomisasiLanding() {
+    const title = document.getElementById('set-landing-title').value.trim(); const desc = document.getElementById('set-landing-desc').value.trim(); const logoFile = document.getElementById('set-landing-logo')?.files?.[0]; const imgFile = document.getElementById('set-landing-img')?.files?.[0];
+    showToast('⏳ Menyimpan konfigurasi, mohon tunggu...'); let logoUrl = globalLandingConfig.logoUrl || null; let imgUrl = globalLandingConfig.imgUrl || null;
+    if (logoFile) { const resLogo = await uploadFile('publikasi', logoFile); if(resLogo.url) logoUrl = resLogo.url; }
+    if (imgFile) { const resImg = await uploadFile('publikasi', imgFile); if(resImg.url) imgUrl = resImg.url; }
+    const configData = { title, desc, logoUrl, imgUrl };
+    await supabaseClient.from('system_settings').upsert([{ key_name: 'landing_page_config', key_value: JSON.stringify(configData) }], { onConflict: 'key_name' });
+    globalLandingConfig = configData; terapkanTampilanLanding(); document.getElementById('set-landing-logo').value = ''; document.getElementById('set-landing-img').value = ''; showToast('✅ Tampilan Landing Page berhasil diperbarui!');
+}
+
+async function resetKustomisasiLanding() {
+    if(!confirm('Reset seluruh kustomisasi landing page ke bawaan aplikasi?')) return;
+    await supabaseClient.from('system_settings').delete().eq('key_name', 'landing_page_config'); globalLandingConfig = {};
+    document.getElementById('landing-title-text').innerHTML = 'Sistem Integrasi <strong style="color: var(--accent);">Gerak Aduan Pelanggaran Etik</strong>'; document.getElementById('landing-desc-text').textContent = 'Platform terpadu untuk integrasi pelaporan, gerak cepat verifikasi, penanganan aduan etik & hukum, hingga penerbitan SK penetapan dalam satu alur kerja transparan.';
+    const heroImg = document.getElementById('landing-hero-img'); if (heroImg) heroImg.src = 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&q=80&w=1200';
+    document.getElementById('set-landing-title').value = ''; document.getElementById('set-landing-desc').value = ''; terapkanTampilanLanding(); showToast('🗑️ Kustomisasi direset ke bawaan.');
+}
+
+function renderMappingTabel() {
+    const tbody = document.getElementById('mapping-tbody'); if(!tbody) return;
+    tbody.innerHTML = dbMappingData.map((d, i) => `<tr><td>${d.tabel}</td><td>${d.fungsi}</td><td>${d.kolom}</td><td style="white-space:nowrap;"><button class="btn-small btn-primary" onclick="editRowMapping(${i})">Edit</button> <button class="btn-small btn-danger" onclick="hapusRowMapping(${i})">Hapus</button></td></tr>`).join('') || '<tr><td colspan="4" style="text-align:center;">Tidak ada data mapping</td></tr>';
+}
+
+async function loadMappingTabel() {
+    const dataDefault = [{tabel: 'profiles', fungsi: 'Menyimpan data otentikasi dan role', kolom: 'id, email, full_name, role, is_active'}, {tabel: 'aduan', fungsi: 'Menyimpan entri laporan utama', kolom: 'id, nama_pelapor, terlapor, status, kategori_id...'}, {tabel: 'penanganan_pic', fungsi: 'Catatan tindak lanjut PIC', kolom: 'id, aduan_id, tanggapan_proses, tanggapan_akhir...'}];
+    try { const { data } = await supabaseClient.from('system_settings').select('key_value').eq('key_name', 'db_mapping').single(); dbMappingData = data?.key_value ? JSON.parse(data.key_value) : dataDefault; } catch(e) { dbMappingData = dataDefault; } renderMappingTabel();
+}
+
+async function simpanKeSupabaseMapping() { await supabaseClient.from('system_settings').upsert([{ key_name: 'db_mapping', key_value: JSON.stringify(dbMappingData) }], { onConflict: 'key_name' }); }
+async function tambahRowMapping() { const tabel = prompt("Nama Tabel:"); if(!tabel) return; const fungsi = prompt("Fungsi / Deskripsi Utama:"); const kolom = prompt("Daftar Kolom (pisahkan dengan koma):"); dbMappingData.push({ tabel, fungsi, kolom }); renderMappingTabel(); await simpanKeSupabaseMapping(); }
+async function editRowMapping(idx) { const cur = dbMappingData[idx]; const tabel = prompt("Nama Tabel:", cur.tabel); if(!tabel) return; const fungsi = prompt("Fungsi / Deskripsi Utama:", cur.fungsi); const kolom = prompt("Daftar Kolom:", cur.kolom); dbMappingData[idx] = { tabel, fungsi, kolom }; renderMappingTabel(); await simpanKeSupabaseMapping(); }
+async function hapusRowMapping(idx) { if(!confirm("Hapus baris tabel ini?")) return; dbMappingData.splice(idx, 1); renderMappingTabel(); await simpanKeSupabaseMapping(); }
+
+function toggleLayoutMode() {
+    const btn = document.getElementById('btn-toggle-layout');
+    const body = document.body;
+    body.classList.toggle('top-nav-mode');
+    
+    if (btn) {
+        if (body.classList.contains('top-nav-mode')) {
+            btn.innerHTML = '⇄ Mode Sidebar';
+            const sidebarEl = document.querySelector('.tab-container');
+            if(sidebarEl) sidebarEl.scrollLeft = 0;
+        } else {
+            btn.innerHTML = '⇄ Mode Topbar';
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async ()=>{
+    if(localStorage.getItem('sigap-theme')==='light') document.body.classList.add('light-theme');
+    await checkSession(); 
+    await loadAllData(); 
+    await loadKustomisasiLanding();
+    await loadPublikasiLanding(); 
+    
+    ['login-email','login-pass'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('keydown', e=>{ if(e.key==='Enter') submitLogin(); }); });
+    const loginScreen=document.getElementById('login-screen'); if(loginScreen) loginScreen.addEventListener('click', e=>{ if(e.target===loginScreen) closeLogin(); });
+});
 </script>
 </body>
 </html>
