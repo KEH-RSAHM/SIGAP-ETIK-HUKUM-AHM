@@ -290,10 +290,16 @@
 
         input, select, textarea, .form-group input, .form-group select, .form-group textarea { background-color: var(--input-bg) !important; color: var(--text) !important; border-color: var(--input-border) !important; }
         
-        /* Memaksa area Preview Surat Keputusan selalu berlatar putih dan teks hitam pekat */
-        .sk-preview, #preview-sk-content, #sk-print-area, #sk-print-area *, #sk-isi-preview { 
+        /* PERBAIKAN: Memaksa area Preview Surat Keputusan selalu berlatar putih dan teks hitam pekat */
+        .sk-preview, #preview-sk-content, #sk-print-area { 
             background-color: #ffffff !important; 
             color: #000000 !important; 
+        }
+        
+        /* Tambahan: Memaksa seluruh anak elemen (paragraf, tabel, span) di dalam kertas menjadi hitam */
+        .sk-preview *, #preview-sk-content *, #sk-print-area * {
+            color: #000000 !important;
+            text-shadow: none !important;
         }
 
         #preview-sk-content, #sk-body-container {
@@ -2493,7 +2499,7 @@ async function renderDashboardCharts() {
         });
 
         const tbody = document.getElementById('dash-kat-body');
-        if(tbody) tbody.innerHTML = Object.entries(katCount).map(([k, v]) => `<tr><td>${k}</td><td>${v} Laporan</td></tr>`).join('') || '<tr><td colspan="2" style="text-align:center;">Belum ada data laporan.</td></tr>';
+        if(tbody) tbody.innerHTML = Object.entries(katCount).map(([k, v]) => `<tr><td>${escapeHtml(k)}</td><td>${v} Laporan</td></tr>`).join('') || '<tr><td colspan="2" style="text-align:center;">Belum ada data laporan.</td></tr>';
 
         Object.values(dashCharts).forEach(c => { if(c) c.destroy(); });
         dashCharts = {};
@@ -2534,35 +2540,43 @@ async function renderDashboardCharts() {
                         borderJoinStyle: 'round'
                     }]
                 },
-                // Mendaftarkan Plugin DataLabels
+                // Aktifkan Plugin Datalabels
                 plugins: [typeof ChartDataLabels !== 'undefined' ? ChartDataLabels : null].filter(Boolean),
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    layout: { padding: { top: 25, bottom: 10, left: 10, right: 10 } },
+                    // Tambah padding agar kotak hitam tidak terpotong tepi canvas
+                    layout: { padding: { top: 30, bottom: 20, left: 15, right: 15 } },
                     animation: { duration: 650 },
                     plugins: {
                         legend: {
                             position: 'bottom',
-                            labels: {
-                                color: textColor,
-                                usePointStyle: true,
-                                pointStyle: 'circle',
-                                boxWidth: 10,
-                                font: { size: 11, weight: '600' }
-                            }
+                            labels: { color: textColor, usePointStyle: true, pointStyle: 'circle', boxWidth: 10, font: { size: 11, weight: '600' } }
                         },
-                        // Konfigurasi Label Angka di atas Grafik
+                        // Matikan tooltip bawaan untuk SEMUA chart (digantikan label permanen)
+                        tooltip: {
+                            enabled: false
+                        },
+                        // Konfigurasi Label Kotak Hitam Permanen untuk SEMUA chart
                         datalabels: {
                             display: true,
-                            color: type === 'line' ? textColor : '#ffffff',
-                            align: type === 'line' ? 'bottom' : 'center',
-                            anchor: type === 'line' ? 'end' : 'center',
-                            font: { weight: 'bold', size: 13 },
-                            // Outline teks agar selalu bisa dibaca walau warnanya bertabrakan
-                            textStrokeColor: type === 'line' ? 'transparent' : 'rgba(0,0,0,0.6)',
-                            textStrokeWidth: type === 'line' ? 0 : 3,
-                            formatter: (value) => value > 0 ? value : '' // Sembunyikan angka jika 0
+                            formatter: function(value, context) {
+                                if (value === 0) return '';
+                                const label = context.chart.data.labels[context.dataIndex];
+                                const datasetLabel = context.dataset.label || 'Jumlah';
+                                return label + '\n' + datasetLabel + ': ' + value;
+                            },
+                            color: '#ffffff',
+                            backgroundColor: 'rgba(30, 41, 59, 0.95)', // Background hitam pekat elegan
+                            borderRadius: 6,
+                            padding: { top: 6, bottom: 6, left: 10, right: 10 },
+                            font: { weight: 'bold', size: 11, family: "'Inter', sans-serif" },
+                            textAlign: 'center',
+                            // Posisi Label (line chart ditaruh sedikit di atas titik, selain itu di tengah)
+                            align: type === 'line' ? 'top' : 'center',
+                            anchor: type === 'line' ? 'center' : 'center',
+                            textStrokeColor: 'transparent',
+                            textStrokeWidth: 0
                         }
                     },
                     scales: {
@@ -2584,14 +2598,15 @@ async function renderDashboardCharts() {
             };
 
             if(type === 'doughnut') config.options.cutout = '55%';
-            if(type === 'pie' || type === 'doughnut') config.options.radius = '80%';
+            // Radius sedikit dikecilkan agar label kotak di pinggir Pie/Doughnut tidak keluar batas layar
+            if(type === 'pie' || type === 'doughnut') config.options.radius = '75%';
 
             return new Chart(ctx, config);
         };
 
-        dashCharts.bar = createChart('dashboard-chart', 'bar', Object.keys(katCount), Object.values(katCount), 'Jumlah Aduan');
-        dashCharts.pie = createChart('dashboard-pie', 'pie', Object.keys(katCount), Object.values(katCount), 'Distribusi Kategori');
-        dashCharts.doughnut = createChart('dashboard-doughnut', 'doughnut', Object.keys(statusCount), Object.values(statusCount), 'Status Aduan');
+        dashCharts.bar = createChart('dashboard-chart', 'bar', Object.keys(katCount), Object.values(katCount), 'Jumlah Aduan', true);
+        dashCharts.pie = createChart('dashboard-pie', 'pie', Object.keys(katCount), Object.values(katCount), 'Distribusi Kategori', true);
+        dashCharts.doughnut = createChart('dashboard-doughnut', 'doughnut', Object.keys(statusCount), Object.values(statusCount), 'Status Aduan', true);
         dashCharts.line = createChart('dashboard-line', 'line', Object.keys(monthCount).reverse(), Object.values(monthCount).reverse(), 'Tren Laporan per Bulan', false);
     } catch (e) {
         console.warn('Dashboard chart tidak tersedia:', e);
