@@ -1158,6 +1158,52 @@
             </div>
         </div>
 
+        <div id="section-cetak-laporan" class="section no-print">
+            <div class="header no-print"><h2>Panel Cetak Laporan</h2><p>Preview format laporan resmi sesuai template A4</p></div>
+            <div class="card card-large no-print">
+                <h3 style="font-size: 14px; margin-bottom:10px;">Filter dan Template Laporan</h3>
+                <div class="form-row">
+                    <div class="form-group"><label>Periode</label><select id="cetak-lap-periode"><option value="semua">Semua Waktu</option><option value="bulanan">Bulan Ini</option><option value="semester">Semester Ini</option><option value="tahunan">Tahun Ini</option></select></div>
+                    <div class="form-group"><label>Kategori</label><select id="cetak-lap-kategori" class="dyn-kategori_aduan"><option value="">Semua Kategori</option></select></div>
+                    <div class="form-group"><label>Status</label><select id="cetak-lap-status"><option value="">Semua Status</option><option value="Terkirim">Terkirim / Baru</option><option value="Proses PIC / Dieskalasi">Dalam Proses PIC</option><option value="Selesai (SK Diterbitkan)">Selesai</option></select></div>
+                    <div class="form-group"><label>Pencarian</label><input type="text" id="cetak-lap-search" placeholder="Cari kode / nama / lokasi"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Dibuat Oleh</label><input type="text" id="cetak-lap-jabatan" value="Ketua Komite Etik" placeholder="Ketua Komite Etik"></div>
+                    <div class="form-group"><label>Nama Pejabat</label><input type="text" id="cetak-lap-nama" value="Ns. Thoha Ma'ruf, S.Kep" placeholder="Nama Pejabat"></div>
+                    <div class="form-group"><label>NIP</label><input type="text" id="cetak-lap-nip" value="-" placeholder="Nomor Induk Pegawai"></div>
+                    <div class="form-group"><label>Kertas</label><select id="cetak-lap-paper"><option value="A4">A4</option><option value="A3">A3</option></select></div>
+                </div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+                    <button class="btn-verify" onclick="loadCetakLaporan()">Terapkan Filter</button>
+                    <button class="btn-otorisasi" onclick="cetakLaporan_Print()">🖨️ Cetak</button>
+                    <button class="btn-pdf" onclick="cetakLaporan_PDF()">⬇ PDF</button>
+                    <button class="btn-success" onclick="cetakLaporan_Excel()">📊 Excel</button>
+                    <button class="btn-primary" onclick="cetakLaporan_DOCX()">📄 DOCX</button>
+                </div>
+            </div>
+
+            <div id="laporan-print-area" class="card card-large" style="box-shadow:none; background:#fff; color:#000;">
+                <div style="text-align: center; margin-bottom: 20px; border-bottom: 3px double #000; padding-bottom: 15px;">
+                    <h3 style="margin: 0; font-size: 16px; color:#000;">LAPORAN REKAPITULASI RIWAYAT PENANGANAN ADUAN</h3>
+                    <h4 style="margin: 5px 0 0 0; font-size: 14px; color:#000;" id="print-instansi-name">SISTEM PELAPORAN ETIK & HUKUM TERPADU (SIGAP)</h4>
+                    <p style="margin: 5px 0 0 0; font-size: 12px; color:#000;">Periode: <span id="lap-print-periode">Semua Waktu</span> | Total: <span id="lap-print-total">0</span> | Tanggal Cetak: <span id="lap-print-tglcetak">-</span></p>
+                </div>
+                <table id="table-cetak-laporan" class="dashboard-table" style="width:100%; border-collapse:collapse;">
+                    <thead><tr><th>No</th><th>Tgl Laporan</th><th>Kode</th><th>Pelapor</th><th>Terlapor</th><th>Lokasi / Kategori</th><th>Status / No SK</th><th>Ringkasan</th></tr></thead>
+                    <tbody id="cetak-lap-tbody"><tr><td colspan="8" style="text-align:center; color:#000;">Belum ada data laporan.</td></tr></tbody>
+                </table>
+                <div style="margin-top: 40px; display: flex; justify-content: flex-end;">
+                    <div style="text-align: center; width: 250px; font-size: 13px; color:#000;">
+                        <p style="margin: 0;">Samarinda, <span id="cetak-sign-tgl">...</span></p>
+                        <p style="margin: 5px 0 60px 0;" id="cetak-sign-jabatan">Ketua Komite Etik,</p>
+                        <p style="margin: 0; font-weight: bold; text-decoration: underline;" id="cetak-sign-nama">Nama Pejabat</p>
+                        <p style="margin: 5px 0 0 0;">NIP. <span id="cetak-sign-nip">-</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div id="section-informasi" class="section no-print">
             <div class="header"><h2>Publikasi & Edukasi</h2><p>Download materi edukasi dan publikasi resmi</p></div>
             <div style="max-width:900px; margin:0 auto;">
@@ -1772,9 +1818,26 @@ async function ubahPassword(){
     if(error) showToast(error.message, true); else showToast('Password diubah');
 }
 
+function ensureCetakLaporanSection() {
+    const existing = document.getElementById('section-cetak-laporan');
+    if (existing) return existing;
+
+    const source = document.getElementById('section-laporan');
+    if (!source || !source.parentNode) return null;
+
+    const clone = source.cloneNode(true);
+    clone.id = 'section-cetak-laporan';
+    source.parentNode.insertBefore(clone, source.nextSibling);
+    return clone;
+}
+
 function bukaTab(target) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    const sec = document.getElementById('section-' + target);
+
+    const sectionId = target === 'laporan' ? 'section-laporan' : target === 'cetak-laporan' ? 'section-cetak-laporan' : 'section-' + target;
+    let sec = document.getElementById(sectionId);
+    if (!sec && target === 'cetak-laporan') sec = ensureCetakLaporanSection();
+    if (!sec && target === 'laporan') sec = document.getElementById('section-cetak-laporan') || ensureCetakLaporanSection();
     if(sec) sec.classList.add('active');
     
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -3210,6 +3273,7 @@ function renderLaporanTable(rows, periode) {
                         ${hasSk ? '<div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:6px;">' +
                             '<button class="btn-small btn-success" data-skr-pdf="' + i + '" type="button">⬇ PDF</button>' +
                             '<button class="btn-small btn-verify" data-skr-docx="' + i + '" type="button">📄 DOCX</button>' +
+                            '<button class="btn-small btn-primary" data-skr-edit="' + i + '" type="button">✏️ Edit</button>' +
                             '</div>' : ''}
                     </td>
                 </tr>
@@ -3239,6 +3303,14 @@ function renderLaporanTable(rows, periode) {
                 if (row) downloadSkFromRow(row, 'docx');
             });
         });
+
+        tbody.querySelectorAll('[data-skr-edit]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const idx = Number(btn.getAttribute('data-skr-edit'));
+                const row = filteredRows[idx];
+                if (row && row.id) editPenetapan(row.id);
+            });
+        });
     }
 
     const signTanggal = document.getElementById('sign-tanggal');
@@ -3265,8 +3337,16 @@ function cetakLaporan() {
 }
 
 async function loadCetakLaporan(){
-    const periode=document.getElementById('cetak-lap-periode')?.value||'semua'; const kategori=document.getElementById('cetak-lap-kategori')?.value||''; const status=document.getElementById('cetak-lap-status')?.value||''; const search=document.getElementById('cetak-lap-search')?.value?.toLowerCase()||'';
-    const tbody=document.getElementById('cetak-lap-tbody'); if(tbody) tbody.innerHTML='<tr><td colspan="8" style="text-align:center;">Memuat...</td></tr>';
+    const periodeEl = document.getElementById('cetak-lap-periode') || document.getElementById('lap-filter-waktu');
+    const kategoriEl = document.getElementById('cetak-lap-kategori') || document.getElementById('lap-filter-kategori');
+    const statusEl = document.getElementById('cetak-lap-status') || document.getElementById('lap-filter-status');
+    const searchEl = document.getElementById('cetak-lap-search');
+    const periode = periodeEl?.value || 'semua';
+    const kategori = kategoriEl?.value || '';
+    const status = statusEl?.value || '';
+    const search = searchEl?.value?.toLowerCase() || document.getElementById('lap-search')?.value?.toLowerCase() || '';
+    const tbody = document.getElementById('cetak-lap-tbody') || document.getElementById('lap-tbody');
+    if (tbody) tbody.innerHTML='<tr><td colspan="8" style="text-align:center;">Memuat...</td></tr>';
 
     let query=supabaseClient.from('v_aduan_lengkap').select('*').order('created_at',{ascending:false}).limit(200);
     if(kategori) query=query.eq('kategori_id', kategori); if(status) query=query.eq('status', status);
@@ -3274,11 +3354,15 @@ async function loadCetakLaporan(){
     let rows=data||[]; if(search) rows=rows.filter(r=> (r.nama_terlapor||'').toLowerCase().includes(search) || (r.nama_pelapor||'').toLowerCase().includes(search) || (r.kode_tracking||'').toLowerCase().includes(search) || (r.lokasi_kejadian||'').toLowerCase().includes(search) || (r.kategori_nama||'').toLowerCase().includes(search) || (r.status||'').toLowerCase().includes(search) );
    cacheLaporan=rows;
 
-    document.getElementById('lap-print-periode').textContent=periode; document.getElementById('lap-print-total').textContent=rows.length; document.getElementById('lap-print-tglcetak').textContent=new Date().toLocaleDateString('id-ID');
-    document.getElementById('stat-baru').textContent=rows.filter(r=>r.status==='baru').length; document.getElementById('stat-proses').textContent=rows.filter(r=>['diverifikasi','tereskalasi','diproses_pic','menunggu_otorisasi'].includes(r.status)).length; document.getElementById('stat-selesai').textContent=rows.filter(r=>['selesai_sk','disahkan'].includes(r.status)).length;
+    const lapPrintPeriode = document.getElementById('lap-print-periode'); if (lapPrintPeriode) lapPrintPeriode.textContent = periode;
+    const lapPrintTotal = document.getElementById('lap-print-total'); if (lapPrintTotal) lapPrintTotal.textContent = rows.length;
+    const lapPrintTglCetak = document.getElementById('lap-print-tglcetak'); if (lapPrintTglCetak) lapPrintTglCetak.textContent = new Date().toLocaleDateString('id-ID');
+    const statBaru = document.getElementById('stat-baru'); if (statBaru) statBaru.textContent = rows.filter(r=>r.status==='baru').length;
+    const statProses = document.getElementById('stat-proses'); if (statProses) statProses.textContent = rows.filter(r=>['diverifikasi','tereskalasi','diproses_pic','menunggu_otorisasi'].includes(r.status)).length;
+    const statSelesai = document.getElementById('stat-selesai'); if (statSelesai) statSelesai.textContent = rows.filter(r=>['selesai_sk','disahkan'].includes(r.status)).length;
 
     if(tbody){
-        tbody.innerHTML=rows.map((r,i)=>`<tr><td>${i+1}</td><td>${r.created_at?new Date(r.created_at).toLocaleDateString('id-ID'):'-'}</td><td><b>${r.kode_tracking}</b></td><td>${r.nama_pelapor}</td><td>${r.nama_terlapor}<br><small>${r.jabatan_terlapor||''}</small></td><td>${r.lokasi_kejadian}<br><small>${r.kategori_nama||''}</small></td><td><span style="background:var(--surface-soft); color:var(--text); padding:2px 6px; border-radius:4px; font-size:10px;">${r.status}</span><br><small>${r.no_sk||''}</small></td><td style="max-width:200px;">${(r.tanggapan_akhir||r.otorisasi_catatan||'').substring(0,100)}${(r.no_sk || r.tgl_penetapan || r.isi_keputusan) ? '<div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:6px;">' + '<button class="btn-small btn-success" data-skr-pdf="'+i+'" type="button">⬇ PDF</button>' + '<button class="btn-small btn-verify" data-skr-docx="'+i+'" type="button">📄 DOCX</button>' + '</div>' : ''}</td></tr>`).join('') || '<tr><td colspan="8" style="text-align:center; color:var(--muted);">Tidak ada data</td></tr>';
+        tbody.innerHTML=rows.map((r,i)=>`<tr><td>${i+1}</td><td>${r.created_at?new Date(r.created_at).toLocaleDateString('id-ID'):'-'}</td><td><b>${r.kode_tracking}</b></td><td>${r.nama_pelapor}</td><td>${r.nama_terlapor}<br><small>${r.jabatan_terlapor||''}</small></td><td>${r.lokasi_kejadian}<br><small>${r.kategori_nama||''}</small></td><td><span style="background:var(--surface-soft); color:var(--text); padding:2px 6px; border-radius:4px; font-size:10px;">${r.status}</span><br><small>${r.no_sk||''}</small></td><td style="max-width:200px;">${(r.tanggapan_akhir||r.otorisasi_catatan||'').substring(0,100)}${(r.no_sk || r.tgl_penetapan || r.isi_keputusan) ? '<div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:6px;">' + '<button class="btn-small btn-success" data-skr-pdf="'+i+'" type="button">⬇ PDF</button>' + '<button class="btn-small btn-verify" data-skr-docx="'+i+'" type="button">📄 DOCX</button>' + '<button class="btn-small btn-primary" data-skr-edit="'+i+'" type="button">✏️ Edit</button>' + '</div>' : ''}</td></tr>`).join('') || '<tr><td colspan="8" style="text-align:center; color:var(--muted);">Tidak ada data</td></tr>';
 
         tbody.querySelectorAll('[data-skr-pdf]').forEach((btn) => {
             btn.addEventListener('click', () => {
@@ -3295,8 +3379,20 @@ async function loadCetakLaporan(){
                 if (row) downloadSkFromRow(row, 'docx');
             });
         });
+
+        tbody.querySelectorAll('[data-skr-edit]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const idx = Number(btn.getAttribute('data-skr-edit'));
+                const row = rows[idx];
+                if (row && row.id) editPenetapan(row.id);
+            });
+        });
     }
-    document.getElementById('cetak-sign-tgl').textContent=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'}); document.getElementById('cetak-sign-nama').textContent=document.getElementById('cetak-lap-nama')?.value||'Nama Pejabat'; document.getElementById('cetak-sign-nip').textContent=document.getElementById('cetak-lap-nip')?.value||'-'; document.getElementById('cetak-sign-jabatan').textContent=(document.getElementById('cetak-lap-jabatan')?.value||'Ketua Komite Etik')+','; showToast('Laporan: '+rows.length+' data');
+    const signTgl = document.getElementById('cetak-sign-tgl'); if (signTgl) signTgl.textContent = new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+    const signNama = document.getElementById('cetak-sign-nama'); if (signNama) signNama.textContent = document.getElementById('cetak-lap-nama')?.value || document.getElementById('lap-nama')?.value || 'Nama Pejabat';
+    const signNip = document.getElementById('cetak-sign-nip'); if (signNip) signNip.textContent = document.getElementById('cetak-lap-nip')?.value || document.getElementById('lap-nip')?.value || '-';
+    const signJabatan = document.getElementById('cetak-sign-jabatan'); if (signJabatan) signJabatan.textContent = (document.getElementById('cetak-lap-jabatan')?.value || document.getElementById('lap-jabatan')?.value || 'Ketua Komite Etik') + ',';
+    showToast('Laporan: '+rows.length+' data');
 }
 
 function resetCetakLaporan(){ ['cetak-lap-periode','cetak-lap-kategori','cetak-lap-status','cetak-lap-search'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=id==='cetak-lap-periode'?'semua':''; }); loadCetakLaporan(); }
