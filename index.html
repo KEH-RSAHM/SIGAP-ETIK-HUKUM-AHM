@@ -848,6 +848,7 @@
                 </div>
                 <button class="btn-otorisasi" onclick="simpanOtorisasi()">Sahkan Laporan</button>
                 <button class="btn-admin btn-small" style="margin-left:8px;" onclick="kembalikanProses('otorisasi')">↩ Kembalikan ke PIC</button>
+                <button class="btn-danger btn-small" style="margin-left:8px;" onclick="batalPengesahan()">⤴ Batalkan Pengesahan</button>
             </div>
             <div class="card card-large">
                 <h3 style="font-size:14px; margin-top:0;">Datasheet: Antrean Menunggu Pengesahan & Telah Disahkan</h3>
@@ -930,8 +931,19 @@
                 </div>
                 <div class="form-group"><label>Tempat Ditetapkan</label><input type="text" id="pen-tempat" value="Samarinda" oninput="muatPreviewSK(document.getElementById('pen-pilih-aduan').value)"></div>
                 <div class="form-group"><label>Isi Keputusan / Amar Putusan *</label><textarea id="pen-isi-keputusan" placeholder="Tuliskan amar keputusan lengkap, sanksi, dan tindak lanjut yang diputuskan..." style="min-height:120px;" oninput="muatPreviewSK(document.getElementById('pen-pilih-aduan').value)" required></textarea></div>
-                <div style="display: flex; justify-content: flex-end; margin-top: -5px; margin-bottom: 15px;">
-                    <button class="btn-success btn-small" style="width: auto;" onclick="ambilTemplateSanksi()">📄 Ambil Template SK Sanksi</button>
+                <div style="background: var(--surface-soft); border:1px solid var(--border); border-radius:12px; padding:14px; margin:12px 0;">
+                    <h4 style="margin:0 0 10px 0; font-size:14px; color:var(--text);">📝 Template SK Sanksi</h4>
+                    <textarea id="template-sk-editor" rows="8" style="width:100%; min-height:180px; resize:vertical; font-family:Consolas, monospace; font-size:12px;">[no_sk]
+[hal]
+
+Pada tanggal [tgl_format], berdasarkan laporan [kode_tracking] atas nama [nama_terlapor] dengan kategori [kategori], diputuskan bahwa:
+
+[isi_keputusan]</textarea>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
+                        <button class="btn-success btn-small" style="width:auto;" onclick="simpanTemplateSKSanksi()">💾 Simpan Template</button>
+                        <button class="btn-primary btn-small" style="width:auto;" onclick="ambilTemplateSanksi()">📄 Terapkan ke Preview</button>
+                        <button class="btn-admin btn-small" style="width:auto;" onclick="hapusTemplateSKSanksi()">🗑️ Hapus Template</button>
+                    </div>
                 </div>
 
                 <hr>
@@ -972,6 +984,7 @@
                 <div class="form-group"><label>Upload Scan SK Bertanda Tangan (Final)</label><input type="file" id="pen-file" accept="image/*,.pdf" onchange="validasiUkuranFile(this, 5)"><span class="file-hint">Maks. 5MB.</span></div>
                 <button class="btn-primary" id="btn-pen-simpan" onclick="simpanPenetapan()">Terbitkan & Arsipkan SK</button>
                 <button class="btn-admin btn-small" style="margin-left:8px;" onclick="kembalikanProses('penetapan')">↩ Kembalikan ke Otorisasi</button>
+                <button class="btn-danger btn-small" style="margin-left:8px;" onclick="batalPengesahan()">⤴ Batalkan Pengesahan</button>
             </div>
             <div class="card card-large">
                 <h3 style="font-size:14px; margin-top:0;">Datasheet: Antrean Penerbitan SK Final</h3>
@@ -1979,8 +1992,50 @@ let templateSKSanksiGlobal = '';
 async function loadTemplateSKSanksi() {
     try {
         const { data } = await supabaseClient.from('system_settings').select('key_value').eq('key_name', 'template_sk_sanksi').single();
-        if (data) templateSKSanksiGlobal = data.key_value;
+        if (data && data.key_value) {
+            templateSKSanksiGlobal = data.key_value;
+            const editor = document.getElementById('template-sk-editor');
+            if (editor) editor.value = data.key_value;
+        } else {
+            templateSKSanksiGlobal = '';
+            const editor = document.getElementById('template-sk-editor');
+            if (editor) editor.value = `[no_sk]\n[hal]\n\nPada tanggal [tgl_format], berdasarkan laporan [kode_tracking] atas nama [nama_terlapor] dengan kategori [kategori], diputuskan bahwa:\n\n[isi_keputusan]`;
+        }
     } catch(e) { console.warn("Template SK gagal dimuat"); }
+}
+
+async function simpanTemplateSKSanksi() {
+    const editor = document.getElementById('template-sk-editor');
+    const text = editor?.value?.trim();
+    if (!text) {
+        showToast('Template SK tidak boleh kosong.', true);
+        return;
+    }
+
+    try {
+        const { error } = await supabaseClient.from('system_settings').upsert([{ key_name: 'template_sk_sanksi', key_value: text }], { onConflict: 'key_name' });
+        if (error) throw error;
+        templateSKSanksiGlobal = text;
+        showToast('✅ Template SK berhasil disimpan.');
+    } catch (error) {
+        console.error('Gagal menyimpan template SK:', error);
+        showToast(error.message || 'Template SK gagal disimpan.', true);
+    }
+}
+
+async function hapusTemplateSKSanksi() {
+    if (!confirm('Hapus template SK yang tersimpan?')) return;
+    try {
+        const { error } = await supabaseClient.from('system_settings').delete().eq('key_name', 'template_sk_sanksi');
+        if (error) throw error;
+        templateSKSanksiGlobal = '';
+        const editor = document.getElementById('template-sk-editor');
+        if (editor) editor.value = '';
+        showToast('✅ Template SK berhasil dihapus.');
+    } catch (error) {
+        console.error('Gagal menghapus template SK:', error);
+        showToast(error.message || 'Template SK gagal dihapus.', true);
+    }
 }
 
 async function loadDatasheets() {
@@ -2482,6 +2537,10 @@ async function kembalikanProses(dari){
 
     const { error } = await supabaseClient.from('aduan').update({ status: targetStatus }).eq('id', aduanId);
     if(error){ showToast(error.message, true); return; }
+
+    if (dari === 'penetapan') {
+        await supabaseClient.from('penetapan_sk').delete().eq('aduan_id', aduanId).catch(() => {});
+    }
     
     showToast(`↩ Berhasil dikembalikan ke panel ${config.msg}`);
     
@@ -2489,7 +2548,32 @@ async function kembalikanProses(dari){
     const headerEl = document.getElementById(`info-header-${dari}`);
     if(headerEl) headerEl.style.display = 'none';
 
+    await loadAduanOptions();
     await loadAllData();
+}
+
+async function batalPengesahan() {
+    const aduanId = document.getElementById('ot-pilih-aduan')?.value || document.getElementById('pen-pilih-aduan')?.value;
+    if (!aduanId) {
+        showToast('Pilih laporan yang akan dibatalkan pengesahannya.', true);
+        return;
+    }
+
+    if (!confirm('Batalkan pengesahan dan kembalikan laporan ke tahap PIC?')) return;
+
+    try {
+        const { error } = await supabaseClient.from('aduan').update({ status: 'diproses_pic' }).eq('id', aduanId);
+        if (error) throw error;
+        await supabaseClient.from('penetapan_sk').delete().eq('aduan_id', aduanId).catch(() => {});
+        if (document.getElementById('ot-pilih-aduan')) document.getElementById('ot-pilih-aduan').value = '';
+        if (document.getElementById('pen-pilih-aduan')) document.getElementById('pen-pilih-aduan').value = '';
+        await loadAduanOptions();
+        await loadAllData();
+        showToast('✅ Pengesahan dibatalkan dan laporan dikembalikan ke PIC.');
+    } catch (error) {
+        console.error('Gagal membatalkan pengesahan:', error);
+        showToast(error.message || 'Gagal membatalkan pengesahan.', true);
+    }
 }
 
 function generateAutoSK(){
@@ -3257,7 +3341,13 @@ function renderLaporanTable(rows, periode) {
             const kategori = r.kategori_nama || '-';
             const sk = r.no_sk || '-';
             const ringkasan = (r.tanggapan_akhir || r.otorisasi_catatan || r.deskripsi_kejadian || '').replace(/\s+/g, ' ').trim();
-            const hasSk = Boolean(r.no_sk || r.tgl_penetapan || r.isi_keputusan || r.jenis_dokumen);
+            const hasSk = Boolean(r.no_sk || r.tgl_penetapan || r.isi_keputusan || r.jenis_dokumen || r.file_scan_sk_url || r.file_scan_sk_path);
+            const scanLink = r.file_scan_sk_url ? '<a href="' + r.file_scan_sk_url + '" target="_blank" style="color: var(--accent);">📎 Scan SK</a>' : '';
+            const skActions = hasSk ? '<div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:6px;">' +
+                '<button class="btn-small btn-success" data-skr-pdf="' + i + '" type="button">⬇ PDF</button>' +
+                '<button class="btn-small btn-verify" data-skr-docx="' + i + '" type="button">📄 DOCX</button>' +
+                '<button class="btn-small btn-primary" data-skr-edit="' + i + '" type="button">✏️ Edit</button>' +
+                '</div>' : '';
             return `
                 <tr>
                     <td>${i + 1}</td>
@@ -3269,12 +3359,9 @@ function renderLaporanTable(rows, periode) {
                     <td>${ringkasan ? ringkasan.substring(0, 120) : '-'}</td>
                     <td>${r.tgl_penetapan ? new Date(r.tgl_penetapan).toLocaleDateString('id-ID') : '-'}</td>
                     <td>
-                        ${r.file_scan_sk_url ? '<a href="' + r.file_scan_sk_url + '" target="_blank" style="color: var(--accent);">Lihat</a>' : '-'}
-                        ${hasSk ? '<div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:6px;">' +
-                            '<button class="btn-small btn-success" data-skr-pdf="' + i + '" type="button">⬇ PDF</button>' +
-                            '<button class="btn-small btn-verify" data-skr-docx="' + i + '" type="button">📄 DOCX</button>' +
-                            '<button class="btn-small btn-primary" data-skr-edit="' + i + '" type="button">✏️ Edit</button>' +
-                            '</div>' : ''}
+                        ${scanLink ? scanLink + '<br>' : ''}
+                        ${hasSk ? '<button class="btn-small btn-primary" type="button" data-skr-pdf="' + i + '">Download SK</button>' : '-'}
+                        ${skActions}
                     </td>
                 </tr>
             `;
@@ -3362,11 +3449,23 @@ async function loadCetakLaporan(){
     const statSelesai = document.getElementById('stat-selesai'); if (statSelesai) statSelesai.textContent = rows.filter(r=>['selesai_sk','disahkan'].includes(r.status)).length;
 
     if(tbody){
-        tbody.innerHTML=rows.map((r,i)=>`<tr><td>${i+1}</td><td>${r.created_at?new Date(r.created_at).toLocaleDateString('id-ID'):'-'}</td><td><b>${r.kode_tracking}</b></td><td>${r.nama_pelapor}</td><td>${r.nama_terlapor}<br><small>${r.jabatan_terlapor||''}</small></td><td>${r.lokasi_kejadian}<br><small>${r.kategori_nama||''}</small></td><td><span style="background:var(--surface-soft); color:var(--text); padding:2px 6px; border-radius:4px; font-size:10px;">${r.status}</span><br><small>${r.no_sk||''}</small></td><td style="max-width:200px;">${(r.tanggapan_akhir||r.otorisasi_catatan||'').substring(0,100)}${(r.no_sk || r.tgl_penetapan || r.isi_keputusan) ? '<div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:6px;">' + '<button class="btn-small btn-success" data-skr-pdf="'+i+'" type="button">⬇ PDF</button>' + '<button class="btn-small btn-verify" data-skr-docx="'+i+'" type="button">📄 DOCX</button>' + '<button class="btn-small btn-primary" data-skr-edit="'+i+'" type="button">✏️ Edit</button>' + '</div>' : ''}</td></tr>`).join('') || '<tr><td colspan="8" style="text-align:center; color:var(--muted);">Tidak ada data</td></tr>';
+        tbody.innerHTML=rows.map((r,i)=>{
+            const hasSk = Boolean(r.no_sk || r.tgl_penetapan || r.isi_keputusan || r.jenis_dokumen || r.file_scan_sk_url || r.file_scan_sk_path);
+            const scanLink = r.file_scan_sk_url ? '<a href="'+r.file_scan_sk_url+'" target="_blank" style="color: var(--accent);">📎 Scan SK</a>' : '';
+            return `<tr><td>${i+1}</td><td>${r.created_at?new Date(r.created_at).toLocaleDateString('id-ID'):'-'}</td><td><b>${r.kode_tracking}</b></td><td>${r.nama_pelapor}</td><td>${r.nama_terlapor}<br><small>${r.jabatan_terlapor||''}</small></td><td>${r.lokasi_kejadian}<br><small>${r.kategori_nama||''}</small></td><td><span style="background:var(--surface-soft); color:var(--text); padding:2px 6px; border-radius:4px; font-size:10px;">${r.status}</span><br><small>${r.no_sk||''}</small></td><td style="max-width:220px;">${(r.tanggapan_akhir||r.otorisasi_catatan||'').substring(0,100)}${scanLink ? '<div style="margin-top:6px;">'+scanLink+'</div>' : ''}${hasSk ? '<div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:6px;">' + '<button class="btn-small btn-primary" data-skr-pdf="'+i+'" type="button">Download SK</button>' + '<button class="btn-small btn-success" data-skr-pdf-alt="'+i+'" type="button">⬇ PDF</button>' + '<button class="btn-small btn-verify" data-skr-docx="'+i+'" type="button">📄 DOCX</button>' + '<button class="btn-small btn-primary" data-skr-edit="'+i+'" type="button">✏️ Edit</button>' + '</div>' : ''}</td></tr>`;
+        }).join('') || '<tr><td colspan="8" style="text-align:center; color:var(--muted);">Tidak ada data</td></tr>';
 
         tbody.querySelectorAll('[data-skr-pdf]').forEach((btn) => {
             btn.addEventListener('click', () => {
                 const idx = Number(btn.getAttribute('data-skr-pdf'));
+                const row = rows[idx];
+                if (row) downloadSkFromRow(row, 'pdf');
+            });
+        });
+
+        tbody.querySelectorAll('[data-skr-pdf-alt]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const idx = Number(btn.getAttribute('data-skr-pdf-alt'));
                 const row = rows[idx];
                 if (row) downloadSkFromRow(row, 'pdf');
             });
