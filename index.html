@@ -123,6 +123,22 @@
         .card { background: var(--card); padding: 20px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); max-width: 900px; margin: 0 auto 20px auto; border: 1px solid var(--border); }
         .card-large { max-width: 1100px; }
         .card canvas { max-width: 100% !important; max-height: 100% !important; }
+        .chart-panel {
+            background: rgba(255, 255, 255, 0.5) !important;
+            border: 1px solid rgba(148, 163, 184, 0.28);
+            border-radius: 18px;
+            padding: 18px;
+            position: relative;
+            height: 320px;
+            overflow: hidden;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+        }
+        .chart-panel canvas { display: block; height: 260px !important; }
+        body.light-theme .chart-panel {
+            background: rgba(255, 255, 255, 0.5) !important;
+            border-color: rgba(15,23,42,0.12);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+        }
         
         .form-row { display: flex; gap: 15px; margin-bottom: 15px; align-items: flex-end;}
         .form-group { flex: 1; margin-bottom: 15px; }
@@ -130,6 +146,10 @@
         
         label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 13px; color: var(--muted); }
         input[type="text"], input[type="email"], input[type="number"], input[type="date"], input[type="file"], input[type="password"], select, textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--input-border); border-radius: 8px; box-sizing: border-box; font-family: inherit; font-size: 14px; background: var(--input-bg); color: var(--text); }
+        input[type="date"] { color: var(--text) !important; color-scheme: dark; -webkit-appearance: auto; appearance: auto; padding-right: 36px !important; }
+        input[type="date"]::-webkit-calendar-picker-indicator { display: block; width: 18px; height: 18px; margin: 0 2px 0 8px; filter: invert(1) brightness(1.25); opacity: 1 !important; cursor: pointer; }
+        body.light-theme input[type="date"] { color: #111827 !important; color-scheme: light; }
+        body.light-theme input[type="date"]::-webkit-calendar-picker-indicator { filter: brightness(0); opacity: 1 !important; }
         input[type="text"]::placeholder, input[type="email"]::placeholder, input[type="number"]::placeholder, input[type="date"]::placeholder, input[type="password"]::placeholder, textarea::placeholder { color: var(--placeholder); }
         input[readonly] { background-color: var(--surface-soft); color: var(--muted); cursor: not-allowed; }
         input:focus, textarea:focus, select:focus{ outline: none; box-shadow: 0 0 0 4px rgba(212,175,55,0.2); border-color: var(--accent) }
@@ -175,10 +195,17 @@
         body.light-theme .dashboard-table th, body.light-theme .dashboard-table td { background: #ffffff !important; color: #111827 !important; border-color: #d1d5db !important; }
         body.light-theme .dashboard-table th { background-color: #f1f5f9 !important; }
 
-        .stat-box { flex: 1; padding: 20px; border-radius: 8px; text-align: center; min-width: 150px; }
-        .stat-box h3 { font-size: 28px; margin: 0 0 5px 0; color: var(--text) !important; }
-        .stat-box p { margin: 0; font-size: 13px; font-weight: bold; opacity: 0.9; color: var(--text) !important; }
+        .stat-box { flex: 1; padding: 20px; border-radius: 8px; text-align: center; min-width: 150px; border: 1px solid var(--border); }
+        /* PERBAIKAN WARNA TEKS KOTAK DASHBOARD HITAM PERMANEN */
+        .stat-box h3 { font-size: 28px; margin: 0 0 5px 0; color: #111827 !important; }
+        .stat-box p { margin: 0; font-size: 13px; font-weight: bold; opacity: 0.9; color: #111827 !important; }
         body.light-theme .stat-box h3, body.light-theme .stat-box p { color: #111827 !important; }
+        body.dark-theme .stat-box h3, body.dark-theme .stat-box p { color: #111827 !important; }
+        #section-dashboard, #section-dashboard * { color: #f8fafc !important; }
+        #section-dashboard .chart-panel { color: #f8fafc !important; }
+        body.light-theme #section-dashboard, body.light-theme #section-dashboard * { color: #111827 !important; }
+        body.light-theme #section-dashboard .chart-panel { color: #111827 !important; }
+        #section-dashboard .stat-box, #section-dashboard .stat-box * { color: #111827 !important; }
         
         #auto-deteksi-badge { color: var(--text) !important; font-weight: bold; background: var(--surface-soft) !important; border-color: var(--border) !important;}
         body.light-theme #auto-deteksi-badge { color: #111827 !important; background: #e2e8f0 !important; }
@@ -941,6 +968,7 @@ Pada tanggal [tgl_format], berdasarkan laporan [kode_tracking] atas nama [nama_t
 [isi_keputusan]</textarea>
                     <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
                         <button class="btn-success btn-small" style="width:auto;" onclick="simpanTemplateSKSanksi()">💾 Simpan Template</button>
+                        <button class="btn-verify btn-small" style="width:auto;" onclick="loadTemplateSKSanksi()">📥 Ambil Template SK</button>
                         <button class="btn-primary btn-small" style="width:auto;" onclick="ambilTemplateSanksi()">📄 Terapkan ke Preview</button>
                         <button class="btn-admin btn-small" style="width:auto;" onclick="hapusTemplateSKSanksi()">🗑️ Hapus Template</button>
                     </div>
@@ -1094,30 +1122,30 @@ Pada tanggal [tgl_format], berdasarkan laporan [kode_tracking] atas nama [nama_t
             </div>
             <div class="card card-large">
                 <div style="display:flex; gap:15px; flex-wrap:wrap; margin-bottom: 20px;">
-                    <div class="stat-box" style="background:#e0f2fe; color:#0369a1;">
+                    <div class="stat-box" style="background:#e0f2fe; color:#111827;">
                         <h3 id="dash-tot">0</h3><p>Total Laporan Masuk</p>
                     </div>
-                    <div class="stat-box" style="background:#fef9c3; color:#854d0e;">
+                    <div class="stat-box" style="background:#fef9c3; color:#111827;">
                         <h3 id="dash-pros">0</h3><p>Sedang Diproses</p>
                     </div>
-                    <div class="stat-box" style="background:#dcfce7; color:#166534;">
+                    <div class="stat-box" style="background:#dcfce7; color:#111827;">
                         <h3 id="dash-sel">0</h3><p>Selesai Ditangani</p>
                     </div>
                 </div>
                 <div style="display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:20px; margin-bottom:24px;">
-                    <div style="background: rgba(15,23,42,0.04); border-radius: 20px; padding: 18px; position: relative; height: 320px;">
+                    <div class="chart-panel">
                         <h3 style="font-size:14px; margin-bottom:12px;">Distribusi Kategori (Bar)</h3>
                         <canvas id="dashboard-chart"></canvas>
                     </div>
-                    <div style="background: rgba(15,23,42,0.04); border-radius: 20px; padding: 18px; position: relative; height: 320px;">
+                    <div class="chart-panel">
                         <h3 style="font-size:14px; margin-bottom:12px;">Distribusi Kategori (Pie)</h3>
                         <canvas id="dashboard-pie"></canvas>
                     </div>
-                    <div style="background: rgba(15,23,42,0.04); border-radius: 20px; padding: 18px; position: relative; height: 320px;">
+                    <div class="chart-panel">
                         <h3 style="font-size:14px; margin-bottom:12px;">Status Aduan (Doughnut)</h3>
                         <canvas id="dashboard-doughnut"></canvas>
                     </div>
-                    <div style="background: rgba(15,23,42,0.04); border-radius: 20px; padding: 18px; position: relative; height: 320px;">
+                    <div class="chart-panel">
                         <h3 style="font-size:14px; margin-bottom:12px;">Tren Bulanan (Line)</h3>
                         <canvas id="dashboard-line"></canvas>
                     </div>
@@ -1199,7 +1227,7 @@ Pada tanggal [tgl_format], berdasarkan laporan [kode_tracking] atas nama [nama_t
             <div id="laporan-print-area" class="card card-large" style="box-shadow:none; background:#fff; color:#000;">
                 <div style="text-align: center; margin-bottom: 20px; border-bottom: 3px double #000; padding-bottom: 15px;">
                     <h3 style="margin: 0; font-size: 16px; color:#000;">LAPORAN REKAPITULASI RIWAYAT PENANGANAN ADUAN</h3>
-                    <h4 style="margin: 5px 0 0 0; font-size: 14px; color:#000;" id="print-instansi-name">SISTEM PELAPORAN ETIK & HUKUM TERPADU (SIGAP)</h4>
+                    <h4 style="margin: 5px 0 0 0; font-size: 14px; color:#000;" id="cetak-print-instansi-name">SISTEM PELAPORAN ETIK & HUKUM TERPADU (SIGAP)</h4>
                     <p style="margin: 5px 0 0 0; font-size: 12px; color:#000;">Periode: <span id="lap-print-periode">Semua Waktu</span> | Total: <span id="lap-print-total">0</span> | Tanggal Cetak: <span id="lap-print-tglcetak">-</span></p>
                 </div>
                 <table id="table-cetak-laporan" class="dashboard-table" style="width:100%; border-collapse:collapse;">
@@ -1252,7 +1280,7 @@ Pada tanggal [tgl_format], berdasarkan laporan [kode_tracking] atas nama [nama_t
                     <div class="card" style="padding:24px; background: var(--surface-soft); border: 1px solid var(--border);">
                         <h3 style="margin-top:0; border-bottom:2px solid var(--primary); padding-bottom:10px; color:var(--text);">🛡️ Panel Admin: Daftar Pertanyaan Masuk</h3>
                         <button class="btn-primary btn-small" style="margin-bottom: 12px;" onclick="loadAdminKorespondensi()">🔄 Refresh Pertanyaan</button>
-                        <div id="admin-kor-list" style="display:flex; flex-direction:column; gap:12px;">Memuat pertanyaan...</div>
+                        <div id="admin-kor-list-korespondensi" style="display:flex; flex-direction:column; gap:12px;">Memuat pertanyaan...</div>
                     </div>
                 </div>
                 <div class="card" style="padding:24px;">
@@ -1379,7 +1407,7 @@ Pada tanggal [tgl_format], berdasarkan laporan [kode_tracking] atas nama [nama_t
                     <button class="btn-primary btn-small" onclick="loadAdminKorespondensi()">🔄 Refresh Pesan</button>
                     <button class="btn-success btn-small" onclick="kirimSemuaBalasanSekaligus()">📤 Kirim Semua Balasan Terisi</button>
                 </div>
-                <div id="admin-kor-list" style="display:flex; flex-direction:column; gap:12px;">
+                <div id="admin-kor-list-admin" style="display:flex; flex-direction:column; gap:12px;">
                     Memuat pertanyaan...
                 </div>
             </div>
@@ -1889,7 +1917,11 @@ function toggleSidebar() {
     document.getElementById('mobile-overlay')?.classList.toggle('show');
 }
 
-function toggleTheme(){ document.body.classList.toggle('light-theme'); localStorage.setItem('sigap-theme', document.body.classList.contains('light-theme')?'light':'dark'); }
+        function toggleTheme(){
+            document.body.classList.toggle('light-theme');
+            localStorage.setItem('sigap-theme', document.body.classList.contains('light-theme')?'light':'dark');
+            if (typeof renderDashboardCharts === 'function') renderDashboardCharts();
+        }
 
 async function uploadFile(bucket, file){
     if(!file) return { url:null, path:null };
@@ -1991,17 +2023,24 @@ let templateSKSanksiGlobal = '';
 
 async function loadTemplateSKSanksi() {
     try {
-        const { data } = await supabaseClient.from('system_settings').select('key_value').eq('key_name', 'template_sk_sanksi').single();
+        const { data, error } = await supabaseClient.from('system_settings').select('key_value').eq('key_name', 'template_sk_sanksi').maybeSingle();
+        if (error) throw error;
         if (data && data.key_value) {
             templateSKSanksiGlobal = data.key_value;
             const editor = document.getElementById('template-sk-editor');
             if (editor) editor.value = data.key_value;
+            return data.key_value;
         } else {
-            templateSKSanksiGlobal = '';
+            templateSKSanksiGlobal = `[no_sk]\n[hal]\n\nPada tanggal [tgl_format], berdasarkan laporan [kode_tracking] atas nama [nama_terlapor] dengan kategori [kategori], diputuskan bahwa:\n\n[isi_keputusan]`;
             const editor = document.getElementById('template-sk-editor');
-            if (editor) editor.value = `[no_sk]\n[hal]\n\nPada tanggal [tgl_format], berdasarkan laporan [kode_tracking] atas nama [nama_terlapor] dengan kategori [kategori], diputuskan bahwa:\n\n[isi_keputusan]`;
+            if (editor) editor.value = templateSKSanksiGlobal;
+            return templateSKSanksiGlobal;
         }
-    } catch(e) { console.warn("Template SK gagal dimuat"); }
+    } catch(e) {
+        console.error('Template SK gagal dimuat:', e);
+        showToast('Template SK gagal diambil dari Supabase.', true);
+        return '';
+    }
 }
 
 async function simpanTemplateSKSanksi() {
@@ -2250,13 +2289,14 @@ async function renderDashboardCharts() {
         const createChart = (id, type, labels, dataArr, title, useMultiColor = true) => {
             const ctx = document.getElementById(id); if(!ctx) return null;
             const isLight = document.body.classList.contains('light-theme');
-            const textColor = getComputedStyle(document.body).getPropertyValue('--text').trim() || '#111827';
-            const gridColor = isLight ? 'rgba(15, 23, 42, 0.14)' : 'rgba(255, 255, 255, 0.12)';
-            const lineColor = isLight ? 'rgba(128, 0, 0, 0.9)' : 'rgba(212, 175, 55, 0.95)';
-            const colors = ['rgba(128, 0, 0, 0.8)', 'rgba(212, 175, 55, 0.8)', 'rgba(148, 163, 184, 0.85)', 'rgba(42, 42, 42, 0.8)', 'rgba(90, 0, 0, 0.8)'];
-            const bgColors = useMultiColor ? colors.slice(0, labels.length) : colors[0];
-            const datasetBorder = type === 'line' ? lineColor : 'rgba(128, 0, 0, 0.7)';
-            const datasetFill = type === 'line' ? (isLight ? 'rgba(128, 0, 0, 0.15)' : 'rgba(212, 175, 55, 0.18)') : bgColors;
+            const textColor = isLight ? '#111827' : '#f8fafc';
+            const gridColor = isLight ? 'rgba(15, 23, 42, 0.18)' : 'rgba(255, 255, 255, 0.18)';
+            const lineColor = isLight ? '#800000' : '#f5c84c';
+            const areaColor = isLight ? 'rgba(128, 0, 0, 0.12)' : 'rgba(245, 200, 76, 0.24)';
+            const colors = ['#800000', '#d4af37', '#94a3b8', '#2f2f2f', '#a16207'];
+            const bgColors = useMultiColor ? colors.slice(0, labels.length) : '#800000';
+            const datasetBorder = type === 'line' ? lineColor : '#800000';
+            const datasetFill = type === 'line' ? areaColor : bgColors;
 
             let config = {
                 type: type,
@@ -2266,36 +2306,44 @@ async function renderDashboardCharts() {
                         label: title,
                         data: dataArr,
                         backgroundColor: datasetFill,
-                        borderWidth: type === 'line' ? 3 : 1,
+                        borderWidth: type === 'line' ? 4 : 1,
                         borderColor: datasetBorder,
                         pointBackgroundColor: lineColor,
                         pointBorderColor: '#ffffff',
                         pointHoverBackgroundColor: lineColor,
                         pointRadius: type === 'line' ? 4 : 3,
-                        pointHoverRadius: type === 'line' ? 5 : 4,
-                        tension: type === 'line' ? 0.28 : 0,
-                        fill: type === 'line' ? true : false
+                        pointHoverRadius: type === 'line' ? 6 : 4,
+                        tension: type === 'line' ? 0.35 : 0,
+                        fill: type === 'line' ? true : false,
+                        borderJoinStyle: 'round'
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    layout: { padding: 15 },
+                    layout: { padding: 12 },
+                    animation: { duration: 650 },
                     plugins: {
                         legend: {
                             position: 'bottom',
-                            labels: { color: textColor, font: { size: 10 } }
+                            labels: {
+                                color: textColor,
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                boxWidth: 10,
+                                font: { size: 10 }
+                            }
                         }
                     },
                     scales: {
                         x: {
-                            ticks: { color: textColor, maxRotation: 45 },
+                            ticks: { color: textColor, maxRotation: 45, font: { weight: '600' } },
                             grid: { color: gridColor, drawBorder: false },
                             border: { display: false }
                         },
                         y: {
                             beginAtZero: true,
-                            ticks: { color: textColor },
+                            ticks: { color: textColor, font: { weight: '600' } },
                             grid: { color: gridColor, drawBorder: false },
                             border: { display: false }
                         }
@@ -2303,7 +2351,7 @@ async function renderDashboardCharts() {
                 }
             };
 
-            if(type === 'doughnut') config.options.cutout = '60%';
+            if(type === 'doughnut') config.options.cutout = '58%';
             if(type === 'pie' || type === 'doughnut') config.options.radius = '85%';
 
             return new Chart(ctx, config);
@@ -2947,17 +2995,28 @@ async function ambilTemplateSanksi() {
 
     let isiKeputusan = document.getElementById('pen-isi-keputusan').value || data.tanggapan_akhir || 'Sanksi diberikan sesuai ketentuan...';
     const tglAduan = new Date(data.created_at).toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
-    
-    let temp = templateSKSanksiGlobal;
+
+    const tempFromSupabase = await loadTemplateSKSanksi();
+    let temp = tempFromSupabase || templateSKSanksiGlobal;
     if (!temp) return showToast('Template belum tersedia di database.', true);
 
-    temp = temp.replace(/\[tanggal_aduan\]/g, tglAduan);
-    temp = temp.replace(/\[ID_Aduan\]/g, data.kode_tracking);
-    temp = temp.replace(/\[nama_terlapor\]/g, data.nama_terlapor);
-    temp = temp.replace(/\[jabatan\]/g, data.jabatan_terlapor || '-');
-    temp = temp.replace(/\[lokasi\]/g, data.lokasi_kejadian || '-');
-    temp = temp.replace(/\[kategori\]/g, data.kategori_nama || '-');
-    temp = temp.replace(/\[isi_keputusan\]/g, isiKeputusan);
+    const tgl = document.getElementById('pen-tgl')?.value || new Date().toISOString().slice(0, 10);
+    const tglFormat = new Date(tgl).toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
+    temp = applySkTemplate(temp, {
+        noSK: document.getElementById('pen-no-sk')?.value || '-/KEH/RSJDAHM/' + new Date().getFullYear(),
+        hal: document.getElementById('pen-hal-sk')?.value || 'Penetapan Hasil Penanganan Aduan',
+        tgl,
+        tglFormat: tglFormat || tglAduan,
+        isi: isiKeputusan,
+        jenis: document.getElementById('pen-jenis-dokumen')?.value || 'sk',
+        pejabat: document.getElementById('pen-pejabat')?.value || 'dr. Indah Puspitasari, MARS',
+        jabatan: document.getElementById('pen-jabatan')?.value || data.jabatan_terlapor || 'Direktur',
+        nip: document.getElementById('pen-nip')?.value || '196705301998032003',
+        tempat: document.getElementById('pen-tempat')?.value || 'Samarinda',
+        kategori: data.kategori_nama || '-',
+        terlapor: data.nama_terlapor || '-',
+        kodeTracking: data.kode_tracking || '-'
+    });
 
     const preview = document.getElementById('preview-sk-content');
     if (preview) {
@@ -3151,7 +3210,7 @@ function previewKopSK(input){ if(input.files && input.files[0]){ const url=URL.c
 function cetakSK_Print(){
     const area=document.getElementById('sk-print-area'); if(!area){ showToast('Area preview SK tidak ditemukan', true); return; }
     const win=window.open('', '_blank');
-    win.document.write('<html><head><title>Cetak SK</title><style>body{font-family:Arial;padding:20px;}</'+'style></head><body>'+area.innerHTML+'</body></html>');
+    win.document.write('<html><head><title>Cetak SK</title><style>body{font-family:Arial;padding:20px;}</'+'style></head><body>'+area.innerHTML+'</'+'body></html>');
     win.document.close(); win.print();
 }
 
@@ -3174,7 +3233,7 @@ function downloadSelectedSKReport(type = 'pdf') {
         }
 
         const win = window.open('', '_blank');
-        win.document.write('<html><head><title>Download SK</title><style>body{font-family:Arial;padding:24px;} img{max-width:100%;}</style></head><body>' + area.innerHTML + '</body></html>');
+        win.document.write('<html><head><title>Download SK</title><style>body{font-family:Arial;padding:24px;} img{max-width:100%;}</style></head><body>' + area.innerHTML + '</' + 'body></html>');
         win.document.close();
         win.focus();
         setTimeout(() => win.print(), 500);
@@ -3322,7 +3381,7 @@ function downloadSkFromRow(row, type = 'pdf') {
         }
 
         const win = window.open('', '_blank');
-        win.document.write('<html><head><title>SK</title><style>body{font-family:Arial;padding:24px;} img{max-width:100%;}</style></head><body>' + htmlContent + '</body></html>');
+        win.document.write('<html><head><title>SK</title><style>body{font-family:Arial;padding:24px;} img{max-width:100%;}</style></head><body>' + htmlContent + '</' + 'body></html>');
         win.document.close();
         win.focus();
         setTimeout(() => win.print(), 500);
@@ -3458,7 +3517,7 @@ function cetakLaporan() {
     }
 
     const printWindow = window.open('', '_blank');
-    printWindow.document.write('<html><head><title>Laporan SIGAP</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#000;} table{width:100%;border-collapse:collapse;font-size:12px;} th,td{border:1px solid #000;padding:6px;vertical-align:top;} th{background:#f3f4f6;} .badge{display:inline-block;padding:4px 6px;border-radius:4px;background:#f1f5f9;} a{color:#000;}</style></head><body>' + area.innerHTML + '</body></html>');
+    printWindow.document.write('<html><head><title>Laporan SIGAP</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#000;} table{width:100%;border-collapse:collapse;font-size:12px;} th,td{border:1px solid #000;padding:6px;vertical-align:top;} th{background:#f3f4f6;} .badge{display:inline-block;padding:4px 6px;border-radius:4px;background:#f1f5f9;} a{color:#000;}</style></head><body>' + area.innerHTML + '</' + 'body></html>');
     printWindow.document.close();
     setTimeout(() => printWindow.print(), 500);
 }
@@ -3538,7 +3597,7 @@ function resetCetakLaporan(){ ['cetak-lap-periode','cetak-lap-kategori','cetak-l
 
 function cetakLaporan_Print(){
     const area=document.getElementById('laporan-print-area'); const win=window.open('', '_blank');
-    win.document.write('<html><head><title>Laporan</title><style>body{font-family:Arial;font-size:12px;color:black;} table{width:100%;border-collapse:collapse;} th,td{border:1px solid #000;padding:6px;color:black;} th{background:#f1f5f9;}</style></head><body>'+area.innerHTML+'</body></html>');
+    win.document.write('<html><head><title>Laporan</title><style>body{font-family:Arial;font-size:12px;color:black;} table{width:100%;border-collapse:collapse;} th,td{border:1px solid #000;padding:6px;color:black;} th{background:#f1f5f9;}</style></head><body>'+area.innerHTML+'</'+'body></html>');
     win.document.close(); setTimeout(()=>win.print(),500);
 }
 
@@ -3745,7 +3804,7 @@ async function loadAdminKorespondensi() {
     const { data, error } = await query;
     if (error) { showToast('Gagal memuat pesan: ' + error.message, true); return; }
     
-    const listEls = document.querySelectorAll('#admin-kor-list'); 
+    const listEls = document.querySelectorAll('#admin-kor-list-korespondensi, #admin-kor-list-admin'); 
     if (listEls.length === 0) return;
     
     const htmlOutput = (!data || data.length === 0) ? '<div style="padding:15px; text-align:center; color:var(--muted);">Belum ada pesan masuk untuk Anda.</div>' : data.map(k => `
