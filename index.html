@@ -379,7 +379,7 @@
         .card-hero-content { position: relative; z-index: 3; }
         .card-hero-content h3 { color: #ffffff !important; font-size: 1.6rem; margin: 0 0 12px 0; text-shadow: 0 2px 4px rgba(0,0,0,0.8); line-height: 1.3; }
         .card-hero-content p { color: #e5e7eb !important; font-size: 0.95rem; line-height: 1.7; margin: 0; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
-        .card-hero-badge { display: inline-block; background: var(--accent); color: #111; padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 1px; }
+        .card-hero-badge { display: inline-block; background: var(--accent); color: hsl(0, 0%, 7%); padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 1px; }
         
         /* Animasi Panel Slide */
         .section { display: none; opacity: 0; transform: translateY(15px) scale(0.99); }
@@ -3036,7 +3036,7 @@ function applySkTemplate(templateText, values = {}) {
         ID_Aduan: values.kodeTracking || '-',
         id_aduan: values.kodeTracking || '-',
         nama_terlapor: values.terlapor || '-',
-        jabatan: values.jabatan || 'Direktur',
+        jabatan: values.jabatanTerlapor || '-', // PERBAIKAN: Template merujuk ke jabatan terlapor
         lokasi: values.lokasi || '-',
         lokasi_kejadian: values.lokasi || '-',
         'lokasi/unit kerja': values.lokasi || '-',
@@ -3049,7 +3049,7 @@ function applySkTemplate(templateText, values = {}) {
         tentang: values.hal || 'Hasil Penanganan Aduan',
         nama_pejabat: values.pejabat || 'dr. Indah Puspitasari, MARS',
         pejabat: values.pejabat || 'dr. Indah Puspitasari, MARS',
-        jabatan_pejabat: values.jabatan || 'Direktur',
+        jabatan_pejabat: values.jabatan || 'Direktur', // Jabatan penandatangan
         nip_pejabat: values.nip || '196705301998032003',
         nip: values.nip || '196705301998032003',
         tempat_ditetapkan: values.tempat || 'Samarinda',
@@ -3061,7 +3061,6 @@ function applySkTemplate(templateText, values = {}) {
     Object.entries(normalized).forEach(([key, value]) => {
         const replaceValue = String(value ?? '-');
         text = text.replace(new RegExp(`\\[${key}\\]`, 'gi'), replaceValue);
-        text = text.replace(new RegExp(`\\[${key.toUpperCase()}\\]`, 'gi'), replaceValue);
     });
 
     text = text
@@ -3131,82 +3130,77 @@ function formatImportedSkTemplate(html) {
 // =================================================================================
 // PERBAIKAN: FORMAT TEMPLATE SK (Tabel Sejajar, Indentasi Rapi Sesuai Gambar)
 // =================================================================================
-function renderSkDocContent({ noSK, hal, tgl, tglFormat, isi, jenis, pejabat, jabatan, nip, tempat, kategori, lokasi, terlapor, kodeTracking, urgensi }) {
-    
-    // Tentukan Judul Surat
+function renderSkDocContent({ noSK, hal, tgl, tglFormat, isi, jenis, pejabat, jabatan, nip, tempat, kategori, lokasi, terlapor, kodeTracking, urgensi, jabatanTerlapor }) {
     let judulSK = 'SURAT KEPUTUSAN PENETAPAN';
-    if (jenis === 'penghentian') judulSK = 'SURAT KETERANGAN PENGHENTIAN PROSES ADUAN';
-    if (jenis === 'tidak_ada_sanksi') judulSK = 'SURAT KETERANGAN TIDAK ADA PENGENAAN SANKSI';
+    let diktumMengingat = `
+        <table style="width: 100%; border-collapse: collapse; border: none;">
+            <tr><td style="width: 25px; vertical-align: top;">1.</td><td style="vertical-align: top; text-align: justify;">Undang-Undang Nomor 44 Tahun 2009 tentang Rumah Sakit.</td></tr>
+            <tr><td style="width: 25px; vertical-align: top;">2.</td><td style="vertical-align: top; text-align: justify;">Peraturan Menteri Kesehatan Nomor 42 Tahun 2018 tentang Komite Etik dan Hukum Rumah Sakit.</td></tr>
+            <tr><td style="width: 25px; vertical-align: top;">3.</td><td style="vertical-align: top; text-align: justify;">Pedoman Etik dan Hukum RSJD Atma Husada Mahakam.</td></tr>
+            <tr><td style="width: 25px; vertical-align: top;">4.</td><td style="vertical-align: top; text-align: justify;">SOP penanganan aduan etik dan hukum internal rumah sakit (SIGAP).</td></tr>
+        </table>`;
+    let diktumMenimbang = `
+        <table style="width: 100%; border-collapse: collapse; border: none;">
+            <tr><td style="width: 25px; vertical-align: top;">1.</td><td style="vertical-align: top; text-align: justify;">Bahwa berdasarkan data aduan masuk pada sistem aplikasi dengan nomor ${kodeTracking || '-'} tentang perkara ${kategori || '-'} yang melibatkan ${terlapor || '-'}, telah dilakukan proses verifikasi.</td></tr>
+            <tr><td style="width: 25px; vertical-align: top;">2.</td><td style="vertical-align: top; text-align: justify;">Bahwa setelah dilakukan pemeriksaan dan telaah oleh Komite terkait, dipandang perlu menetapkan keputusan sanksi/tindak lanjut secara formal.</td></tr>
+        </table>`;
+    let labelMemutuskan = 'MEMUTUSKAN:';
+    let diktumSatuTeks = `Dinyatakan terbukti secara sah dan meyakinkan melakukan pemenuhan unsur kategori perkara [${kategori}] dengan tingkat urgensi penanganan [${urgensi || '-'}].`;
 
-    // Format Paragraf Isi (Mencegah error text panjang)
+    // PERBAIKAN: Format konten dinamis (tapi tetap menggunakan layout Tabel SK) jika dokumen bukan SK biasa
+    if (jenis === 'penghentian') {
+        judulSK = 'SURAT KETERANGAN PENGHENTIAN PROSES ADUAN';
+        diktumMenimbang = `
+            <table style="width: 100%; border-collapse: collapse; border: none;">
+                <tr><td style="width: 25px; vertical-align: top;">1.</td><td style="vertical-align: top; text-align: justify;">Bahwa berdasarkan laporan aduan nomor ${kodeTracking || '-'} tentang ${kategori || '-'} yang melibatkan ${terlapor || '-'}, telah dilakukan proses verifikasi dan pemeriksaan menyeluruh.</td></tr>
+                <tr><td style="width: 25px; vertical-align: top;">2.</td><td style="vertical-align: top; text-align: justify;">Bahwa berdasarkan hasil pemeriksaan dan pertimbangan yang objektif, maka pelaksanaan tindak lanjut terhadap peristiwa tersebut perlu dihentikan secara formal.</td></tr>
+            </table>`;
+        labelMemutuskan = 'MENERANGKAN:';
+        diktumSatuTeks = `Dinyatakan bahwa proses aduan terhadap nama tersebut dihentikan sesuai dengan hasil verifikasi dan telaah pedoman rumah sakit.`;
+    } else if (jenis === 'tidak_ada_sanksi') {
+        judulSK = 'SURAT KETERANGAN TIDAK ADA PENGENAAN SANKSI';
+        diktumMenimbang = `
+            <table style="width: 100%; border-collapse: collapse; border: none;">
+                <tr><td style="width: 25px; vertical-align: top;">1.</td><td style="vertical-align: top; text-align: justify;">Bahwa berdasarkan laporan aduan nomor ${kodeTracking || '-'} tentang ${kategori || '-'} yang melibatkan ${terlapor || '-'}, telah dilakukan proses telaah mendalam.</td></tr>
+                <tr><td style="width: 25px; vertical-align: top;">2.</td><td style="vertical-align: top; text-align: justify;">Bahwa berdasarkan evaluasi komite dan pedoman yang berlaku, tidak ditemukan pelanggaran yang memenuhi unsur pengenaan sanksi sehingga perlu diterbitkan keterangan resmi.</td></tr>
+            </table>`;
+        labelMemutuskan = 'MENERANGKAN:';
+        diktumSatuTeks = `Dinyatakan bahwa nama tersebut telah melalui proses telaah dan tidak dikenakan sanksi disiplin/etik maupun sanksi lainnya.`;
+    }
+
     const isiKeputusan = (isi || '').trim() || '-';
 
     return `
     <div style="font-family: 'Times New Roman', Times, serif; color: #000; width: 100%; font-size: 12pt; line-height: 1.5; padding: 0 10mm;">
-        
-        <!-- HEADER SURAT -->
         <div style="text-align: center; margin-bottom: 25px;">
             <div style="font-weight: bold; text-decoration: underline; font-size: 13pt;">${judulSK}</div>
             <div style="margin-top: 2px;">Nomor: ${noSK}</div>
             <div style="margin-top: 8px;">Tentang</div>
-            <div style="font-weight: bold;">PENETAPAN HASIL PENANGANAN ADUAN</div>
+            <div style="font-weight: bold; text-transform: uppercase;">PENETAPAN HASIL PENANGANAN ADUAN</div>
             <div style="font-weight: bold; text-transform: uppercase;">TERLAPOR A.N. ${terlapor || '-'}</div>
             <br>
             <div style="font-weight: bold; font-size: 13pt;">DIREKTUR RUMAH SAKIT JIWA DAERAH ATMA HUSADA MAHAKAM</div>
         </div>
 
-        <!-- BODY SURAT (MENGGUNAKAN TABEL AGAR TITIK DUA SEJAJAR) -->
         <table style="width: 100%; border-collapse: collapse; border: none; font-size: 12pt; vertical-align: top;">
-            
-            <!-- MENIMBANG -->
             <tr>
                 <td style="width: 120px; vertical-align: top; padding-bottom: 10px;">MENIMBANG</td>
                 <td style="width: 20px; vertical-align: top; text-align: center; padding-bottom: 10px;">:</td>
-                <td style="vertical-align: top; text-align: justify; padding-bottom: 10px;">
-                    <table style="width: 100%; border-collapse: collapse; border: none;">
-                        <tr>
-                            <td style="width: 25px; vertical-align: top;">1.</td>
-                            <td style="vertical-align: top; text-align: justify;">Bahwa berdasarkan data aduan masuk pada sistem aplikasi tanggal ${tglFormat} terkait dugaan pelanggaran.</td>
-                        </tr>
-                        <tr>
-                            <td style="width: 25px; vertical-align: top;">2.</td>
-                            <td style="vertical-align: top; text-align: justify;">Bahwa setelah dilakukan proses verifikasi serta rangkaian penanganan aduan, dipandang perlu menetapkan keputusan sanksi.</td>
-                        </tr>
-                    </table>
-                </td>
+                <td style="vertical-align: top; text-align: justify; padding-bottom: 10px;">${diktumMenimbang}</td>
             </tr>
-
-            <!-- MENGINGAT -->
             <tr>
                 <td style="width: 120px; vertical-align: top; padding-bottom: 20px;">MENGINGAT</td>
                 <td style="width: 20px; vertical-align: top; text-align: center; padding-bottom: 20px;">:</td>
-                <td style="vertical-align: top; text-align: justify; padding-bottom: 20px;">
-                    <table style="width: 100%; border-collapse: collapse; border: none;">
-                        <tr>
-                            <td style="width: 25px; vertical-align: top;">1.</td>
-                            <td style="vertical-align: top; text-align: justify;">Peraturan internal Organisasi/Instansi.</td>
-                        </tr>
-                        <tr>
-                            <td style="width: 25px; vertical-align: top;">2.</td>
-                            <td style="vertical-align: top; text-align: justify;">Panduan standardisasi operasional penanganan aduan Etik dan Hukum pada aplikasi SIGAP.</td>
-                        </tr>
-                    </table>
-                </td>
+                <td style="vertical-align: top; text-align: justify; padding-bottom: 20px;">${diktumMengingat}</td>
             </tr>
-
-            <!-- MEMUTUSKAN (CENTERED) -->
             <tr>
-                <td colspan="3" style="text-align: center; font-weight: bold; padding-bottom: 15px;">MEMUTUSKAN:</td>
+                <td colspan="3" style="text-align: center; font-weight: bold; padding-bottom: 15px;">${labelMemutuskan}</td>
             </tr>
-
-            <!-- MENETAPKAN -->
             <tr>
                 <td style="width: 120px; vertical-align: top; padding-bottom: 10px;">MENETAPKAN</td>
                 <td style="width: 20px; vertical-align: top; text-align: center; padding-bottom: 10px;">:</td>
                 <td style="vertical-align: top; text-align: justify; padding-bottom: 10px;">Keputusan Hasil Penanganan Aduan Nomor : ${kodeTracking}</td>
             </tr>
-
-            <!-- PERTAMA -->
             <tr>
                 <td style="width: 120px; vertical-align: top; padding-bottom: 10px;">PERTAMA</td>
                 <td style="width: 20px; vertical-align: top; text-align: center; padding-bottom: 10px;">:</td>
@@ -3214,14 +3208,12 @@ function renderSkDocContent({ noSK, hal, tgl, tglFormat, isi, jenis, pejabat, ja
                     Menyatakan bahwa Terlapor di bawah ini :
                     <table style="width: 100%; border-collapse: collapse; border: none; margin: 4px 0;">
                         <tr><td style="width: 140px; padding: 2px 0;">- Nama Terlapor</td><td style="width: 15px; padding: 2px 0;">:</td><td style="padding: 2px 0;">${terlapor}</td></tr>
-                        <tr><td style="padding: 2px 0;">- Jabatan</td><td style="padding: 2px 0;">:</td><td style="padding: 2px 0;">${jabatan}</td></tr>
+                        <tr><td style="padding: 2px 0;">- Jabatan</td><td style="padding: 2px 0;">:</td><td style="padding: 2px 0;">${jabatanTerlapor || '-'}</td></tr>
                         <tr><td style="padding: 2px 0;">- Lokasi/Unit Kerja</td><td style="padding: 2px 0;">:</td><td style="padding: 2px 0;">${lokasi}</td></tr>
                     </table>
-                    <div style="margin-top: 4px;">Dinyatakan terbukti secara sah dan meyakinkan melakukan pemenuhan unsur kategori perkara [${kategori}] dengan tingkat urgensi penanganan [${urgensi || '-'}].</div>
+                    <div style="margin-top: 4px;">${diktumSatuTeks}</div>
                 </td>
             </tr>
-
-            <!-- KEDUA -->
             <tr>
                 <td style="width: 120px; vertical-align: top; padding-bottom: 10px;">KEDUA</td>
                 <td style="width: 20px; vertical-align: top; text-align: center; padding-bottom: 10px;">:</td>
@@ -3230,27 +3222,22 @@ function renderSkDocContent({ noSK, hal, tgl, tglFormat, isi, jenis, pejabat, ja
                     <div style="margin-top: 6px; white-space: pre-wrap;"><strong>"${isiKeputusan}"</strong></div>
                 </td>
             </tr>
-
-            <!-- KETIGA -->
             <tr>
                 <td style="width: 120px; vertical-align: top; padding-bottom: 10px;">KETIGA</td>
                 <td style="width: 20px; vertical-align: top; text-align: center; padding-bottom: 10px;">:</td>
-                <td style="vertical-align: top; text-align: justify; padding-bottom: 10px;">Keputusan penetapan ini bersifat mutlak mengikat, diterbitkan secara resmi melalui otorisasi kelembagaan.</td>
+                <td style="vertical-align: top; text-align: justify; padding-bottom: 10px;">Ketetapan ini bersifat mutlak mengikat, diterbitkan secara resmi melalui otorisasi kelembagaan.</td>
             </tr>
-
         </table>
 
-        <!-- TANDA TANGAN -->
         <div style="margin-top: 50px; display: flex; justify-content: flex-end;">
             <div style="text-align: center; width: 300px;">
                 <p style="margin: 0;">Ditetapkan di: ${tempat}</p>
                 <p style="margin: 0; padding-bottom: 10px;">Pada Tanggal: ${tglFormat}</p>
-                <p style="margin: 10px 0 70px 0; text-transform: uppercase;">DIREKTUR,</p>
+                <p style="margin: 10px 0 70px 0; text-transform: uppercase;">${jabatan},</p>
                 <p style="margin: 0; font-weight: bold; text-decoration: underline;">${pejabat}</p>
                 <p style="margin: 0;">NIP. ${nip}</p>
             </div>
         </div>
-
     </div>`;
 }
 
@@ -3272,7 +3259,6 @@ function setCompleteSkTemplateMode(isComplete) {
 async function muatPreviewSK(aduanId){
     if(!aduanId) return;
     const { data } = await supabaseClient.from('v_aduan_lengkap').select('*').eq('id', aduanId).single(); if(!data) return;
-    
     const { data: eskalasi } = await supabaseClient.from('eskalasi').select('urgensi_id').eq('aduan_id', aduanId).maybeSingle();
     const { data: urgensi } = eskalasi?.urgensi_id ? await supabaseClient.from('ref_urgensi').select('nama').eq('id', eskalasi.urgensi_id).maybeSingle() : { data: null };
     
@@ -3293,6 +3279,7 @@ async function muatPreviewSK(aduanId){
 
         preview.innerHTML = renderSkDocContent({
             noSK, tglFormat, isi, jenis, pejabat, jabatan, nip, tempat,
+            jabatanTerlapor: data.jabatan_terlapor || '-', // PERBAIKAN: Kirim jabatan terlapor secara spesifik
             kategori: data.kategori_nama || '-',
             lokasi: data.lokasi_kejadian || '-',
             urgensi: urgensi?.nama || '-',
@@ -3300,7 +3287,6 @@ async function muatPreviewSK(aduanId){
             kodeTracking: data.kode_tracking || '-'
         });
         
-        // Hapus padding bawaan card supaya mirip kertas
         preview.style.padding = '0';
     }
 }
@@ -3423,7 +3409,6 @@ async function loadCetakSK(aduanId){
     
     document.getElementById('sk-no-text').textContent = data.no_sk || data.kode_tracking;
     
-    // Auto-isi form koreksi dari database
     const rawTgl = data.tgl_penetapan || new Date().toISOString().slice(0,10);
     if(document.getElementById('cetak-sk-tgl')) document.getElementById('cetak-sk-tgl').value = rawTgl;
     if(document.getElementById('cetak-sk-pejabat')) document.getElementById('cetak-sk-pejabat').value = data.nama_pejabat || 'dr. Indah Puspitasari, MARS';
@@ -3434,7 +3419,6 @@ async function loadCetakSK(aduanId){
     const dropdownJenis = document.getElementById('cetak-sk-jenis');
     if (dropdownJenis) dropdownJenis.value = jenisDokumen;
     
-    // Panggil fungsi render template baru
     const bodyContainer = document.getElementById('sk-body-container');
     if(bodyContainer) {
         const { data: eskalasi } = await supabaseClient.from('eskalasi').select('urgensi_id').eq('aduan_id', aduanId).maybeSingle();
@@ -3442,15 +3426,36 @@ async function loadCetakSK(aduanId){
 
         const tglAduan = new Date(data.created_at).toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
         
-        bodyContainer.innerHTML = renderSkDocContent({
+        let templateText = null;
+        if (jenisDokumen === 'sk' && templateSKSanksiGlobal && templateSKSanksiGlobal.trim() !== '') {
+             templateText = formatImportedSkTemplate(applySkTemplate(templateSKSanksiGlobal, {
+                noSK: data.no_sk || data.kode_tracking || '-/SK/RSJD-AHM/2026',
+                tglFormat: tglAduan,
+                isi: data.isi_keputusan || data.tanggapan_akhir || '-',
+                jenis: jenisDokumen,
+                pejabat: data.nama_pejabat || 'dr. Indah Puspitasari, MARS',
+                jabatan: data.jabatan_pejabat || 'Direktur',
+                jabatanTerlapor: data.jabatan_terlapor || '-',
+                nip: '196705301998032003',
+                tempat: data.tempat_ditetapkan || 'Samarinda',
+                kategori: data.kategori_nama || '-',
+                lokasi: data.lokasi_kejadian || '-',
+                terlapor: data.nama_terlapor || '-',
+                kodeTracking: data.kode_tracking || '-'
+            }));
+        }
+
+        // Render hasil akhir: Pakai template custom JIKA ada, kalau tidak pakai template table baku yang rapi
+        bodyContainer.innerHTML = templateText || renderSkDocContent({
             noSK: data.no_sk || data.kode_tracking || '-/SK/RSJD-AHM/2026',
             tglFormat: tglAduan,
             isi: data.isi_keputusan || data.tanggapan_akhir || '-',
             jenis: jenisDokumen,
             pejabat: data.nama_pejabat || 'dr. Indah Puspitasari, MARS',
             jabatan: data.jabatan_pejabat || 'Direktur',
-            nip: data.nip_pejabat || '196705301998032003',
+            nip: '196705301998032003',
             tempat: data.tempat_ditetapkan || 'Samarinda',
+            jabatanTerlapor: data.jabatan_terlapor || '-',
             kategori: data.kategori_nama || '-',
             lokasi: data.lokasi_kejadian || '-',
             urgensi: urgensi?.nama || '-',
@@ -3462,7 +3467,6 @@ async function loadCetakSK(aduanId){
     document.getElementById('cetak-sk-info').style.display = 'block'; 
     document.getElementById('cetak-sk-info').textContent = 'Loaded: ' + (data.no_sk || data.kode_tracking);
 
-    // Sembunyikan elemen static lama (karena sudah disatukan di template baru)
     const staticHeader = document.getElementById('sk-static-title'); if(staticHeader) staticHeader.style.display = 'none';
     const staticMeta = document.getElementById('sk-static-meta'); if(staticMeta) staticMeta.style.display = 'none';
     const staticSign = document.getElementById('sk-static-signature'); if(staticSign) staticSign.style.display = 'none';
@@ -3698,17 +3702,10 @@ function buildSkHtmlFromRow(row = {}) {
     const tempat = row.tempat_ditetapkan || 'Samarinda';
 
     return renderSkDocContent({
-        noSK,
-        hal,
-        tgl,
-        tglFormat,
-        isi,
-        jenis,
-        pejabat,
-        jabatan,
-        nip,
-        tempat,
+        noSK, hal, tgl, tglFormat, isi, jenis, pejabat, jabatan, nip, tempat,
+        jabatanTerlapor: row.jabatan_terlapor || '-', // PERBAIKAN
         kategori: row.kategori_nama || '-',
+        lokasi: row.lokasi_kejadian || '-',
         terlapor: row.nama_terlapor || '-',
         kodeTracking: row.kode_tracking || '-'
     });
@@ -3775,17 +3772,9 @@ function renderLaporanTable(rows, periode) {
         const date = r.created_at ? new Date(r.created_at) : null;
         if (!date || Number.isNaN(date.getTime())) return true;
         const now = new Date();
-        if (periode === 'bulanan') {
-            return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
-        }
-        if (periode === 'semester') {
-            const currentSemester = Math.floor(now.getMonth() / 6);
-            const rowSemester = Math.floor(date.getMonth() / 6);
-            return rowSemester === currentSemester && date.getFullYear() === now.getFullYear();
-        }
-        if (periode === 'tahunan') {
-            return date.getFullYear() === now.getFullYear();
-        }
+        if (periode === 'bulanan') return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+        if (periode === 'semester') return Math.floor(date.getMonth() / 6) === Math.floor(now.getMonth() / 6) && date.getFullYear() === now.getFullYear();
+        if (periode === 'tahunan') return date.getFullYear() === now.getFullYear();
         return true;
     });
 
@@ -3797,11 +3786,13 @@ function renderLaporanTable(rows, periode) {
             const ringkasan = (r.tanggapan_akhir || r.otorisasi_catatan || r.deskripsi_kejadian || '').replace(/\s+/g, ' ').trim();
             const hasSk = Boolean(r.no_sk || r.tgl_penetapan || r.isi_keputusan || r.jenis_dokumen || r.file_scan_sk_url || r.file_scan_sk_path);
             const scanLink = r.file_scan_sk_url ? '<a href="' + r.file_scan_sk_url + '" target="_blank" style="color: var(--accent);">📎 Scan SK</a>' : '';
+            
+            // PERBAIKAN: Tombol Edit SK Telah Dihapus dari Panel Laporan
             const skActions = hasSk ? '<div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:6px;">' +
                 '<button class="btn-small btn-success" data-skr-pdf="' + i + '" type="button">⬇ PDF</button>' +
                 '<button class="btn-small btn-verify" data-skr-docx="' + i + '" type="button">📄 DOCX</button>' +
-                '<button class="btn-small btn-primary" data-skr-edit="' + i + '" type="button">✏️ Edit</button>' +
                 '</div>' : '';
+                
             return `
                 <tr>
                     <td>${i + 1}</td>
@@ -3821,35 +3812,18 @@ function renderLaporanTable(rows, periode) {
             `;
         }).join('') || '<tr><td colspan="9" style="text-align:center; color:var(--muted);">Tidak ada data sesuai filter.</td></tr>';
 
-        tbody.querySelectorAll('[data-skr-row]').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                const idx = Number(btn.getAttribute('data-skr-row'));
-                const row = filteredRows[idx];
-                if (row) downloadSkFromRow(row, 'pdf');
-            });
-        });
-
+        // Bind PDF/DOCX events...
         tbody.querySelectorAll('[data-skr-pdf]').forEach((btn) => {
             btn.addEventListener('click', () => {
-                const idx = Number(btn.getAttribute('data-skr-pdf'));
-                const row = filteredRows[idx];
+                const row = filteredRows[Number(btn.getAttribute('data-skr-pdf'))];
                 if (row) downloadSkFromRow(row, 'pdf');
             });
         });
 
         tbody.querySelectorAll('[data-skr-docx]').forEach((btn) => {
             btn.addEventListener('click', () => {
-                const idx = Number(btn.getAttribute('data-skr-docx'));
-                const row = filteredRows[idx];
+                const row = filteredRows[Number(btn.getAttribute('data-skr-docx'))];
                 if (row) downloadSkFromRow(row, 'docx');
-            });
-        });
-
-        tbody.querySelectorAll('[data-skr-edit]').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                const idx = Number(btn.getAttribute('data-skr-edit'));
-                const row = filteredRows[idx];
-                if (row && row.id) editPenetapan(row.id);
             });
         });
     }
