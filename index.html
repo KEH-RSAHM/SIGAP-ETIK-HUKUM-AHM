@@ -2003,23 +2003,40 @@ async function loadAllData() {
     }
 }
 
+function normalizeAduanStatusValue(value) {
+    return String(value || '').trim();
+}
+
+function isSkReadyAduan(item) {
+    const status = normalizeAduanStatusValue(item?.status);
+    const noSk = normalizeAduanStatusValue(item?.no_sk);
+    const jenis = normalizeAduanStatusValue(item?.jenis_dokumen);
+    const allowed = ['disahkan','Disahkan','selesai_sk','Selesai (SK Diterbitkan)','Menunggu Penerbitan SK','menunggu_otorisasi','Menunggu Otorisasi'];
+    return allowed.includes(status) || !!noSk || !!jenis;
+}
+
 async function loadAduanOptions() {
-    const { data: aduan } = await supabaseClient.from('aduan').select('id, kode_tracking, nama_terlapor, status').order('created_at', { ascending: false }).limit(200);
+    const { data: aduan } = await supabaseClient.from('v_aduan_lengkap').select('id, kode_tracking, nama_terlapor, status, no_sk, jenis_dokumen').order('created_at', { ascending: false }).limit(200);
     const selectConfig = [
         { id: 'op-pilih-aduan', statuses: ['baru', 'terkirim', 'Terkirim'] },
         { id: 'esk-pilih-aduan', statuses: ['diverifikasi', 'Diverifikasi'] },
         { id: 'pic-pilih-aduan', statuses: ['tereskalasi', 'diproses_pic', 'Proses PIC / Dieskalasi'] },
         { id: 'ot-pilih-aduan', statuses: ['menunggu_otorisasi', 'Menunggu Otorisasi'] },
-        { id: 'pen-pilih-aduan', statuses: ['disahkan', 'Disahkan'] },
-        { id: 'cetak-sk-pilih', statuses: ['selesai_sk', 'Selesai (SK Diterbitkan)', 'disahkan'] }
+        { id: 'pen-pilih-aduan', statuses: ['disahkan', 'Disahkan', 'selesai_sk', 'Selesai (SK Diterbitkan)', 'menunggu_otorisasi', 'Menunggu Otorisasi'] },
+        { id: 'cetak-sk-pilih', statuses: ['selesai_sk', 'Selesai (SK Diterbitkan)', 'disahkan', 'Disahkan'] }
     ];
 
     selectConfig.forEach(config => {
         const sel = document.getElementById(config.id); if (!sel) return;
         const cur = sel.value; sel.innerHTML = '<option value="">-- Pilih Aduan --</option>';
-        const filteredAduan = (aduan || []).filter(a => config.statuses.includes(a.status) || config.statuses.includes(a.status?.toLowerCase()));
-        filteredAduan.forEach(a => { const o = document.createElement('option'); o.value = a.id; o.textContent = `${a.kode_tracking} | ${a.nama_terlapor} | ${a.status}`; sel.appendChild(o); });
-        if (cur) sel.value = cur;
+        const filteredAduan = (aduan || []).filter(a => {
+            const status = normalizeAduanStatusValue(a.status);
+            const finalStatus = config.id === 'pen-pilih-aduan' ? isSkReadyAduan(a) : config.statuses.includes(status) || config.statuses.includes(status.toLowerCase());
+            return finalStatus || (config.id === 'cetak-sk-pilih' && isSkReadyAduan(a));
+        });
+        filteredAduan.forEach(a => { const o = document.createElement('option'); o.value = a.id; o.textContent = `${a.kode_tracking} | ${a.nama_terlapor} | ${a.status || 'SK Belum Terbit'}`; sel.appendChild(o); });
+        if (cur && [...sel.options].some(option => option.value === cur)) sel.value = cur;
+        else if (filteredAduan[0]) sel.value = filteredAduan[0].id;
     });
 }
 
@@ -2342,23 +2359,35 @@ async function kembalikanProses(dari){
         'eskalasi': { id: 'esk-pilih-aduan', target: 'diverifikasi', msg: 'Verifikasi' },
         'pic': { id: 'pic-pilih-aduan', target: 'tereskalasi', msg: 'Komite (Eskalasi)' },
         'otorisasi': { id: 'ot-pilih-aduan', target: 'diproses_pic', msg: 'PIC' },
-        'penetapan': { id: 'pen-pilih-aduan', target: 'menunggu_otorisasi', msg: 'Otorisasi' }
+        'penetapan': { id: 'pen-pilih-aduan', target: 'disahkan', msg: 'Otorisasi' }
     };
     
     const config = map[dari];
     if(!config) return;
     
-    const aduanId = document.getElementById(config.id)?.value;
+    const sel = document.getElementById(config.id);
+    const aduanId = sel?.value;
     if(!aduanId){ showToast('Pilih laporan yang akan dikembalikan terlebih dahulu', true); return; }
 
-    if(!confirm(`Anda yakin ingin mengembalikan laporan ini ke tahap ${config.msg}?`)) return;
+    let targetStatus = config.target;
+    const { data: currentAduan, error: statusErr } = await supabaseClient.from('aduan').select('status').eq('id', aduanId).single();
+    const currentStatus = currentAduan?.status || '';
 
-    const { error } = await supabaseClient.from('aduan').update({ status: config.target }).eq('id', aduanId);
+    if (dari === 'penetapan') {
+        if (['selesai_sk', 'disahkan', 'Selesai (SK Diterbitkan)', 'Disahkan'].includes(currentStatus)) targetStatus = 'disahkan';
+        else if (['menunggu_otorisasi', 'Menunggu Otorisasi'].includes(currentStatus)) targetStatus = 'menunggu_otorisasi';
+    } else if (dari === 'otorisasi') {
+        if (['disahkan', 'selesai_sk', 'Selesai (SK Diterbitkan)', 'Disahkan'].includes(currentStatus)) targetStatus = 'diproses_pic';
+    }
+
+    if (!confirm(`Anda yakin ingin mengembalikan laporan ini ke tahap ${config.msg}?`)) return;
+
+    const { error } = await supabaseClient.from('aduan').update({ status: targetStatus }).eq('id', aduanId);
     if(error){ showToast(error.message, true); return; }
     
     showToast(`↩ Berhasil dikembalikan ke panel ${config.msg}`);
     
-    document.getElementById(config.id).value = '';
+    if (sel) sel.value = '';
     const headerEl = document.getElementById(`info-header-${dari}`);
     if(headerEl) headerEl.style.display = 'none';
 
