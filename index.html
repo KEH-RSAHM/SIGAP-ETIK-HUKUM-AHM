@@ -25,9 +25,9 @@
             --bg: #121212;               /* Hitam Pekat Latar Belakang */
             --surface: #1e1e1e;          /* Hitam Kartu / Panel */
             --surface-soft: #2a2a2a;     /* Hitam Lembut */
-            --text: #e5e7eb;             /* Silver Terang untuk Teks */
-            --muted: #9ca3af;            /* Silver Meredup */
-            --border: #404040;           /* Silver Gelap untuk Garis Pembatas */
+            --text: #f3f4f6;             /* Putih Keabu-Abuan agar lebih jelas */
+            --muted: #cbd5e1;            /* Abu terang untuk teks sekunder */
+            --border: #4b5563;           /* Garis pembatas lebih tegas */
             
             --sidebar-bg: #0a0a0a;       /* Hitam Sidebar */
             --sidebar-text: #c0c0c0;     /* Silver Menu */
@@ -2249,18 +2249,58 @@ async function renderDashboardCharts() {
 
         const createChart = (id, type, labels, dataArr, title, useMultiColor = true) => {
             const ctx = document.getElementById(id); if(!ctx) return null;
-            const colors = ['rgba(128, 0, 0, 0.8)', 'rgba(212, 175, 55, 0.8)', 'rgba(192, 192, 192, 0.8)', 'rgba(42, 42, 42, 0.8)', 'rgba(90, 0, 0, 0.8)'];
+            const isLight = document.body.classList.contains('light-theme');
+            const textColor = getComputedStyle(document.body).getPropertyValue('--text').trim() || '#111827';
+            const gridColor = isLight ? 'rgba(15, 23, 42, 0.14)' : 'rgba(255, 255, 255, 0.12)';
+            const lineColor = isLight ? 'rgba(128, 0, 0, 0.9)' : 'rgba(212, 175, 55, 0.95)';
+            const colors = ['rgba(128, 0, 0, 0.8)', 'rgba(212, 175, 55, 0.8)', 'rgba(148, 163, 184, 0.85)', 'rgba(42, 42, 42, 0.8)', 'rgba(90, 0, 0, 0.8)'];
             const bgColors = useMultiColor ? colors.slice(0, labels.length) : colors[0];
-            
-            let config = { 
-                type: type, 
-                data: { labels: labels, datasets: [{ label: title, data: dataArr, backgroundColor: bgColors, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }] }, 
-                options: { 
-                    responsive: true, 
+            const datasetBorder = type === 'line' ? lineColor : 'rgba(128, 0, 0, 0.7)';
+            const datasetFill = type === 'line' ? (isLight ? 'rgba(128, 0, 0, 0.15)' : 'rgba(212, 175, 55, 0.18)') : bgColors;
+
+            let config = {
+                type: type,
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: title,
+                        data: dataArr,
+                        backgroundColor: datasetFill,
+                        borderWidth: type === 'line' ? 3 : 1,
+                        borderColor: datasetBorder,
+                        pointBackgroundColor: lineColor,
+                        pointBorderColor: '#ffffff',
+                        pointHoverBackgroundColor: lineColor,
+                        pointRadius: type === 'line' ? 4 : 3,
+                        pointHoverRadius: type === 'line' ? 5 : 4,
+                        tension: type === 'line' ? 0.28 : 0,
+                        fill: type === 'line' ? true : false
+                    }]
+                },
+                options: {
+                    responsive: true,
                     maintainAspectRatio: false,
                     layout: { padding: 15 },
-                    plugins: { legend: { position: 'bottom', labels: { color: 'var(--text)', font: {size: 10} } } }
-                } 
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: textColor, font: { size: 10 } }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: textColor, maxRotation: 45 },
+                            grid: { color: gridColor, drawBorder: false },
+                            border: { display: false }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: textColor },
+                            grid: { color: gridColor, drawBorder: false },
+                            border: { display: false }
+                        }
+                    }
+                }
             };
 
             if(type === 'doughnut') config.options.cutout = '60%';
