@@ -1951,6 +1951,8 @@ async function loadDatasheets() {
             <td>
                 <div style="display:flex; gap:4px; flex-wrap:wrap;">
                     <button class="btn-small btn-primary" onclick="bukaTab('cetak-sk'); document.getElementById('cetak-sk-pilih').value='${d.id}'; loadCetakSK('${d.id}');">🖨️ Cetak</button>
+                    <button class="btn-small btn-success" onclick="downloadSkRowFromQueue('${d.id}', 'pdf')">⬇ PDF</button>
+                    <button class="btn-small btn-verify" onclick="downloadSkRowFromQueue('${d.id}', 'docx')">📄 DOCX</button>
                     <button class="btn-small btn-verify" onclick="editPenetapan('${d.id}')">✏️ Edit</button>
                 </div>
             </td>
@@ -1958,12 +1960,26 @@ async function loadDatasheets() {
     }
 }
 
+async function downloadSkRowFromQueue(aduanId, type = 'pdf') {
+    const { data } = await supabaseClient.from('v_aduan_lengkap').select('*').eq('id', aduanId).single();
+    if (!data) {
+        showToast('Data SK tidak ditemukan untuk diunduh', true);
+        return;
+    }
+    downloadSkFromRow(data, type);
+}
+
 async function editPenetapan(aduanId) {
     const { data } = await supabaseClient.from('v_aduan_lengkap').select('*').eq('id', aduanId).single();
     if(!data) return;
     
     bukaTab('penetapan');
-    document.getElementById('pen-pilih-aduan').value = aduanId;
+    const penSelect = document.getElementById('pen-pilih-aduan');
+    if (penSelect && ![...penSelect.options].some(option => option.value === aduanId)) {
+        const option = new Option(`${data.kode_tracking} | ${data.nama_terlapor} | ${data.status || 'Edit SK'}`, aduanId);
+        penSelect.add(option);
+    }
+    penSelect.value = aduanId;
     
     document.getElementById('pen-jenis-dokumen').value = data.jenis_dokumen || 'sk';
     document.getElementById('pen-no-sk').value = data.no_sk || '';
@@ -2007,16 +2023,28 @@ function normalizeAduanStatusValue(value) {
     return String(value || '').trim();
 }
 
+function normalizeStatusKey(value) {
+    return normalizeAduanStatusValue(value).toLowerCase().replace(/[_\s]+/g, '');
+}
+
+function matchesStatusList(rawStatus, allowedStatuses = []) {
+    const current = normalizeStatusKey(rawStatus);
+    return allowedStatuses.some(status => normalizeStatusKey(status) === current);
+}
+
 function isSkReadyAduan(item) {
     const status = normalizeAduanStatusValue(item?.status);
     const noSk = normalizeAduanStatusValue(item?.no_sk);
     const jenis = normalizeAduanStatusValue(item?.jenis_dokumen);
-    const allowed = ['disahkan','Disahkan','selesai_sk','Selesai (SK Diterbitkan)','Menunggu Penerbitan SK','menunggu_otorisasi','Menunggu Otorisasi'];
-    return allowed.includes(status) || !!noSk || !!jenis;
+    const allowed = ['disahkan','selesai_sk','selesai (sk diterbitkan)','menunggu_otorisasi','menunggu penerbitan sk','menunggu penerbitan sk'];
+    return matchesStatusList(status, allowed) || !!noSk || !!jenis;
 }
 
 async function loadAduanOptions() {
     const { data: aduan } = await supabaseClient.from('v_aduan_lengkap').select('id, kode_tracking, nama_terlapor, status, no_sk, jenis_dokumen').order('created_at', { ascending: false }).limit(200);
+    const { data: skRows } = await supabaseClient.from('penetapan_sk').select('aduan_id');
+    const skAduanIds = new Set((skRows || []).map(row => row.aduan_id).filter(Boolean));
+
     const selectConfig = [
         { id: 'op-pilih-aduan', statuses: ['baru', 'terkirim', 'Terkirim'] },
         { id: 'esk-pilih-aduan', statuses: ['diverifikasi', 'Diverifikasi'] },
@@ -2031,8 +2059,15 @@ async function loadAduanOptions() {
         const cur = sel.value; sel.innerHTML = '<option value="">-- Pilih Aduan --</option>';
         const filteredAduan = (aduan || []).filter(a => {
             const status = normalizeAduanStatusValue(a.status);
-            const finalStatus = config.id === 'pen-pilih-aduan' ? isSkReadyAduan(a) : config.statuses.includes(status) || config.statuses.includes(status.toLowerCase());
-            return finalStatus || (config.id === 'cetak-sk-pilih' && isSkReadyAduan(a));
+            const statusMatches = matchesStatusList(status, config.statuses);
+            const hasSkRecord = skAduanIds.has(a.id);
+            if (config.id === 'pen-pilih-aduan') {
+                return statusMatches || hasSkRecord || isSkReadyAduan(a);
+            }
+            if (config.id === 'cetak-sk-pilih') {
+                return statusMatches || hasSkRecord || isSkReadyAduan(a);
+            }
+            return statusMatches;
         });
         filteredAduan.forEach(a => { const o = document.createElement('option'); o.value = a.id; o.textContent = `${a.kode_tracking} | ${a.nama_terlapor} | ${a.status || 'SK Belum Terbit'}`; sel.appendChild(o); });
         if (cur && [...sel.options].some(option => option.value === cur)) sel.value = cur;
@@ -2453,6 +2488,45 @@ function generateAutoSK(){
     fillAutoNumber();
 }
 
+function applySkTemplate(templateText, values = {}) {
+    if (!templateText || !templateText.trim()) return null;
+
+    const cleaned = String(templateText).trim();
+    const normalized = {
+        no_sk: values.noSK || '-',
+        nomor_sk: values.noSK || '-',
+        tanggal_aduan: values.tglFormat || values.tgl || '-',
+        tgl_penetapan: values.tglFormat || values.tgl || '-',
+        ID_Aduan: values.kodeTracking || '-',
+        id_aduan: values.kodeTracking || '-',
+        nama_terlapor: values.terlapor || '-',
+        jabatan: values.jabatan || 'Direktur',
+        lokasi: values.kategori || '-',
+        kategori: values.kategori || '-',
+        isi_keputusan: values.isi || '-',
+        isi: values.isi || '-',
+        hal_sk: values.hal || 'Hasil Penanganan Aduan',
+        tentang: values.hal || 'Hasil Penanganan Aduan',
+        nama_pejabat: values.pejabat || 'dr. Indah Puspitasari, MARS',
+        pejabat: values.pejabat || 'dr. Indah Puspitasari, MARS',
+        jabatan_pejabat: values.jabatan || 'Direktur',
+        nip_pejabat: values.nip || '196705301998032003',
+        nip: values.nip || '196705301998032003',
+        tempat_ditetapkan: values.tempat || 'Samarinda',
+        tempat: values.tempat || 'Samarinda',
+        jenis_dokumen: values.jenis || 'sk'
+    };
+
+    let text = cleaned;
+    Object.entries(normalized).forEach(([key, value]) => {
+        const replaceValue = String(value ?? '-');
+        text = text.replace(new RegExp(`\\[${key}\\]`, 'gi'), replaceValue);
+        text = text.replace(new RegExp(`\\[${key.toUpperCase()}\\]`, 'gi'), replaceValue);
+    });
+
+    return text;
+}
+
 function renderSkDocContent({
     noSK,
     hal,
@@ -2474,6 +2548,26 @@ function renderSkDocContent({
         : jenis === 'tidak_ada_sanksi'
             ? 'SURAT KETERANGAN TIDAK ADA PENGENAAN SANKSI'
             : 'SURAT KEPUTUSAN';
+
+    const templateRendered = applySkTemplate(templateSKSanksiGlobal, {
+        noSK,
+        hal,
+        tgl,
+        tglFormat,
+        isi,
+        jenis,
+        pejabat,
+        jabatan,
+        nip,
+        tempat,
+        kategori,
+        terlapor,
+        kodeTracking
+    });
+
+    if (templateRendered) {
+        return templateRendered;
+    }
 
     const isiKeputusan = (isi || '').trim() || '-';
     const paragrafMenimbang = `Bahwa berdasarkan laporan aduan nomor ${kodeTracking || '-'} tentang ${kategori || '-'} yang melibatkan ${terlapor || '-'} telah dilakukan proses verifikasi, pemeriksaan, dan penetapan hasil penanganan sesuai mekanisme yang berlaku dalam sistem SIGAP RSJD AHM.`;
@@ -2745,27 +2839,30 @@ async function loadCetakSK(aduanId){
     
     const bodyContainer = document.getElementById('sk-body-container');
     if(bodyContainer) {
-        let isiKeputusan = data.isi_keputusan || data.tanggapan_akhir || '-';
+        const isiKeputusan = data.isi_keputusan || data.tanggapan_akhir || '-';
         const tglAduan = new Date(data.created_at).toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
-        
-        if (jenisDokumen === 'sk' && templateSKSanksiGlobal && templateSKSanksiGlobal.trim() !== '') {
-            let temp = templateSKSanksiGlobal;
-            temp = temp.replace(/\[tanggal_aduan\]/g, tglAduan);
-            temp = temp.replace(/\[ID_Aduan\]/g, data.kode_tracking || '-');
-            temp = temp.replace(/\[nama_terlapor\]/g, data.nama_terlapor || '-');
-            temp = temp.replace(/\[jabatan\]/g, data.jabatan_terlapor || '-');
-            temp = temp.replace(/\[lokasi\]/g, data.lokasi_kejadian || '-');
-            temp = temp.replace(/\[kategori\]/g, data.kategori_nama || '-');
-            temp = temp.replace(/\[isi_keputusan\]/g, isiKeputusan);
-            bodyContainer.innerHTML = temp;
-        } else {
-            bodyContainer.innerHTML = `
-                <p><strong>Menimbang:</strong> Bahwa berdasarkan laporan aduan nomor <strong>${data.kode_tracking || '-'}</strong> tentang <strong>${data.kategori_nama || '-'}</strong> yang melibatkan <strong>${data.nama_terlapor || '-'}</strong>, telah dilakukan proses verifikasi, eskalasi, dan sidang etik sesuai prosedur.</p>
-                <p><strong>Mengingat:</strong> 1. Undang-undang tentang Rumah Sakit; 2. Peraturan Kode Etik; 3. SOP SIGAP RSJD AHM.</p>
-                <p><strong>Memutuskan:</strong></p>
-                <div style="padding-left:10px; white-space:pre-wrap; margin-bottom:20px;">${isiKeputusan}</div>
-            `;
-        }
+        const templateText = applySkTemplate(templateSKSanksiGlobal, {
+            noSK: data.no_sk || data.kode_tracking || '-/SK/RSJD-AHM/2026',
+            hal: data.hal_sk || 'Hasil Penanganan Aduan',
+            tgl: data.tgl_penetapan || new Date().toISOString().slice(0,10),
+            tglFormat: tglAduan,
+            isi: isiKeputusan,
+            jenis: jenisDokumen || 'sk',
+            pejabat: data.nama_pejabat || 'dr. Indah Puspitasari, MARS',
+            jabatan: data.jabatan_pejabat || 'Direktur',
+            nip: '196705301998032003',
+            tempat: data.tempat_ditetapkan || 'Samarinda',
+            kategori: data.kategori_nama || '-',
+            terlapor: data.nama_terlapor || '-',
+            kodeTracking: data.kode_tracking || '-'
+        });
+
+        bodyContainer.innerHTML = templateText || `
+            <p><strong>Menimbang:</strong> Bahwa berdasarkan laporan aduan nomor <strong>${data.kode_tracking || '-'}</strong> tentang <strong>${data.kategori_nama || '-'}</strong> yang melibatkan <strong>${data.nama_terlapor || '-'}</strong>, telah dilakukan proses verifikasi, eskalasi, dan sidang etik sesuai prosedur.</p>
+            <p><strong>Mengingat:</strong> 1. Undang-undang tentang Rumah Sakit; 2. Peraturan Kode Etik; 3. SOP SIGAP RSJD AHM.</p>
+            <p><strong>Memutuskan:</strong></p>
+            <div style="padding-left:10px; white-space:pre-wrap; margin-bottom:20px;">${isiKeputusan}</div>
+        `;
     }
     
     document.getElementById('cetak-sk-info').style.display = 'block'; 
@@ -2865,19 +2962,74 @@ function resetPrintSettings(){
 function previewKopSK(input){ if(input.files && input.files[0]){ const url=URL.createObjectURL(input.files[0]); const img=document.getElementById('sk-kop-img'); img.src=url; img.style.display='block'; } }
 
 function cetakSK_Print(){
-    const area=document.getElementById('sk-print-area'); const win=window.open('', '_blank');
+    const area=document.getElementById('sk-print-area'); if(!area){ showToast('Area preview SK tidak ditemukan', true); return; }
+    const win=window.open('', '_blank');
     win.document.write('<html><head><title>Cetak SK</title><style>body{font-family:Arial;padding:20px;}</'+'style></head><body>'+area.innerHTML+'</body></html>');
     win.document.close(); win.print();
 }
 
+function downloadSelectedSKReport(type = 'pdf') {
+    const area=document.getElementById('sk-print-area'); if(!area){ showToast('Belum ada SK yang dipilih untuk diunduh', true); return; }
+    const selectedId = document.getElementById('cetak-sk-pilih')?.value;
+    const defaultName = (document.getElementById('sk-no-text')?.textContent || 'SK').replace(/\s+/g, '_');
+
+    if (type === 'pdf') {
+        if (window.html2pdf) {
+            const orient=document.getElementById('cetak-sk-orient')?.value||'Portrait';
+            html2pdf().set({
+                margin: 10,
+                filename: defaultName + '.pdf',
+                image:{type:'jpeg',quality:0.98},
+                html2canvas:{scale:2},
+                jsPDF:{unit:'mm', format:'a4', orientation: orient.toLowerCase()}
+            }).from(area).save();
+            return;
+        }
+
+        const win = window.open('', '_blank');
+        win.document.write('<html><head><title>Download SK</title><style>body{font-family:Arial;padding:24px;} img{max-width:100%;}</style></head><body>' + area.innerHTML + '</body></html>');
+        win.document.close();
+        win.focus();
+        setTimeout(() => win.print(), 500);
+        showToast('html2pdf tidak tersedia, fallback ke Print/PDF browser');
+        return;
+    }
+
+    if (window.htmlDocx) {
+        const blob = htmlDocx.asBlob(area.innerHTML);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = defaultName + '.docx';
+        a.click();
+        URL.revokeObjectURL(url);
+        return;
+    }
+
+    const blob = new Blob([area.innerHTML], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = defaultName + '.html';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Fitur DOCX tidak tersedia; file HTML disimpan sebagai fallback');
+}
+
 function cetakSK_PDF(){
-    const area=document.getElementById('sk-print-area'); const orient=document.getElementById('cetak-sk-orient')?.value||'Portrait';
-    if(window.html2pdf) html2pdf().set({margin:10, filename:(document.getElementById('sk-no-text').textContent||'SK')+'.pdf', html2canvas:{scale:2}, jsPDF:{unit:'mm', format:'a4', orientation:orient.toLowerCase()}}).from(area).save();
+    if (!document.getElementById('cetak-sk-pilih')?.value) {
+        showToast('Pilih SK terlebih dahulu sebelum download PDF', true);
+        return;
+    }
+    downloadSelectedSKReport('pdf');
 }
 
 function cetakSK_DOCX(){
-    const area=document.getElementById('sk-print-area');
-    if(window.htmlDocx){ const blob=htmlDocx.asBlob(area.innerHTML); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=(document.getElementById('sk-no-text').textContent||'SK')+'.docx'; a.click(); }
+    if (!document.getElementById('cetak-sk-pilih')?.value) {
+        showToast('Pilih SK terlebih dahulu sebelum download Word', true);
+        return;
+    }
+    downloadSelectedSKReport('docx');
 }
 
 let cacheLaporan=[];
@@ -2932,6 +3084,86 @@ async function muatLaporanFormal() {
     }
 }
 
+function buildSkHtmlFromRow(row = {}) {
+    const noSK = row.no_sk || row.kode_tracking || 'SK';
+    const hal = row.hal_sk || 'Hasil Penanganan Aduan';
+    const tgl = row.tgl_penetapan || row.created_at || new Date().toISOString().slice(0, 10);
+    const tglFormat = new Date(tgl).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    const isi = row.isi_keputusan || row.tanggapan_akhir || row.otorisasi_catatan || '-';
+    const jenis = row.jenis_dokumen || 'sk';
+    const pejabat = row.nama_pejabat || 'dr. Indah Puspitasari, MARS';
+    const jabatan = row.jabatan_pejabat || 'Direktur';
+    const nip = row.nip_pejabat || '196705301998032003';
+    const tempat = row.tempat_ditetapkan || 'Samarinda';
+
+    return renderSkDocContent({
+        noSK,
+        hal,
+        tgl,
+        tglFormat,
+        isi,
+        jenis,
+        pejabat,
+        jabatan,
+        nip,
+        tempat,
+        kategori: row.kategori_nama || '-',
+        terlapor: row.nama_terlapor || '-',
+        kodeTracking: row.kode_tracking || '-'
+    });
+}
+
+function downloadSkFromRow(row, type = 'pdf') {
+    if (!row || (!row.no_sk && !row.kode_tracking)) {
+        showToast('Data SK tidak valid untuk diunduh', true);
+        return;
+    }
+
+    const htmlContent = buildSkHtmlFromRow(row);
+    const filename = String(row.no_sk || row.kode_tracking || 'SK').replace(/\s+/g, '_');
+
+    if (type === 'pdf') {
+        if (window.html2pdf) {
+            html2pdf().set({
+                margin: 10,
+                filename: filename + '.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            }).from(htmlContent).save();
+            return;
+        }
+
+        const win = window.open('', '_blank');
+        win.document.write('<html><head><title>SK</title><style>body{font-family:Arial;padding:24px;} img{max-width:100%;}</style></head><body>' + htmlContent + '</body></html>');
+        win.document.close();
+        win.focus();
+        setTimeout(() => win.print(), 500);
+        showToast('html2pdf tidak tersedia, fallback ke print browser');
+        return;
+    }
+
+    if (window.htmlDocx) {
+        const blob = htmlDocx.asBlob(htmlContent);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename + '.docx';
+        a.click();
+        URL.revokeObjectURL(url);
+        return;
+    }
+
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename + '.html';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('DOCX tidak tersedia; file HTML otomatis diunduh sebagai fallback', true);
+}
+
 function renderLaporanTable(rows, periode) {
     const tbody = document.getElementById('lap-tbody');
     const periodeText = document.getElementById('lap-periode-text');
@@ -2962,6 +3194,7 @@ function renderLaporanTable(rows, periode) {
             const kategori = r.kategori_nama || '-';
             const sk = r.no_sk || '-';
             const ringkasan = (r.tanggapan_akhir || r.otorisasi_catatan || r.deskripsi_kejadian || '').replace(/\s+/g, ' ').trim();
+            const hasSk = Boolean(r.no_sk || r.tgl_penetapan || r.isi_keputusan || r.jenis_dokumen);
             return `
                 <tr>
                     <td>${i + 1}</td>
@@ -2972,10 +3205,40 @@ function renderLaporanTable(rows, periode) {
                     <td><span class="badge">${status}</span><br><small>${sk}</small></td>
                     <td>${ringkasan ? ringkasan.substring(0, 120) : '-'}</td>
                     <td>${r.tgl_penetapan ? new Date(r.tgl_penetapan).toLocaleDateString('id-ID') : '-'}</td>
-                    <td>${r.file_scan_sk_url ? '<a href="' + r.file_scan_sk_url + '" target="_blank" style="color: var(--accent);">Lihat</a>' : '-'}</td>
+                    <td>
+                        ${r.file_scan_sk_url ? '<a href="' + r.file_scan_sk_url + '" target="_blank" style="color: var(--accent);">Lihat</a>' : '-'}
+                        ${hasSk ? '<div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:6px;">' +
+                            '<button class="btn-small btn-success" data-skr-pdf="' + i + '" type="button">⬇ PDF</button>' +
+                            '<button class="btn-small btn-verify" data-skr-docx="' + i + '" type="button">📄 DOCX</button>' +
+                            '</div>' : ''}
+                    </td>
                 </tr>
             `;
         }).join('') || '<tr><td colspan="9" style="text-align:center; color:var(--muted);">Tidak ada data sesuai filter.</td></tr>';
+
+        tbody.querySelectorAll('[data-skr-row]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const idx = Number(btn.getAttribute('data-skr-row'));
+                const row = filteredRows[idx];
+                if (row) downloadSkFromRow(row, 'pdf');
+            });
+        });
+
+        tbody.querySelectorAll('[data-skr-pdf]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const idx = Number(btn.getAttribute('data-skr-pdf'));
+                const row = filteredRows[idx];
+                if (row) downloadSkFromRow(row, 'pdf');
+            });
+        });
+
+        tbody.querySelectorAll('[data-skr-docx]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const idx = Number(btn.getAttribute('data-skr-docx'));
+                const row = filteredRows[idx];
+                if (row) downloadSkFromRow(row, 'docx');
+            });
+        });
     }
 
     const signTanggal = document.getElementById('sign-tanggal');
@@ -3015,7 +3278,23 @@ async function loadCetakLaporan(){
     document.getElementById('stat-baru').textContent=rows.filter(r=>r.status==='baru').length; document.getElementById('stat-proses').textContent=rows.filter(r=>['diverifikasi','tereskalasi','diproses_pic','menunggu_otorisasi'].includes(r.status)).length; document.getElementById('stat-selesai').textContent=rows.filter(r=>['selesai_sk','disahkan'].includes(r.status)).length;
 
     if(tbody){
-        tbody.innerHTML=rows.map((r,i)=>`<tr><td>${i+1}</td><td>${r.created_at?new Date(r.created_at).toLocaleDateString('id-ID'):'-'}</td><td><b>${r.kode_tracking}</b></td><td>${r.nama_pelapor}</td><td>${r.nama_terlapor}<br><small>${r.jabatan_terlapor||''}</small></td><td>${r.lokasi_kejadian}<br><small>${r.kategori_nama||''}</small></td><td><span style="background:var(--surface-soft); color:var(--text); padding:2px 6px; border-radius:4px; font-size:10px;">${r.status}</span><br><small>${r.no_sk||''}</small></td><td style="max-width:200px;">${(r.tanggapan_akhir||r.otorisasi_catatan||'').substring(0,100)}</td></tr>`).join('') || '<tr><td colspan="8" style="text-align:center; color:var(--muted);">Tidak ada data</td></tr>';
+        tbody.innerHTML=rows.map((r,i)=>`<tr><td>${i+1}</td><td>${r.created_at?new Date(r.created_at).toLocaleDateString('id-ID'):'-'}</td><td><b>${r.kode_tracking}</b></td><td>${r.nama_pelapor}</td><td>${r.nama_terlapor}<br><small>${r.jabatan_terlapor||''}</small></td><td>${r.lokasi_kejadian}<br><small>${r.kategori_nama||''}</small></td><td><span style="background:var(--surface-soft); color:var(--text); padding:2px 6px; border-radius:4px; font-size:10px;">${r.status}</span><br><small>${r.no_sk||''}</small></td><td style="max-width:200px;">${(r.tanggapan_akhir||r.otorisasi_catatan||'').substring(0,100)}${(r.no_sk || r.tgl_penetapan || r.isi_keputusan) ? '<div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:6px;">' + '<button class="btn-small btn-success" data-skr-pdf="'+i+'" type="button">⬇ PDF</button>' + '<button class="btn-small btn-verify" data-skr-docx="'+i+'" type="button">📄 DOCX</button>' + '</div>' : ''}</td></tr>`).join('') || '<tr><td colspan="8" style="text-align:center; color:var(--muted);">Tidak ada data</td></tr>';
+
+        tbody.querySelectorAll('[data-skr-pdf]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const idx = Number(btn.getAttribute('data-skr-pdf'));
+                const row = rows[idx];
+                if (row) downloadSkFromRow(row, 'pdf');
+            });
+        });
+
+        tbody.querySelectorAll('[data-skr-docx]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const idx = Number(btn.getAttribute('data-skr-docx'));
+                const row = rows[idx];
+                if (row) downloadSkFromRow(row, 'docx');
+            });
+        });
     }
     document.getElementById('cetak-sign-tgl').textContent=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'}); document.getElementById('cetak-sign-nama').textContent=document.getElementById('cetak-lap-nama')?.value||'Nama Pejabat'; document.getElementById('cetak-sign-nip').textContent=document.getElementById('cetak-lap-nip')?.value||'-'; document.getElementById('cetak-sign-jabatan').textContent=(document.getElementById('cetak-lap-jabatan')?.value||'Ketua Komite Etik')+','; showToast('Laporan: '+rows.length+' data');
 }
