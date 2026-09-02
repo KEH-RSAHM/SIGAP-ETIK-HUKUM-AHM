@@ -11,6 +11,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/docx-preview@0.3.6/dist/docx-preview.min.js"></script>
     
     <style id="print-custom-style"></style>
     <style>
@@ -293,6 +295,29 @@
             background-color: #ffffff !important; 
             color: #000000 !important; 
         }
+
+        #preview-sk-content, #sk-body-container {
+            font-family: 'Times New Roman', Times, serif !important;
+            font-size: 12pt;
+            line-height: 1.35;
+            text-align: justify;
+        }
+        #preview-sk-content > table, #sk-body-container > table { width: 100%; border-collapse: collapse; }
+        #preview-sk-content p, #sk-body-container p { margin: 0 0 8px; }
+        #preview-sk-content td, #sk-body-container td { vertical-align: top; }
+        #preview-sk-content img, #sk-body-container img { max-width: 100%; height: auto; }
+        .sk-imported-template { width: 100%; font-family: 'Times New Roman', Times, serif; font-size: 12pt; line-height: 1.35; color: #000; }
+        .sk-imported-template p { margin: 0 0 8px; }
+        .sk-imported-template table { width: 100%; border-collapse: collapse; }
+        .sk-imported-template td { vertical-align: top; }
+        .sk-imported-template .sk-section-label { display: inline-block; width: 92px; vertical-align: top; font-weight: bold; }
+        .sk-imported-template .sk-section-content { display: inline-block; width: calc(100% - 98px); vertical-align: top; }
+        .sk-imported-template .sk-section-table td:first-child { width: 92px; }
+        .sk-imported-template .sk-section-table td { padding: 0 0 6px; }
+        .sk-imported-template .sk-signature-block { width: 290px; margin: 26px 0 0 auto; text-align: center; }
+        .docx-preview { width: 100%; background: #fff !important; color: #000 !important; }
+        .docx-preview .docx-wrapper { background: #fff !important; padding: 0 !important; }
+        .docx-preview section.docx { margin: 0 auto !important; box-shadow: none !important; }
 
         #sk-print-area {
             width: 210mm !important;
@@ -660,6 +685,17 @@
             </div>
         </div>
 
+        <div id="section-lacak" class="section no-print">
+            <div class="header"><h2>Lacak Status Aduan</h2><p>Periksa perkembangan laporan berdasarkan kode tracking</p></div>
+            <div class="card card-large">
+                <div class="form-row" style="align-items:flex-end;">
+                    <div class="form-group" style="margin-bottom:0;"><label for="lacak-id">Kode Tracking / Nama Terlapor / Kontak</label><input type="text" id="lacak-id" placeholder="Contoh: SIGAP-20260902-AB12"></div>
+                    <button class="btn-search" type="button" onclick="cariStatusLaporan()">🔍 Cari Laporan</button>
+                </div>
+                <div id="lacak-result" style="margin-top:16px;"><p style="color:var(--muted); text-align:center;">Masukkan kata kunci untuk melihat status laporan.</p></div>
+            </div>
+        </div>
+
         <div id="section-operator" class="section no-print">
             <div class="header"><h2>Panel Verifikasi</h2><p>Verifikasi & Klasifikasi Laporan Masuk</p></div>
             <div class="card">
@@ -907,7 +943,7 @@
                     <span id="recall-info-penetapan" style="font-size:12px; color:var(--muted);">Klik recall untuk muat laporan persiapan SK.</span>
                 </div>
                 
-                <div class="form-group"><label>Pilih Laporan (Disahkan)</label><select id="pen-pilih-aduan" onchange="sinkronHeader(this.value, 'penetapan'); switchJenisDokumen();"></select></div>
+                <div class="form-group"><label>Pilih Aduan (Sudah Disahkan)</label><select id="pen-pilih-aduan" onchange="sinkronHeader(this.value, 'penetapan'); switchJenisDokumen();"></select></div>
                 <div id="info-header-penetapan" style="display:none; margin-bottom:15px;"></div>
                 
                 <div style="background: var(--surface-soft); border:1px solid var(--border); border-radius:12px; padding:16px; margin:14px 0;">
@@ -960,13 +996,10 @@
                 <div class="form-group"><label>Isi Keputusan / Amar Putusan *</label><textarea id="pen-isi-keputusan" placeholder="Tuliskan amar keputusan lengkap, sanksi, dan tindak lanjut yang diputuskan..." style="min-height:120px;" oninput="muatPreviewSK(document.getElementById('pen-pilih-aduan').value)" required></textarea></div>
                 <div style="background: var(--surface-soft); border:1px solid var(--border); border-radius:12px; padding:14px; margin:12px 0;">
                     <h4 style="margin:0 0 10px 0; font-size:14px; color:var(--text);">📝 Template SK Sanksi</h4>
-                    <textarea id="template-sk-editor" rows="8" style="width:100%; min-height:180px; resize:vertical; font-family:Consolas, monospace; font-size:12px;">[no_sk]
-[hal]
-
-Pada tanggal [tgl_format], berdasarkan laporan [kode_tracking] atas nama [nama_terlapor] dengan kategori [kategori], diputuskan bahwa:
-
-[isi_keputusan]</textarea>
+                    <div class="form-group"><label>Upload Template SK (.docx)</label><input type="file" id="template-sk-file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"></div>
+                    <textarea id="template-sk-editor" rows="8" style="width:100%; min-height:180px; resize:vertical; font-family:Consolas, monospace; font-size:12px;" placeholder="Template dibaca dari Supabase setelah upload."></textarea>
                     <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
+                        <button class="btn-success btn-small" style="width:auto;" onclick="uploadTemplateSKSanksi()">📤 Upload Template</button>
                         <button class="btn-success btn-small" style="width:auto;" onclick="simpanTemplateSKSanksi()">💾 Simpan Template</button>
                         <button class="btn-verify btn-small" style="width:auto;" onclick="loadTemplateSKSanksi()">📥 Ambil Template SK</button>
                         <button class="btn-primary btn-small" style="width:auto;" onclick="ambilTemplateSanksi()">📄 Terapkan ke Preview</button>
@@ -1082,12 +1115,12 @@ Pada tanggal [tgl_format], berdasarkan laporan [kode_tracking] atas nama [nama_t
                         </div>
                     </div>
                     
-                    <div style="text-align:center; margin:20px 0;">
+                    <div id="sk-static-title" style="text-align:center; margin:20px 0;">
                         <h2 id="sk-judul-preview" style="font-size:18px; text-decoration:underline; margin:0; color:black !important;">SURAT KEPUTUSAN</h2>
                         <p id="sk-nomor-preview" style="font-size:13px; margin:6px 0; color:black !important;">Nomor: <span id="sk-no-text">-/SK/RSJD-AHM/2026</span></p>
                     </div>
                     
-                    <table style="font-size:12px; margin-bottom:16px; width:100%; color:black;">
+                    <table id="sk-static-meta" style="font-size:12px; margin-bottom:16px; width:100%; color:black;">
                         <tr><td style="width:120px;">Tentang</td><td>: <span id="sk-hal-preview">Hasil Penanganan Aduan</span></td></tr>
                         <tr><td>Tanggal</td><td>: <span id="sk-tgl-preview">Samarinda, --</span></td></tr>
                         <tr><td>Sifat</td><td>: <span id="sk-sifat-preview">Terbatas</span></td></tr>
@@ -1098,7 +1131,7 @@ Pada tanggal [tgl_format], berdasarkan laporan [kode_tracking] atas nama [nama_t
                         Isi keputusan akan otomatis dirender di sini beserta template...
                     </div>
                     
-                    <div style="margin-top:40px; display:flex; justify-content:flex-end; color:black; font-family:'Times New Roman', Times, serif; font-size:12pt;">
+                    <div id="sk-static-signature" style="margin-top:40px; display:flex; justify-content:flex-end; color:black; font-family:'Times New Roman', Times, serif; font-size:12pt;">
                         <div style="text-align:center; width:260px;">
                             <p style="margin:0;">Ditetapkan di <span id="sk-tempat-preview">Samarinda</span></p>
                             <p style="margin:0; border-bottom: 1px solid #000; padding-bottom:6px; margin-bottom:10px;">Pada tanggal <span id="sk-tgl2-preview">--</span></p>
@@ -1185,8 +1218,8 @@ Pada tanggal [tgl_format], berdasarkan laporan [kode_tracking] atas nama [nama_t
                     <p style="margin: 5px 0 0 0; font-size: 12px;">Periode: <span id="lap-periode-text">Semua Waktu</span></p>
                 </div>
                 <table class="dashboard-table">
-                    <thead><tr><th>Tgl Laporan</th><th>Pelapor</th><th>Terlapor</th><th>Kategori & PIC</th><th>Status & No SK</th><th>Proses Lengkap & Rekomendasi</th><th>Tgl SK</th><th>Surat</th></tr></thead>
-                    <tbody id="lap-tbody"><tr><td colspan="8" style="text-align:center;">Gunakan tombol Terapkan Filter untuk memuat data.</td></tr></tbody>
+                    <thead><tr><th>No</th><th>Tgl Laporan</th><th>Pelapor</th><th>Terlapor</th><th>Kategori & PIC</th><th>Status & No SK</th><th>Proses Lengkap & Rekomendasi</th><th>Tgl SK</th><th>Surat</th></tr></thead>
+                    <tbody id="lap-tbody"><tr><td colspan="9" style="text-align:center;">Gunakan tombol Terapkan Filter untuk memuat data.</td></tr></tbody>
                 </table>
                 <div style="margin-top: 40px; display: flex; justify-content: flex-end;">
                     <div style="text-align: center; width: 250px; font-size: 13px;">
@@ -1231,8 +1264,8 @@ Pada tanggal [tgl_format], berdasarkan laporan [kode_tracking] atas nama [nama_t
                     <p style="margin: 5px 0 0 0; font-size: 12px; color:#000;">Periode: <span id="lap-print-periode">Semua Waktu</span> | Total: <span id="lap-print-total">0</span> | Tanggal Cetak: <span id="lap-print-tglcetak">-</span></p>
                 </div>
                 <table id="table-cetak-laporan" class="dashboard-table" style="width:100%; border-collapse:collapse;">
-                    <thead><tr><th>No</th><th>Tgl Laporan</th><th>Kode</th><th>Pelapor</th><th>Terlapor</th><th>Lokasi / Kategori</th><th>Status / No SK</th><th>Ringkasan</th></tr></thead>
-                    <tbody id="cetak-lap-tbody"><tr><td colspan="8" style="text-align:center; color:#000;">Belum ada data laporan.</td></tr></tbody>
+                    <thead><tr><th>No</th><th>Tgl Laporan</th><th>Kode</th><th>Pelapor</th><th>Terlapor</th><th>Lokasi / Kategori</th><th>Status / No SK</th><th>Ringkasan / Proses</th><th>Surat</th></tr></thead>
+                    <tbody id="cetak-lap-tbody"><tr><td colspan="9" style="text-align:center; color:#000;">Belum ada data laporan.</td></tr></tbody>
                 </table>
                 <div style="margin-top: 40px; display: flex; justify-content: flex-end;">
                     <div style="text-align: center; width: 250px; font-size: 13px; color:#000;">
@@ -1537,7 +1570,7 @@ Pada tanggal [tgl_format], berdasarkan laporan [kode_tracking] atas nama [nama_t
     </div>
 
 <script>
-let aksesConfigGlobal = JSON.parse(localStorage.getItem('akses_config_sigap')) || {
+let aksesConfigGlobal = {
     'Pelapor': ['pelapor', 'lacak', 'dashboard', 'informasi', 'korespondensi'],
     'Operator': ['pelapor', 'operator', 'lacak', 'dashboard', 'informasi', 'korespondensi'],
     'Komite Etik': ['eskalasi', 'dashboard', 'informasi', 'korespondensi'],
@@ -1549,7 +1582,6 @@ let aksesConfigGlobal = JSON.parse(localStorage.getItem('akses_config_sigap')) |
 if (aksesConfigGlobal['Komite']) {
     aksesConfigGlobal['Komite Etik'] = aksesConfigGlobal['Komite'];
     delete aksesConfigGlobal['Komite'];
-    localStorage.setItem('akses_config_sigap', JSON.stringify(aksesConfigGlobal));
 }
 
 const daftarSemuaModul = [
@@ -1693,6 +1725,39 @@ function escapeHtml(value) {
         .replace(/'/g, '&#039;');
 }
 
+function normalizeAduanRecord(row = {}) {
+    return {
+        ...row,
+        kode_tracking: row.kode_tracking || row.id || '-',
+        nama_pelapor: row.nama_pelapor || row.pelapor || '-',
+        email_pelapor: row.email_pelapor || row.email || '',
+        kontak_pelapor: row.kontak_pelapor || row.kontak || '',
+        nama_terlapor: row.nama_terlapor || row.terlapor || '-',
+        jabatan_terlapor: row.jabatan_terlapor || row.jabatan || '',
+        lokasi_kejadian: row.lokasi_kejadian || row.lokasi || '',
+        deskripsi_kejadian: row.deskripsi_kejadian || row.deskripsi || '',
+        link_cloud_drive: row.link_cloud_drive || row.link_bukti || '',
+        file_bukti_url: row.file_bukti_url || row.file_bukti || '',
+        kategori_nama: row.kategori_nama || row.kategori || '-',
+        hasil_verifikasi_nama: row.hasil_verifikasi_nama || row.hasil_verifikasi || '',
+        tgl_penetapan: row.tgl_penetapan || row.tgl_sk || '',
+        tingkat_kerahasiaan: row.tingkat_kerahasiaan || row.kerahasiaan || 'Terbatas',
+        isi_keputusan: row.isi_keputusan || row.konten_html || ''
+    };
+}
+
+function normalizeAduanRows(rows) {
+    return (rows || []).map(normalizeAduanRecord);
+}
+
+async function saveChildByAduanId(table, payload) {
+    const { data: existing, error: lookupError } = await supabaseClient
+        .from(table).select('id').eq('aduan_id', payload.aduan_id).maybeSingle();
+    if (lookupError) return { error: lookupError };
+    if (existing?.id) return supabaseClient.from(table).update(payload).eq('id', existing.id);
+    return supabaseClient.from(table).insert(payload);
+}
+
 function openLoginModal(){
     const el=document.getElementById('login-screen');
     if(el){ el.style.display='flex'; el.style.visibility='visible'; el.style.opacity='1'; void el.offsetWidth; el.classList.add('show-modal'); document.body.classList.add('modal-open'); }
@@ -1756,12 +1821,12 @@ async function autoFillData() {
         
         if (laporKontak && !laporKontak.value) {
             const { data } = await supabaseClient.from('aduan')
-                .select('kontak_pelapor').eq('pelapor_id', currentProfile.id)
-                .not('kontak_pelapor', 'is', null)
+                .select('kontak').eq('email', currentProfile.email)
+                .not('kontak', 'is', null)
                 .order('created_at', { ascending: false }).limit(1);
                 
             if (data && data.length > 0) {
-                laporKontak.value = data[0].kontak_pelapor;
+                laporKontak.value = data[0].kontak;
             }
         }
     } else {
@@ -2020,26 +2085,107 @@ async function loadRefData(){
 }
 
 let templateSKSanksiGlobal = '';
+let templateSKSource = '';
+let templateSKDocxPath = '';
+
+async function uploadTemplateSKSanksi() {
+    const file = document.getElementById('template-sk-file')?.files?.[0];
+    if (!file) {
+        showToast('Pilih file template DOCX terlebih dahulu.', true);
+        return;
+    }
+    if (!window.mammoth) {
+        showToast('Pembaca DOCX belum tersedia.', true);
+        return;
+    }
+    try {
+        const result = await window.mammoth.convertToHtml({ arrayBuffer: await file.arrayBuffer() });
+        const template = String(result.value || '').trim();
+        if (!template) throw new Error('File template DOCX kosong.');
+        const { error } = await supabaseClient.from('system_settings').upsert(
+            [{ key_name: 'template_sk_sanksi', key_value: template }],
+            { onConflict: 'key_name' }
+        );
+        if (error) throw error;
+        const storagePath = `template-sk/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+        const { error: storageError } = await supabaseClient.storage.from('scan-sk').upload(storagePath, file, { upsert: true });
+        if (storageError) throw storageError;
+        const { error: pathError } = await supabaseClient.from('system_settings').upsert([{ key_name: 'template_sk_sanksi_docx_path', key_value: storagePath }], { onConflict: 'key_name' });
+        if (pathError) throw pathError;
+        templateSKDocxPath = storagePath;
+        templateSKSanksiGlobal = template;
+        templateSKSource = 'supabase';
+        const editor = document.getElementById('template-sk-editor');
+        if (editor) editor.value = template;
+        document.getElementById('template-sk-file').value = '';
+        showToast('✅ Template berhasil diupload dan disimpan ke Supabase.');
+    } catch (error) {
+        console.error('Gagal upload template SK:', error);
+        showToast(error.message || 'Template gagal diupload.', true);
+    }
+}
 
 async function loadTemplateSKSanksi() {
     try {
         const { data, error } = await supabaseClient.from('system_settings').select('key_value').eq('key_name', 'template_sk_sanksi').maybeSingle();
         if (error) throw error;
-        if (data && data.key_value) {
-            templateSKSanksiGlobal = data.key_value;
+        const { data: pathData, error: pathError } = await supabaseClient.from('system_settings').select('key_value').eq('key_name', 'template_sk_sanksi_docx_path').maybeSingle();
+        if (pathError) throw pathError;
+        templateSKDocxPath = pathData?.key_value || '';
+        if (!data?.key_value?.trim()) {
+            templateSKSanksiGlobal = '';
+            templateSKSource = '';
             const editor = document.getElementById('template-sk-editor');
-            if (editor) editor.value = data.key_value;
-            return data.key_value;
-        } else {
-            templateSKSanksiGlobal = `[no_sk]\n[hal]\n\nPada tanggal [tgl_format], berdasarkan laporan [kode_tracking] atas nama [nama_terlapor] dengan kategori [kategori], diputuskan bahwa:\n\n[isi_keputusan]`;
-            const editor = document.getElementById('template-sk-editor');
-            if (editor) editor.value = templateSKSanksiGlobal;
-            return templateSKSanksiGlobal;
+            if (editor) editor.value = '';
+            return '';
         }
-    } catch(e) {
+        templateSKSanksiGlobal = data.key_value;
+        templateSKSource = 'supabase';
+        const editor = document.getElementById('template-sk-editor');
+        if (editor) editor.value = data.key_value;
+        return data.key_value;
+    } catch (e) {
         console.error('Template SK gagal dimuat:', e);
-        showToast('Template SK gagal diambil dari Supabase.', true);
+        templateSKSanksiGlobal = '';
+        templateSKSource = '';
+        showToast('Template SK gagal dimuat dari Supabase.', true);
         return '';
+    }
+}
+
+function renderDocxPlaceholders(container, values) {
+    const replacements = {
+        '[no_sk]': values.noSK || '-', '[ID_Aduan]': values.kodeTracking || '-', '[kode_tracking]': values.kodeTracking || '-',
+        '[tanggal_aduan]': values.tglFormat || values.tgl || '-', '[tgl_format]': values.tglFormat || values.tgl || '-',
+        '[nama_terlapor]': values.terlapor || '-', '[jabatan]': values.jabatan || '-', '[lokasi]': values.lokasi || '-',
+        '[kategori]': values.kategori || '-', '[urgensi]': values.urgensi || '-', '[isi_keputusan]': values.isi || '-',
+        '[hal]': values.hal || '-', '[nama_pejabat]': values.pejabat || '-', '[tempat]': values.tempat || 'Samarinda'
+    };
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach(node => {
+        let text = node.nodeValue;
+        Object.entries(replacements).forEach(([key, value]) => { text = text.replace(new RegExp(key.replace(/[\[\]]/g, '\\$&'), 'gi'), String(value)); });
+        node.nodeValue = text;
+    });
+}
+
+async function renderStoredDocxTemplate(container, values) {
+    if (!container || !templateSKDocxPath || !window.docx || typeof window.docx.renderAsync !== 'function') return false;
+    const { data, error } = await supabaseClient.storage.from('scan-sk').download(templateSKDocxPath);
+    if (error || !data) return false;
+    try {
+        container.innerHTML = '';
+        await window.docx.renderAsync(await data.arrayBuffer(), container, null, {
+            className: 'docx-preview', inWrapper: true, ignoreWidth: false, ignoreHeight: false,
+            breakPages: true, renderHeaders: true, renderFooters: true, useBase64URL: true
+        });
+        renderDocxPlaceholders(container, values);
+        return true;
+    } catch (renderError) {
+        console.error('Gagal merender template DOCX:', renderError);
+        return false;
     }
 }
 
@@ -2067,10 +2213,20 @@ async function hapusTemplateSKSanksi() {
     try {
         const { error } = await supabaseClient.from('system_settings').delete().eq('key_name', 'template_sk_sanksi');
         if (error) throw error;
+        if (templateSKDocxPath) {
+            const { error: storageError } = await supabaseClient.storage.from('scan-sk').remove([templateSKDocxPath]);
+            if (storageError) throw storageError;
+        }
+        const { error: pathError } = await supabaseClient.from('system_settings').delete().eq('key_name', 'template_sk_sanksi_docx_path');
+        if (pathError) throw pathError;
         templateSKSanksiGlobal = '';
+        templateSKDocxPath = '';
+        templateSKSource = '';
         const editor = document.getElementById('template-sk-editor');
         if (editor) editor.value = '';
-        showToast('✅ Template SK berhasil dihapus.');
+        const file = document.getElementById('template-sk-file');
+        if (file) file.value = '';
+        showToast('✅ Template Supabase dikosongkan. Silakan upload template baru.');
     } catch (error) {
         console.error('Gagal menghapus template SK:', error);
         showToast(error.message || 'Template SK gagal dihapus.', true);
@@ -2078,8 +2234,9 @@ async function hapusTemplateSKSanksi() {
 }
 
 async function loadDatasheets() {
-    const { data, error } = await supabaseClient.from('v_aduan_lengkap').select('*').order('created_at', { ascending: false }).limit(200);
-    if (error || !data) return;
+    const { data: rows, error } = await supabaseClient.from('v_aduan_lengkap').select('*').order('created_at', { ascending: false }).limit(200);
+    if (error || !rows) return;
+    const data = rows || [];
 
     const tbPelapor = document.getElementById('ds-pelapor');
     if (tbPelapor) tbPelapor.innerHTML = data.map(d => `<tr><td>${new Date(d.created_at).toLocaleDateString('id-ID')}</td><td><span style="font-size:11px;font-family:monospace;">${d.kode_tracking}</span></td><td>${d.nama_pelapor}</td><td>${d.nama_terlapor}</td><td><span class="badge">${d.status}</span></td><td><button class="btn-small btn-primary" onclick="bukaTab('lacak'); document.getElementById('lacak-id').value='${d.kode_tracking}'; cariStatusLaporan();">Lacak</button></td></tr>`).join('') || '<tr><td colspan="6" style="text-align:center;">Belum ada data</td></tr>';
@@ -2129,7 +2286,7 @@ async function downloadSkRowFromQueue(aduanId, type = 'pdf') {
 async function editPenetapan(aduanId) {
     const { data } = await supabaseClient.from('v_aduan_lengkap').select('*').eq('id', aduanId).single();
     if(!data) return;
-    
+
     bukaTab('penetapan');
     const penSelect = document.getElementById('pen-pilih-aduan');
     if (penSelect && ![...penSelect.options].some(option => option.value === aduanId)) {
@@ -2198,19 +2355,27 @@ function isSkReadyAduan(item) {
 }
 
 async function loadAduanOptions() {
-    const { data: aduan } = await supabaseClient.from('v_aduan_lengkap').select('id, kode_tracking, nama_terlapor, status, no_sk, jenis_dokumen').order('created_at', { ascending: false }).limit(200);
-    const { data: skRows } = await supabaseClient.from('penetapan_sk').select('aduan_id');
+    const { data: rows, error: aduanError } = await supabaseClient.from('aduan').select('id, kode_tracking, nama_terlapor, status, created_at').order('created_at', { ascending: false }).limit(200);
+    if (aduanError) {
+        console.error('Gagal memuat daftar aduan untuk panel SK:', aduanError);
+        showToast('Gagal memuat daftar aduan: ' + aduanError.message, true);
+        return 0;
+    }
+
+    const { data: skRows, error: skError } = await supabaseClient.from('penetapan_sk').select('aduan_id');
+    if (skError) console.warn('Data penetapan SK tidak dapat dibaca:', skError);
     const skAduanIds = new Set((skRows || []).map(row => row.aduan_id).filter(Boolean));
 
     const selectConfig = [
-        { id: 'op-pilih-aduan', statuses: ['baru', 'terkirim', 'Terkirim'] },
-        { id: 'esk-pilih-aduan', statuses: ['diverifikasi', 'Diverifikasi'] },
-        { id: 'pic-pilih-aduan', statuses: ['tereskalasi', 'diproses_pic', 'Proses PIC / Dieskalasi'] },
-        { id: 'ot-pilih-aduan', statuses: ['menunggu_otorisasi', 'Menunggu Otorisasi'] },
-        { id: 'pen-pilih-aduan', statuses: ['disahkan', 'Disahkan', 'selesai_sk', 'Selesai (SK Diterbitkan)', 'menunggu_otorisasi', 'Menunggu Otorisasi'] },
-        { id: 'cetak-sk-pilih', statuses: ['selesai_sk', 'Selesai (SK Diterbitkan)', 'disahkan', 'Disahkan'] }
+        { id: 'op-pilih-aduan', context: 'operator', statuses: ['baru', 'terkirim', 'Terkirim'] },
+        { id: 'esk-pilih-aduan', context: 'eskalasi', statuses: ['diverifikasi', 'Diverifikasi'] },
+        { id: 'pic-pilih-aduan', context: 'pic', statuses: ['tereskalasi', 'diproses_pic', 'Proses PIC / Dieskalasi'] },
+        { id: 'ot-pilih-aduan', context: 'otorisasi', statuses: ['menunggu_otorisasi', 'Menunggu Otorisasi'] },
+        { id: 'pen-pilih-aduan', context: 'penetapan', statuses: ['disahkan', 'Disahkan', 'selesai_sk', 'Selesai (SK Diterbitkan)'] },
+        { id: 'cetak-sk-pilih', context: 'cetak-sk', statuses: ['selesai_sk', 'Selesai (SK Diterbitkan)', 'disahkan', 'Disahkan'] }
     ];
 
+    const aduan = rows || [];
     selectConfig.forEach(config => {
         const sel = document.getElementById(config.id); if (!sel) return;
         const cur = sel.value; sel.innerHTML = '<option value="">-- Pilih Aduan --</option>';
@@ -2219,7 +2384,7 @@ async function loadAduanOptions() {
             const statusMatches = matchesStatusList(status, config.statuses);
             const hasSkRecord = skAduanIds.has(a.id);
             if (config.id === 'pen-pilih-aduan') {
-                return statusMatches || hasSkRecord || isSkReadyAduan(a);
+                return statusMatches;
             }
             if (config.id === 'cetak-sk-pilih') {
                 return statusMatches || hasSkRecord || isSkReadyAduan(a);
@@ -2229,7 +2394,10 @@ async function loadAduanOptions() {
         filteredAduan.forEach(a => { const o = document.createElement('option'); o.value = a.id; o.textContent = `${a.kode_tracking} | ${a.nama_terlapor} | ${a.status || 'SK Belum Terbit'}`; sel.appendChild(o); });
         if (cur && [...sel.options].some(option => option.value === cur)) sel.value = cur;
         else if (filteredAduan[0]) sel.value = filteredAduan[0].id;
+        if (sel.value && config.context !== 'cetak-sk') sinkronHeader(sel.value, config.context);
     });
+
+    return (aduan || []).length;
 }
 
 async function updateDashboardStats(){
@@ -2267,7 +2435,7 @@ async function renderDashboardCharts() {
     };
 
     try {
-        const { data } = await supabaseClient.from('v_aduan_lengkap').select('kategori_nama, status, created_at');
+            const { data } = await supabaseClient.from('v_aduan_lengkap').select('kategori_nama, status, created_at');
         if(!data || data.length === 0) {
             emptyState();
             return;
@@ -2384,7 +2552,7 @@ async function kirimLaporan(){
             bukti = await uploadFile('bukti-aduan', file); bukti.nama=file.name;
         }
 
-        const payload={ nama_pelapor:nama, email_pelapor:email, kontak_pelapor:kontak, nama_terlapor:terlapor, jabatan_terlapor:jabatan, lokasi_kejadian:lokasi, tanggal_kejadian:tanggal, deskripsi_kejadian:deskripsi, link_cloud_drive:link, file_bukti_url:bukti.url, file_bukti_path:bukti.path, file_bukti_nama:bukti.nama, pelapor_id: currentUser?.id || null, status:'baru' };
+        const payload={ nama_pelapor:nama, email_pelapor:email, kontak_pelapor:kontak, nama_terlapor:terlapor, jabatan_terlapor:jabatan, lokasi_kejadian:lokasi, tanggal_kejadian:tanggal, deskripsi_kejadian:deskripsi, link_cloud_drive:link, file_bukti_url:bukti.url, file_bukti_path:bukti.path, file_bukti_nama:bukti.nama, pelapor_id:currentUser?.id || null, status:'baru' };
         const { data, error } = await supabaseClient.from('aduan').insert(payload).select().single();
         if(error) throw error;
 
@@ -2400,7 +2568,7 @@ function validasiUkuranFile(input){ if(input.files && input.files[0] && input.fi
 
 async function simpanVerifikasi(){
     const aduanId=document.getElementById('op-pilih-aduan')?.value; if(!aduanId){ showToast('Pilih aduan', true); return; }
-    const payload={ aduan_id:aduanId, operator_id: currentUser?.id, chk_identitas: document.getElementById('chk-identitas')?.checked || false, chk_deskripsi: document.getElementById('chk-deskripsi')?.checked || false, chk_bukti: document.getElementById('chk-bukti')?.checked || false, kategori_id: document.getElementById('op-kategori')?.value || null, sub_kategori_id: document.getElementById('op-subkategori')?.value || null, hasil_verifikasi_id: document.getElementById('op-hasil')?.value || null, catatan_verifikator: document.getElementById('op-catatan')?.value || '' };
+    const payload={ aduan_id:aduanId, operator_id:currentUser?.id, chk_identitas:document.getElementById('chk-identitas')?.checked || false, chk_deskripsi:document.getElementById('chk-deskripsi')?.checked || false, chk_bukti:document.getElementById('chk-bukti')?.checked || false, kategori_id:document.getElementById('op-kategori')?.value || null, sub_kategori_id:document.getElementById('op-subkategori')?.value || null, hasil_verifikasi_id:document.getElementById('op-hasil')?.value || null, catatan_verifikator:document.getElementById('op-catatan')?.value || '' };
     if(!payload.kategori_id || !payload.hasil_verifikasi_id){ showToast('Kategori & Hasil wajib', true); return; }
 
     const { error } = await supabaseClient.from('verifikasi').upsert(payload, { onConflict:'aduan_id' });
@@ -2410,7 +2578,18 @@ async function simpanVerifikasi(){
     await loadAllData();
 }
 
-async function recallAduan(ctx){ await loadAllData(); showToast('Data aduan di-refresh'); }
+async function recallAduan(ctx){
+    if (ctx === 'penetapan') {
+        const total = await loadAduanOptions();
+        const info = document.getElementById('recall-info-penetapan');
+        if (info) info.textContent = `Berhasil memuat ${total} aduan untuk persiapan SK.`;
+        showToast(`Aduan SK diperbarui: ${total} data`);
+        return;
+    }
+
+    await loadAllData();
+    showToast('Data aduan di-refresh');
+}
 
 async function sinkronHeader(aduanId, context){
     const headerContainer = document.getElementById(`info-header-${context}`);
@@ -2419,8 +2598,44 @@ async function sinkronHeader(aduanId, context){
         return;
     }
 
+    if (headerContainer) {
+        headerContainer.style.display = 'block';
+        headerContainer.innerHTML = '<div style="background:var(--surface-soft); border:1px solid var(--border); border-left:4px solid var(--accent); padding:12px 16px; border-radius:8px; color:var(--muted);">Memuat informasi aduan dari Supabase...</div>';
+    }
+
     const { data } = await supabaseClient.from('v_aduan_lengkap').select('*').eq('id', aduanId).single();
-    if(!data) return;
+    if(!data) {
+        if (headerContainer) headerContainer.innerHTML = '<div style="background:var(--surface-soft); border:1px solid #ef4444; border-left:4px solid #ef4444; padding:12px 16px; border-radius:8px; color:#ef4444;">Detail aduan tidak ditemukan di Supabase.</div>';
+        return;
+    }
+
+    const [verifikasiResult, eskalasiResult, prosesResult, otorisasiResult, penetapanResult] = await Promise.all([
+        supabaseClient.from('verifikasi').select('chk_identitas, chk_deskripsi, chk_bukti, hasil_verifikasi_id, catatan_verifikator').eq('aduan_id', aduanId).maybeSingle(),
+        supabaseClient.from('eskalasi').select('level_eskalasi_id, pic_tujuan_id, urgensi_id, sla_hari_id, deadline_date, instruksi').eq('aduan_id', aduanId).maybeSingle(),
+        supabaseClient.from('penanganan_pic').select('tgl_mulai, tgl_selesai, tanggapan_proses, tanggapan_akhir, jenis_surat').eq('aduan_id', aduanId).maybeSingle(),
+        supabaseClient.from('otorisasi').select('keputusan, catatan_final, is_approved').eq('aduan_id', aduanId).maybeSingle(),
+        supabaseClient.from('penetapan_sk').select('jenis_dokumen, no_sk, tgl_penetapan, hal_sk').eq('aduan_id', aduanId).maybeSingle()
+    ]);
+    const verifikasi = verifikasiResult.data || {};
+    const eskalasi = eskalasiResult.data || {};
+    const proses = prosesResult.data || {};
+    const otorisasi = otorisasiResult.data || {};
+    const penetapan = penetapanResult.data || {};
+    const [hasilRef, levelRef, picRef, urgensiRef, slaRef] = await Promise.all([
+        verifikasi.hasil_verifikasi_id ? supabaseClient.from('ref_hasil_verifikasi').select('nama').eq('id', verifikasi.hasil_verifikasi_id).maybeSingle() : Promise.resolve({ data: null }),
+        eskalasi.level_eskalasi_id ? supabaseClient.from('ref_eskalasi_level').select('nama').eq('id', eskalasi.level_eskalasi_id).maybeSingle() : Promise.resolve({ data: null }),
+        eskalasi.pic_tujuan_id ? supabaseClient.from('ref_pic').select('nama').eq('id', eskalasi.pic_tujuan_id).maybeSingle() : Promise.resolve({ data: null }),
+        eskalasi.urgensi_id ? supabaseClient.from('ref_urgensi').select('nama').eq('id', eskalasi.urgensi_id).maybeSingle() : Promise.resolve({ data: null }),
+        eskalasi.sla_hari_id ? supabaseClient.from('ref_sla_hari').select('hari').eq('id', eskalasi.sla_hari_id).maybeSingle() : Promise.resolve({ data: null })
+    ]);
+    const hasilNama = hasilRef.data?.nama || '-';
+    const levelNama = levelRef.data?.nama || '-';
+    const picNama = picRef.data?.nama || '-';
+    const urgensiNama = urgensiRef.data?.nama || '-';
+    const slaHari = Number(slaRef.data?.hari || data.sla_hari || 0);
+    const deadline = eskalasi.deadline_date ? new Date(`${eskalasi.deadline_date}T23:59:59`) : null;
+    const sisaHari = deadline ? Math.ceil((deadline - new Date()) / 86400000) : null;
+    const statusSla = sisaHari === null ? 'Belum ditetapkan' : sisaHari < 0 ? `Terlambat ${Math.abs(sisaHari)} Hari` : `Sesuai jadwal, sisa ${sisaHari} Hari`;
 
     if(!headerContainer) return;
 
@@ -2430,58 +2645,61 @@ async function sinkronHeader(aduanId, context){
                 <div><b>Pelapor:</b> ${data.nama_pelapor || '-'}</div>
                 <div><b>Tgl Lapor:</b> ${new Date(data.created_at).toLocaleDateString('id-ID')}</div>
              </div>`;
-    html += `<div><b>Terlapor:</b> ${data.nama_terlapor || '-'} <span style="color:var(--muted)">(${data.jabatan_terlapor || '-'})</span></div>`;
-    html += `<div><b>Deskripsi Kejadian:</b> ${data.deskripsi_kejadian || '-'}</div>`;
+    html += `<div><b>Email/Kontak Pelapor:</b> ${escapeHtml(data.email_pelapor || '-')} / ${escapeHtml(data.kontak_pelapor || '-')}</div>`;
+    html += `<div><b>Terlapor:</b> ${escapeHtml(data.nama_terlapor || '-')} <span style="color:var(--muted)">(${escapeHtml(data.jabatan_terlapor || '-')})</span></div>`;
+    html += `<div><b>Lokasi/Tgl Kejadian:</b> ${escapeHtml(data.lokasi_kejadian || '-')} / ${data.tanggal_kejadian ? new Date(data.tanggal_kejadian).toLocaleDateString('id-ID') : '-'}</div>`;
+    html += `<div><b>Deskripsi Kejadian:</b> ${escapeHtml(data.deskripsi_kejadian || '-')}</div>`;
+
+    if (context === 'operator') {
+        html += `<div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--border);"><b>Kriteria:</b> Identitas ${verifikasi.chk_identitas ? 'OK' : 'Belum'} | Deskripsi ${verifikasi.chk_deskripsi ? 'OK' : 'Belum'} | Bukti ${verifikasi.chk_bukti ? 'OK' : 'Belum'}<br><b>Hasil Verifikasi:</b> ${escapeHtml(hasilNama)}<br><b>Catatan:</b> ${escapeHtml(verifikasi.catatan_verifikator || '-')}</div>`;
+    }
 
     if (['eskalasi', 'pic', 'otorisasi', 'penetapan'].includes(context)) {
         html += `<div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--border);">
                     <div style="display:flex; justify-content:space-between;">
-                        <div><b>Kategori:</b> ${data.kategori_nama || '-'}</div>
-                        <div><b>Hasil Verifikasi:</b> <span style="color:var(--accent); font-weight:bold;">${data.hasil_verifikasi_nama || 'Valid'}</span></div>
+                        <div><b>Kategori:</b> ${escapeHtml(data.kategori_nama || '-')}</div>
+                        <div><b>Hasil Verifikasi:</b> <span style="color:var(--accent); font-weight:bold;">${escapeHtml(hasilNama)}</span></div>
                     </div>
                  </div>`;
     }
 
     if (['pic', 'otorisasi', 'penetapan'].includes(context)) {
-        let slaText = "-"; let slaColor = "var(--text)";
-        let slaHari = data.sla_hari || 14; 
-        if (data.created_at) {
-            let start = new Date(data.created_at);
-            let deadline = new Date(start);
-            deadline.setDate(deadline.getDate() + parseInt(slaHari));
-            let now = new Date();
-            let diffDays = Math.ceil((deadline - now) / (1000 * 60 * 60 * 24));
-            
-            if (diffDays < 0) { slaText = `Terlambat ${Math.abs(diffDays)} Hari`; slaColor = "#ef4444"; }
-            else if (diffDays === 0) { slaText = `Hari Terakhir (Batas Waktu)`; slaColor = "#f59e0b"; }
-            else { slaText = `Tepat Waktu (Sisa ${diffDays} Hari)`; slaColor = "#10b981"; }
-        }
-
+        let slaText = statusSla; let slaColor = sisaHari !== null && sisaHari < 0 ? "#ef4444" : "#10b981";
         html += `<div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--border);">
                     <div style="display:flex; justify-content:space-between;">
-                        <div><b>Level Urgensi:</b> ${data.urgensi_nama || '-'}</div>
-                        <div><b>Target SLA:</b> ${slaHari} Hari</div>
+                        <div><b>Level Eskalasi:</b> ${escapeHtml(levelNama)} | <b>PIC:</b> ${escapeHtml(picNama)}</div>
+                        <div><b>Urgensi:</b> ${escapeHtml(urgensiNama)} | <b>Target SLA:</b> ${slaHari || '-'} Hari</div>
                     </div>
-                    <div><b>Status Penanganan:</b> <span style="color:${slaColor}; font-weight:bold; background:rgba(0,0,0,0.2); padding:2px 6px; border-radius:4px;">${slaText}</span></div>
+                    <div><b>Deadline:</b> ${eskalasi.deadline_date || '-'} | <b>Status SLA:</b> <span style="color:${slaColor}; font-weight:bold; background:rgba(0,0,0,0.2); padding:2px 6px; border-radius:4px;">${slaText}</span></div>
+                    <div><b>Instruksi:</b> ${escapeHtml(eskalasi.instruksi || '-')}</div>
                  </div>`;
     }
 
     if (['otorisasi', 'penetapan'].includes(context)) {
         html += `<div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--border);">
-                    <div><b>Rekomendasi Akhir PIC:</b> <span style="color:var(--accent); font-style:italic;">"${data.tanggapan_akhir || 'Belum ada rekomendasi'}"</span></div>
+                    <div><b>Tgl Proses:</b> ${proses.tgl_mulai || '-'} s/d ${proses.tgl_selesai || '-'}<br><b>Tanggapan Proses:</b> ${escapeHtml(proses.tanggapan_proses || '-')}<br><b>Rekomendasi Akhir PIC:</b> <span style="color:var(--accent); font-style:italic;">"${escapeHtml(proses.tanggapan_akhir || data.tanggapan_akhir || '-')}"</span></div>
+                 </div>`;
+    }
+
+    if (context === 'otorisasi') {
+        html += `<div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--border);">
+                    <div><b>Keputusan Otorisasi:</b> ${escapeHtml(otorisasi.keputusan || '-')} | <b>Status Pengesahan:</b> ${otorisasi.is_approved ? 'Disahkan' : 'Belum disahkan'}</div>
+                    <div><b>Catatan Direktur:</b> ${escapeHtml(otorisasi.catatan_final || '-')}</div>
                  </div>`;
     }
 
     if (['penetapan'].includes(context)) {
-        let jenisSurat = data.jenis_surat || 'SK Biasa';
+        let jenisSurat = proses.jenis_surat || 'SK Biasa';
         if (jenisSurat === 'penghentian') jenisSurat = 'Surat Keterangan Penghentian';
         if (jenisSurat === 'tidak_ada_sanksi') jenisSurat = 'Surat Keterangan Tidak Ada Sanksi';
 
         html += `<div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--border);">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div><b>Keputusan Direktur:</b> <span style="color:#10b981; font-weight:bold;">${data.otorisasi_keputusan || '-'}</span></div>
-                        <div><span style="background:var(--primary); color:white; padding:4px 8px; border-radius:4px; font-size:11px;">Surat: ${jenisSurat}</span></div>
+                        <div><b>Keputusan Direktur:</b> <span style="color:#10b981; font-weight:bold;">${escapeHtml(otorisasi.keputusan || data.otorisasi_keputusan || '-')}</span></div>
+                        <div><span style="background:var(--primary); color:white; padding:4px 8px; border-radius:4px; font-size:11px;">Pengesahan: ${otorisasi.is_approved ? 'Ya' : 'Belum'} | Surat: ${escapeHtml(penetapan.jenis_dokumen || jenisSurat)}</span></div>
                     </div>
+                    <div><b>Catatan Otorisasi:</b> ${escapeHtml(otorisasi.catatan_final || data.otorisasi_catatan || '-')}</div>
+                    <div><b>Nomor SK:</b> ${escapeHtml(penetapan.no_sk || data.no_sk || '-')} | <b>Tanggal SK:</b> ${penetapan.tgl_penetapan || data.tgl_penetapan || '-'} | <b>Hal:</b> ${escapeHtml(penetapan.hal_sk || data.hal_sk || '-')}</div>
                  </div>`;
     }
 
@@ -2494,12 +2712,12 @@ function autoDeteksiJenisDokumen(aduanId){}
 
 async function simpanEskalasi(){
     const aduanId=document.getElementById('esk-pilih-aduan')?.value; if(!aduanId){ showToast('Pilih aduan', true); return; }
-    const payload={ aduan_id:aduanId, level_eskalasi_id: document.getElementById('esk-level')?.value || null, pic_tujuan_id: document.getElementById('esk-nama')?.value || null, notif_email: document.getElementById('notif-email')?.checked || false, notif_wa: document.getElementById('notif-wa')?.checked || false, notif_telegram: document.getElementById('notif-telegram')?.checked || false, urgensi_id: document.getElementById('esk-urgensi')?.value || null, sla_hari_id: document.getElementById('esk-waktu')?.value || null, instruksi: document.getElementById('esk-deskripsi')?.value || '', assigned_by: currentUser?.id };
+    const payload={ aduan_id:aduanId, level_eskalasi_id:document.getElementById('esk-level')?.value || null, pic_tujuan_id:document.getElementById('esk-nama')?.value || null, notif_email:document.getElementById('notif-email')?.checked || false, notif_wa:document.getElementById('notif-wa')?.checked || false, notif_telegram:document.getElementById('notif-telegram')?.checked || false, urgensi_id:document.getElementById('esk-urgensi')?.value || null, sla_hari_id:document.getElementById('esk-waktu')?.value || null, instruksi:document.getElementById('esk-deskripsi')?.value || '', assigned_by:currentUser?.id || null };
     if(!payload.level_eskalasi_id || !payload.pic_tujuan_id){ showToast('Level & PIC wajib', true); return; }
-    const { data:sla } = await supabaseClient.from('ref_sla_hari').select('hari').eq('id', payload.sla_hari_id).single();
-    if(sla){ const d=new Date(); d.setDate(d.getDate()+(sla.hari||7)); payload.deadline_date=d.toISOString().slice(0,10); }
+    const { data:sla } = await supabaseClient.from('ref_sla_hari').select('hari').eq('id', payload.sla_hari_id).maybeSingle();
+    if(sla){ const deadline=new Date(); deadline.setDate(deadline.getDate() + (sla.hari || 7)); payload.deadline_date=deadline.toISOString().slice(0,10); }
 
-    const { error } = await supabaseClient.from('eskalasi').upsert(payload, { onConflict: 'aduan_id' });
+    const { error } = await supabaseClient.from('eskalasi').upsert(payload, { onConflict:'aduan_id' });
     if(error){ showToast(error.message, true); return; }
     
     await supabaseClient.from('aduan').update({ status:'tereskalasi' }).eq('id', aduanId); showToast('✅ Eskalasi berhasil'); 
@@ -2517,7 +2735,8 @@ async function loadBuktiPIC() {
     
     panelBukti.style.display = 'block'; const tbody = document.getElementById('ds-bukti-pic');
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Memuat data bukti...</td></tr>';
-    const { data, error } = await supabaseClient.from('v_aduan_lengkap').select('*').in('status', ['tereskalasi', 'diproses_pic']);
+    const { data: rows, error } = await supabaseClient.from('aduan').select('*').in('status', ['tereskalasi', 'diproses_pic', 'Proses PIC / Dieskalasi']);
+    const data = normalizeAduanRows(rows);
     if (error || !data || data.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Tidak ada bukti laporan untuk ditindaklanjuti.</td></tr>'; return; }
 
     tbody.innerHTML = data.map(a => `<tr><td><b>${a.kode_tracking || '-'}</b></td><td>${a.nama_terlapor || '-'}</td><td style="max-width: 240px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${a.deskripsi_kejadian || ''}">${(a.deskripsi_kejadian || '-').substring(0, 60)}...</td><td>${a.link_cloud_drive ? `<a href="${a.link_cloud_drive}" target="_blank" class="btn-small btn-primary" style="text-decoration:none; display:inline-block;">🔗 Buka Link</a>` : '<span style="color:var(--muted);font-size:11px;font-style:italic;">Tidak ada link</span>'}</td><td>${a.file_bukti_url ? `<a href="${a.file_bukti_url}" target="_blank" class="btn-small btn-success" style="text-decoration:none; display:inline-block;">⬇️ Unduh File</a><br><small style="font-size:10px; color:var(--muted);">${a.file_bukti_nama || 'Lampiran'}</small>` : '<span style="color:var(--muted);font-size:11px;font-style:italic;">Tidak ada file</span>'}</td></tr>`).join('');
@@ -2529,9 +2748,9 @@ async function simpanPenanganan(){
     const file=document.getElementById('pic-input-file')?.files?.[0]; let dok={url:null, path:null}; if(file){ dok=await uploadFile('dokumentasi-sidang', file); }
     const todos=[]; document.querySelectorAll('.pic-todo').forEach(cb=>{ if(cb.checked){ todos.push(cb.closest('label')?.textContent?.trim() || 'todo'); } });
 
-    const payload={ aduan_id:aduanId, pic_id: currentUser?.id, tgl_mulai: document.getElementById('pic-tgl-mulai')?.value || null, tgl_selesai: document.getElementById('pic-tgl-selesai')?.value || null, todo_pemanggilan: todos.some(t=>t.toLowerCase().includes('pemanggilan')), todo_pemeriksaan: todos.some(t=>t.toLowerCase().includes('pemeriksaan')), todo_sidang_etik: todos.some(t=>t.toLowerCase().includes('sidang')), todo_rekomendasi_akhir: todos.some(t=>t.toLowerCase().includes('rekomendasi')), todos_json: todos, tanggapan_proses: document.getElementById('pic-tanggapan-proses')?.value || '', tanggapan_akhir: tanggapanAkhir, jenis_surat: (document.getElementById('pic-jenis-surat')?.value || 'none').replace('🛑 ','').replace('✅ ','').replace(/[^a-z_]/g,'') || 'none', dokumentasi_url: dok.url, dokumentasi_path: dok.path };
+    const payload={ aduan_id:aduanId, pic_id:currentUser?.id || null, tgl_mulai:document.getElementById('pic-tgl-mulai')?.value || null, tgl_selesai:document.getElementById('pic-tgl-selesai')?.value || null, todo_pemanggilan:todos.some(t=>t.toLowerCase().includes('pemanggilan')), todo_pemeriksaan:todos.some(t=>t.toLowerCase().includes('pemeriksaan')), todo_sidang_etik:todos.some(t=>t.toLowerCase().includes('sidang')), todo_rekomendasi_akhir:todos.some(t=>t.toLowerCase().includes('rekomendasi')), todos_json:todos, tanggapan_proses:document.getElementById('pic-tanggapan-proses')?.value || '', tanggapan_akhir:tanggapanAkhir, jenis_surat:(document.getElementById('pic-jenis-surat')?.value || 'none').replace('🛑 ','').replace('✅ ','').replace(/[^a-z_]/g,'') || 'none', dokumentasi_url:dok.url, dokumentasi_path:dok.path };
     
-    const { error } = await supabaseClient.from('penanganan_pic').upsert(payload, { onConflict: 'aduan_id' });
+    const { error } = await supabaseClient.from('penanganan_pic').upsert(payload, { onConflict:'aduan_id' });
     if(error){ showToast(error.message, true); return; }
     
     await supabaseClient.from('aduan').update({ status:'menunggu_otorisasi' }).eq('id', aduanId); showToast('✅ Penanganan PIC disimpan'); 
@@ -2552,14 +2771,14 @@ async function simpanOtorisasi(){
     const mapKeputusan={ 'Dinyatakan terbukti secara sah dan meyakinkan':'terbukti', 'tidak terbukti - Hentikan Proses':'tidak_terbukti_hentikan', 'Tidak ada sanksi - Pembinaan/Edukasi':'tidak_ada_sanksi_pembinaan', 'Kembalikan ke PIC':'kembalikan_ke_pic', 'Ditolak':'ditolak' };
     const file=document.getElementById('kop-input')?.files?.[0]; let kop={url:null, path:null}; if(file){ kop=await uploadFile('kop-surat', file); }
 
-    const payload={ aduan_id:aduanId, pimpinan_id: currentUser?.id, keputusan: mapKeputusan[keputusan] || 'terbukti', catatan_final: document.getElementById('ot-catatan')?.value || '', is_approved: document.getElementById('ot-approved')?.checked || false, kop_surat_url: kop.url, kop_surat_path: kop.path };
+    const payload={ aduan_id:aduanId, pimpinan_id:currentUser?.id || null, keputusan:mapKeputusan[keputusan] || 'terbukti', catatan_final:document.getElementById('ot-catatan')?.value || '', is_approved:document.getElementById('ot-approved')?.checked || false, kop_surat_url:kop.url, kop_surat_path:kop.path };
     
-    const { error } = await supabaseClient.from('otorisasi').upsert(payload, { onConflict: 'aduan_id' });
+    const { error } = await supabaseClient.from('otorisasi').upsert(payload, { onConflict:'aduan_id' });
     if(error){ showToast(error.message, true); return; }
     
     const newStatus = payload.is_approved ? 'disahkan' : 'diproses_pic';
     await supabaseClient.from('aduan').update({ status:newStatus }).eq('id', aduanId);
-    showToast(payload.is_approved ? '✅ Disahkan' : 'Catatan disimpan'); 
+    showToast(payload.is_approved ? '✅ Disahkan' : 'Catatan disimpan');
     document.getElementById('ot-pilih-aduan').value = ''; document.getElementById('info-header-otorisasi').style.display = 'none';
     await loadAllData();
 }
@@ -2627,7 +2846,8 @@ async function kembalikanProses(dari){
     if(error){ showToast(error.message, true); return; }
 
     if (dari === 'penetapan') {
-        await supabaseClient.from('penetapan_sk').delete().eq('aduan_id', aduanId).catch(() => {});
+        const { error: deleteError } = await supabaseClient.from('penetapan_sk').delete().eq('aduan_id', aduanId);
+        if (deleteError) console.warn('Data penetapan SK tidak terhapus:', deleteError);
     }
     
     showToast(`↩ Berhasil dikembalikan ke panel ${config.msg}`);
@@ -2652,7 +2872,8 @@ async function batalPengesahan() {
     try {
         const { error } = await supabaseClient.from('aduan').update({ status: 'diproses_pic' }).eq('id', aduanId);
         if (error) throw error;
-        await supabaseClient.from('penetapan_sk').delete().eq('aduan_id', aduanId).catch(() => {});
+        const { error: deleteError } = await supabaseClient.from('penetapan_sk').delete().eq('aduan_id', aduanId);
+        if (deleteError) throw deleteError;
         if (document.getElementById('ot-pilih-aduan')) document.getElementById('ot-pilih-aduan').value = '';
         if (document.getElementById('pen-pilih-aduan')) document.getElementById('pen-pilih-aduan').value = '';
         await loadAduanOptions();
@@ -2732,13 +2953,18 @@ function applySkTemplate(templateText, values = {}) {
         nomor_sk: values.noSK || '-',
         tanggal_aduan: values.tglFormat || values.tgl || '-',
         tgl_penetapan: values.tglFormat || values.tgl || '-',
+        tgl_format: values.tglFormat || values.tgl || '-',
         ID_Aduan: values.kodeTracking || '-',
         id_aduan: values.kodeTracking || '-',
         nama_terlapor: values.terlapor || '-',
         jabatan: values.jabatan || 'Direktur',
-        lokasi: values.kategori || '-',
+        lokasi: values.lokasi || '-',
+        lokasi_kejadian: values.lokasi || '-',
+        'lokasi/unit kerja': values.lokasi || '-',
         kategori: values.kategori || '-',
+        urgensi: values.urgensi || '-',
         isi_keputusan: values.isi || '-',
+        'isi keputusan / amar putusan': values.isi || '-',
         isi: values.isi || '-',
         hal_sk: values.hal || 'Hasil Penanganan Aduan',
         tentang: values.hal || 'Hasil Penanganan Aduan',
@@ -2759,7 +2985,68 @@ function applySkTemplate(templateText, values = {}) {
         text = text.replace(new RegExp(`\\[${key.toUpperCase()}\\]`, 'gi'), replaceValue);
     });
 
+    text = text
+        .replace(/\[tanggal_aduan\]/gi, normalized.tanggal_aduan)
+        .replace(/\[lokasi\/unit kerja\]/gi, normalized['lokasi/unit kerja'])
+        .replace(/\[urgensi\]/gi, normalized.urgensi)
+        .replace(/\[isi keputusan\s*\/\s*amar putusan\]/gi, normalized['isi keputusan / amar putusan']);
+
     return text;
+}
+
+function formatImportedSkTemplate(html) {
+    if (!html) return html;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'sk-imported-template';
+    wrapper.innerHTML = html;
+    const paragraphs = [...wrapper.querySelectorAll('p, h1, h2, h3, h4, h5, h6')];
+    paragraphs.forEach((paragraph) => {
+        const text = paragraph.textContent.trim().toUpperCase();
+        if (text.includes('SURAT KEPUTUSAN PENETAPAN') || text === 'TENTANG' || text.includes('PENETAPAN HASIL PENANGANAN ADUAN') || text.includes('TERLAPOR A.N.') || text === 'MEMUTUSKAN:') {
+            paragraph.style.textAlign = 'center';
+        }
+        if (text.includes('SURAT KEPUTUSAN PENETAPAN') || text.includes('PENETAPAN HASIL PENANGANAN ADUAN') || text.includes('TERLAPOR A.N.') || text.includes('DIREKTUR RUMAH SAKIT')) {
+            paragraph.style.fontWeight = 'bold';
+        }
+        if (/^(MENIMBANG|MENGINGAT|MENETAPKAN|PERTAMA|KEDUA|KETIGA)\s*:?$/.test(text)) {
+            paragraph.classList.add('sk-section-label');
+            const next = paragraph.nextElementSibling;
+            if (next && /^(OL|UL|TABLE|P)$/i.test(next.tagName)) next.classList.add('sk-section-content');
+        }
+    });
+    [...wrapper.children].forEach((paragraph) => {
+        const text = paragraph.textContent.trim().toUpperCase();
+        if (!/^(MENIMBANG|MENGINGAT|MENETAPKAN|PERTAMA|KEDUA|KETIGA)\s*:?$/.test(text)) return;
+        const content = paragraph.nextElementSibling;
+        if (!content || !/^(OL|UL|TABLE|P)$/i.test(content.tagName)) return;
+        const table = document.createElement('table');
+        table.className = 'sk-section-table';
+        table.innerHTML = '<tr><td class="sk-section-label"></td><td class="sk-section-content"></td></tr>';
+        table.querySelector('.sk-section-label').textContent = text.replace(/:$/, '') + ' :';
+        table.querySelector('.sk-section-content').appendChild(content);
+        paragraph.replaceWith(table);
+    });
+    wrapper.querySelectorAll('p').forEach((paragraph) => {
+        const text = paragraph.textContent.trim().toUpperCase();
+        if (/^(MENIMBANG|MENGINGAT|MEMUTUSKAN|MENETAPKAN|PERTAMA|KEDUA|KETIGA)\b/.test(text)) {
+            paragraph.style.textAlign = text.startsWith('MEMUTUSKAN') ? 'center' : 'left';
+            if (text.startsWith('MEMUTUSKAN')) paragraph.style.fontWeight = 'bold';
+        }
+        if (/^(DITETAPKAN DI|PADA TANGGAL|DIREKTUR|NIP\.)/.test(text)) paragraph.style.textAlign = 'center';
+    });
+    wrapper.querySelectorAll('table').forEach((table) => {
+        table.style.width = '100%';
+        table.style.borderCollapse = 'collapse';
+        table.style.tableLayout = 'fixed';
+    });
+    const signatureStart = [...wrapper.children].findIndex((element) => /^(DITETAPKAN DI|PADA TANGGAL)/i.test(element.textContent.trim()));
+    if (signatureStart >= 0) {
+        const signature = document.createElement('div');
+        signature.className = 'sk-signature-block';
+        [...wrapper.children].slice(signatureStart).forEach((element) => signature.appendChild(element));
+        wrapper.appendChild(signature);
+    }
+    return wrapper.innerHTML;
 }
 
 function renderSkDocContent({
@@ -2774,6 +3061,7 @@ function renderSkDocContent({
     nip,
     tempat,
     kategori,
+    lokasi,
     terlapor,
     kodeTracking,
     isCompact = false
@@ -2796,13 +3084,16 @@ function renderSkDocContent({
         nip,
         tempat,
         kategori,
+        lokasi,
         terlapor,
         kodeTracking
     });
 
     if (templateRendered) {
-        return templateRendered;
+        return formatImportedSkTemplate(templateRendered);
     }
+
+    return '<p style="font-family:Arial,sans-serif; color:#b91c1c; text-align:center;">Template SK belum tersedia dari Supabase.</p>';
 
     const isiKeputusan = (isi || '').trim() || '-';
     const paragrafMenimbang = `Bahwa berdasarkan laporan aduan nomor ${kodeTracking || '-'} tentang ${kategori || '-'} yang melibatkan ${terlapor || '-'} telah dilakukan proses verifikasi, pemeriksaan, dan penetapan hasil penanganan sesuai mekanisme yang berlaku dalam sistem SIGAP RSJD AHM.`;
@@ -2925,9 +3216,28 @@ function renderSkDocContent({
     return body;
 }
 
+function setCompleteSkTemplateMode(isComplete) {
+    ['sk-static-title', 'sk-static-meta', 'sk-static-signature', 'sk-lampiran'].forEach((id) => {
+        const element = document.getElementById(id);
+        if (element) element.style.display = isComplete ? 'none' : '';
+    });
+    const body = document.getElementById('sk-body-container');
+    if (body) {
+        body.style.marginBottom = isComplete ? '0' : '20px';
+        body.style.minHeight = isComplete ? '0' : '120px';
+        body.style.fontFamily = isComplete ? "'Times New Roman', Times, serif" : '';
+        body.style.fontSize = isComplete ? '12pt' : '12pt';
+        body.style.lineHeight = isComplete ? '1.35' : '1.5';
+    }
+}
+
 async function muatPreviewSK(aduanId){
     if(!aduanId) return;
     const { data } = await supabaseClient.from('v_aduan_lengkap').select('*').eq('id', aduanId).single(); if(!data) return;
+    const { data: eskalasi } = await supabaseClient.from('eskalasi').select('urgensi_id').eq('aduan_id', aduanId).maybeSingle();
+    const { data: urgensi } = eskalasi?.urgensi_id
+        ? await supabaseClient.from('ref_urgensi').select('nama').eq('id', eskalasi.urgensi_id).maybeSingle()
+        : { data: null };
     const isiEl=document.getElementById('pen-isi-keputusan'); if(isiEl && !isiEl.value){ isiEl.value=data.tanggapan_akhir || data.otorisasi_catatan || ''; }
     
     const preview=document.getElementById('preview-sk-content');
@@ -2956,9 +3266,17 @@ async function muatPreviewSK(aduanId){
             nip,
             tempat,
             kategori: data.kategori_nama || '-',
+            lokasi: data.lokasi_kejadian || '-',
+            urgensi: urgensi?.nama || '-',
             terlapor: data.nama_terlapor || '-',
             kodeTracking: data.kode_tracking || '-'
         });
+        await renderStoredDocxTemplate(preview, {
+            noSK, hal, tgl, tglFormat, isi, jenis, pejabat, jabatan, nip, tempat,
+            kategori: data.kategori_nama || '-', lokasi: data.lokasi_kejadian || '-',
+            terlapor: data.nama_terlapor || '-', kodeTracking: data.kode_tracking || '-'
+        });
+        setCompleteSkTemplateMode(Boolean(templateSKSanksiGlobal));
     }
 }
 function switchJenisDokumen(){ muatPreviewSK(document.getElementById('pen-pilih-aduan')?.value); }
@@ -2976,9 +3294,9 @@ async function simpanPenetapan(){
     const jenisRaw=document.getElementById('pen-jenis-dokumen')?.value || 'sk';
     const jenisMap={ 'sk':'sk', 'penghentian':'penghentian', 'tidak_ada_sanksi':'tidak_ada_sanksi', '✅ Surat Keterangan Tidak Ada Pengenaan Sanksi':'tidak_ada_sanksi', '🛑 Surat Keterangan Penghentian Proses Aduan':'penghentian' };
     
-    const payload={ aduan_id:aduanId, jenis_dokumen: jenisMap[jenisRaw] || 'sk', no_sk:noSK, tgl_penetapan:tgl, hal_sk:hal, tingkat_kerahasiaan: document.getElementById('pen-kerahasiaan')?.value || 'Terbatas', nama_pejabat:namaPejabat, jabatan_pejabat:jabatan, tempat_ditetapkan:tempat, isi_keputusan:isi, paper_size: document.getElementById('print-paper-size')?.value || 'A4', orientation: document.getElementById('print-orientation')?.value || 'Portrait', kop_header_option: document.getElementById('print-kop-header')?.value || 'Ya, KOP di setiap halaman', margin_top: parseInt(document.getElementById('print-margin-top')?.value||20), margin_bottom: parseInt(document.getElementById('print-margin-bottom')?.value||20), margin_left: parseInt(document.getElementById('print-margin-left')?.value||20), margin_right: parseInt(document.getElementById('print-margin-right')?.value||20), page_range: document.getElementById('print-page-range')?.value || 'Semua Halaman', custom_range: document.getElementById('print-custom-range')?.value || '', file_scan_sk_url: scan.url, file_scan_sk_path: scan.path, created_by: currentUser?.id };
+    const payload={ aduan_id:aduanId, jenis_dokumen:jenisMap[jenisRaw] || 'sk', no_sk:noSK, tgl_penetapan:tgl, hal_sk:hal, tingkat_kerahasiaan:document.getElementById('pen-kerahasiaan')?.value || 'Terbatas', nama_pejabat:namaPejabat, jabatan_pejabat:jabatan, tempat_ditetapkan:tempat, isi_keputusan:isi, paper_size:document.getElementById('print-paper-size')?.value || 'A4', orientation:document.getElementById('print-orientation')?.value || 'Portrait', kop_header_option:document.getElementById('print-kop-header')?.value || 'Ya, KOP di setiap halaman', margin_top:parseInt(document.getElementById('print-margin-top')?.value || 20), margin_bottom:parseInt(document.getElementById('print-margin-bottom')?.value || 20), margin_left:parseInt(document.getElementById('print-margin-left')?.value || 20), margin_right:parseInt(document.getElementById('print-margin-right')?.value || 20), page_range:document.getElementById('print-page-range')?.value || 'Semua Halaman', custom_range:document.getElementById('print-custom-range')?.value || '', file_scan_sk_url:scan.url, file_scan_sk_path:scan.path, created_by:currentUser?.id || null };
 
-    const { error } = await supabaseClient.from('penetapan_sk').upsert(payload, { onConflict: 'aduan_id' });
+    const { error } = await supabaseClient.from('penetapan_sk').upsert(payload, { onConflict:'aduan_id' });
     if(error){ showToast(error.message, true); return; }
     
     await supabaseClient.from('aduan').update({ status:'selesai_sk' }).eq('id', aduanId); showToast('✅ SK Terbitkan/Diperbarui: '+noSK); 
@@ -2990,8 +3308,13 @@ async function ambilTemplateSanksi() {
     const aduanId = document.getElementById('pen-pilih-aduan')?.value;
     if (!aduanId) return showToast('Pilih laporan (Disahkan) terlebih dahulu!', true);
     
-    const { data } = await supabaseClient.from('v_aduan_lengkap').select('*').eq('id', aduanId).single();
+    const { data: row } = await supabaseClient.from('aduan').select('*').eq('id', aduanId).single();
+    const data = normalizeAduanRecord(row);
     if (!data) return;
+    const { data: eskalasi } = await supabaseClient.from('eskalasi').select('urgensi_id').eq('aduan_id', aduanId).maybeSingle();
+    const { data: urgensi } = eskalasi?.urgensi_id
+        ? await supabaseClient.from('ref_urgensi').select('nama').eq('id', eskalasi.urgensi_id).maybeSingle()
+        : { data: null };
 
     let isiKeputusan = document.getElementById('pen-isi-keputusan').value || data.tanggapan_akhir || 'Sanksi diberikan sesuai ketentuan...';
     const tglAduan = new Date(data.created_at).toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
@@ -3014,6 +3337,8 @@ async function ambilTemplateSanksi() {
         nip: document.getElementById('pen-nip')?.value || '196705301998032003',
         tempat: document.getElementById('pen-tempat')?.value || 'Samarinda',
         kategori: data.kategori_nama || '-',
+        lokasi: data.lokasi_kejadian || '-',
+        urgensi: urgensi?.nama || '-',
         terlapor: data.nama_terlapor || '-',
         kodeTracking: data.kode_tracking || '-'
     });
@@ -3041,9 +3366,12 @@ async function ambilTemplateSanksi() {
             nip,
             tempat,
             kategori: data.kategori_nama || '-',
+            lokasi: data.lokasi_kejadian || '-',
+            urgensi: urgensi?.nama || '-',
             terlapor: data.nama_terlapor || '-',
             kodeTracking: data.kode_tracking || '-'
         });
+        preview.style.padding = '0';
     }
     
     const halSK = document.getElementById('pen-hal-sk');
@@ -3087,7 +3415,7 @@ async function loadCetakSK(aduanId){
     if(bodyContainer) {
         const isiKeputusan = data.isi_keputusan || data.tanggapan_akhir || '-';
         const tglAduan = new Date(data.created_at).toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
-        const templateText = applySkTemplate(templateSKSanksiGlobal, {
+        const templateText = formatImportedSkTemplate(applySkTemplate(templateSKSanksiGlobal, {
             noSK: data.no_sk || data.kode_tracking || '-/SK/RSJD-AHM/2026',
             hal: data.hal_sk || 'Hasil Penanganan Aduan',
             tgl: data.tgl_penetapan || new Date().toISOString().slice(0,10),
@@ -3099,9 +3427,10 @@ async function loadCetakSK(aduanId){
             nip: '196705301998032003',
             tempat: data.tempat_ditetapkan || 'Samarinda',
             kategori: data.kategori_nama || '-',
+            lokasi: data.lokasi_kejadian || '-',
             terlapor: data.nama_terlapor || '-',
             kodeTracking: data.kode_tracking || '-'
-        });
+        }));
 
         bodyContainer.innerHTML = templateText || `
             <p><strong>Menimbang:</strong> Bahwa berdasarkan laporan aduan nomor <strong>${data.kode_tracking || '-'}</strong> tentang <strong>${data.kategori_nama || '-'}</strong> yang melibatkan <strong>${data.nama_terlapor || '-'}</strong>, telah dilakukan proses verifikasi, eskalasi, dan sidang etik sesuai prosedur.</p>
@@ -3109,6 +3438,23 @@ async function loadCetakSK(aduanId){
             <p><strong>Memutuskan:</strong></p>
             <div style="padding-left:10px; white-space:pre-wrap; margin-bottom:20px;">${isiKeputusan}</div>
         `;
+        await renderStoredDocxTemplate(bodyContainer, {
+            noSK: data.no_sk || data.kode_tracking || '-/SK/RSJD-AHM/2026',
+            hal: data.hal_sk || 'Hasil Penanganan Aduan',
+            tgl: data.tgl_penetapan || new Date().toISOString().slice(0,10),
+            tglFormat: tglAduan,
+            isi: isiKeputusan,
+            jenis: jenisDokumen || 'sk',
+            pejabat: data.nama_pejabat || 'dr. Indah Puspitasari, MARS',
+            jabatan: data.jabatan_pejabat || 'Direktur',
+            nip: '196705301998032003',
+            tempat: data.tempat_ditetapkan || 'Samarinda',
+            kategori: data.kategori_nama || '-',
+            lokasi: data.lokasi_kejadian || '-',
+            terlapor: data.nama_terlapor || '-',
+            kodeTracking: data.kode_tracking || '-'
+        });
+        setCompleteSkTemplateMode(Boolean(templateText));
     }
     
     document.getElementById('cetak-sk-info').style.display = 'block'; 
@@ -3141,12 +3487,14 @@ function updateSKPreviewText() {
 }
 
 function updateSKPreview(){
-    const paper = document.getElementById('cetak-sk-paper')?.value || 'A4';
-    const orient = document.getElementById('cetak-sk-orient')?.value || 'Portrait';
-    const mt = document.getElementById('cetak-sk-mt')?.value || 20;
-    const mb = document.getElementById('cetak-sk-mb')?.value || 20;
-    const ml = document.getElementById('cetak-sk-ml')?.value || 20;
-    const mr = document.getElementById('cetak-sk-mr')?.value || 20;
+    const drafting = document.getElementById('section-penetapan')?.classList.contains('active');
+    const id = (draft, print) => document.getElementById(drafting ? draft : print);
+    const paper = id('print-paper-size', 'cetak-sk-paper')?.value || 'A4';
+    const orient = id('print-orientation', 'cetak-sk-orient')?.value || 'Portrait';
+    const mt = id('print-margin-top', 'cetak-sk-mt')?.value || 20;
+    const mb = id('print-margin-bottom', 'cetak-sk-mb')?.value || 20;
+    const ml = id('print-margin-left', 'cetak-sk-ml')?.value || 20;
+    const mr = id('print-margin-right', 'cetak-sk-mr')?.value || 20;
 
     const area = document.getElementById('sk-print-area');
     if(area) {
@@ -3295,7 +3643,7 @@ async function muatLaporanFormal() {
     const status = document.getElementById('lap-filter-status')?.value || '';
     const tbody = document.getElementById('lap-tbody');
 
-    if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Memuat data laporan...</td></tr>';
+    if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">Memuat data laporan...</td></tr>';
 
     try {
         let query = supabaseClient.from('v_aduan_lengkap').select('*').order('created_at', { ascending: false });
@@ -3312,7 +3660,7 @@ async function muatLaporanFormal() {
                 'selesai_sk', 'disahkan', 'Selesai (SK Diterbitkan)'
             ]);
             const rows = await query;
-            let list = rows.data || [];
+            let list = normalizeAduanRows(rows.data);
             const filtered = list.filter(r => {
                 const raw = String(r.status || '');
                 return [...statusVariants].some(v => raw === v || raw.toLowerCase() === String(v).toLowerCase());
@@ -3326,7 +3674,7 @@ async function muatLaporanFormal() {
     } catch (e) {
         console.error('Gagal memuat laporan formal:', e);
         showToast(e.message || 'Gagal memuat laporan formal.', true);
-        if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--muted);">Gagal memuat data laporan.</td></tr>';
+        if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:var(--muted);">Gagal memuat data laporan.</td></tr>';
     }
 }
 
@@ -3532,12 +3880,12 @@ async function loadCetakLaporan(){
     const status = statusEl?.value || '';
     const search = searchEl?.value?.toLowerCase() || document.getElementById('lap-search')?.value?.toLowerCase() || '';
     const tbody = document.getElementById('cetak-lap-tbody') || document.getElementById('lap-tbody');
-    if (tbody) tbody.innerHTML='<tr><td colspan="8" style="text-align:center;">Memuat...</td></tr>';
+    if (tbody) tbody.innerHTML='<tr><td colspan="9" style="text-align:center;">Memuat...</td></tr>';
 
     let query=supabaseClient.from('v_aduan_lengkap').select('*').order('created_at',{ascending:false}).limit(200);
     if(kategori) query=query.eq('kategori_id', kategori); if(status) query=query.eq('status', status);
     const { data, error } = await query; if(error){ showToast(error.message, true); return; }
-    let rows=data||[]; if(search) rows=rows.filter(r=> (r.nama_terlapor||'').toLowerCase().includes(search) || (r.nama_pelapor||'').toLowerCase().includes(search) || (r.kode_tracking||'').toLowerCase().includes(search) || (r.lokasi_kejadian||'').toLowerCase().includes(search) || (r.kategori_nama||'').toLowerCase().includes(search) || (r.status||'').toLowerCase().includes(search) );
+    let rows=normalizeAduanRows(data); if(search) rows=rows.filter(r=> (r.nama_terlapor||'').toLowerCase().includes(search) || (r.nama_pelapor||'').toLowerCase().includes(search) || (r.kode_tracking||'').toLowerCase().includes(search) || (r.lokasi_kejadian||'').toLowerCase().includes(search) || (r.kategori_nama||'').toLowerCase().includes(search) || (r.status||'').toLowerCase().includes(search) );
    cacheLaporan=rows;
 
     const lapPrintPeriode = document.getElementById('lap-print-periode'); if (lapPrintPeriode) lapPrintPeriode.textContent = periode;
@@ -3551,8 +3899,8 @@ async function loadCetakLaporan(){
         tbody.innerHTML=rows.map((r,i)=>{
             const hasSk = Boolean(r.no_sk || r.tgl_penetapan || r.isi_keputusan || r.jenis_dokumen || r.file_scan_sk_url || r.file_scan_sk_path);
             const scanLink = r.file_scan_sk_url ? '<a href="'+r.file_scan_sk_url+'" target="_blank" style="color: var(--accent);">📎 Scan SK</a>' : '';
-            return `<tr><td>${i+1}</td><td>${r.created_at?new Date(r.created_at).toLocaleDateString('id-ID'):'-'}</td><td><b>${r.kode_tracking}</b></td><td>${r.nama_pelapor}</td><td>${r.nama_terlapor}<br><small>${r.jabatan_terlapor||''}</small></td><td>${r.lokasi_kejadian}<br><small>${r.kategori_nama||''}</small></td><td><span style="background:var(--surface-soft); color:var(--text); padding:2px 6px; border-radius:4px; font-size:10px;">${r.status}</span><br><small>${r.no_sk||''}</small></td><td style="max-width:220px;">${(r.tanggapan_akhir||r.otorisasi_catatan||'').substring(0,100)}${scanLink ? '<div style="margin-top:6px;">'+scanLink+'</div>' : ''}${hasSk ? '<div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:6px;">' + '<button class="btn-small btn-primary" data-skr-pdf="'+i+'" type="button">Download SK</button>' + '<button class="btn-small btn-success" data-skr-pdf-alt="'+i+'" type="button">⬇ PDF</button>' + '<button class="btn-small btn-verify" data-skr-docx="'+i+'" type="button">📄 DOCX</button>' + '<button class="btn-small btn-primary" data-skr-edit="'+i+'" type="button">✏️ Edit</button>' + '</div>' : ''}</td></tr>`;
-        }).join('') || '<tr><td colspan="8" style="text-align:center; color:var(--muted);">Tidak ada data</td></tr>';
+            return `<tr><td>${i+1}</td><td>${r.created_at?new Date(r.created_at).toLocaleDateString('id-ID'):'-'}</td><td><b>${r.kode_tracking}</b></td><td>${r.nama_pelapor}</td><td>${r.nama_terlapor}<br><small>${r.jabatan_terlapor||''}</small></td><td>${r.lokasi_kejadian}<br><small>${r.kategori_nama||''}</small></td><td><span style="background:var(--surface-soft); color:var(--text); padding:2px 6px; border-radius:4px; font-size:10px;">${r.status}</span><br><small>${r.no_sk||''}</small></td><td style="max-width:220px;">${(r.tanggapan_akhir||r.otorisasi_catatan||'').substring(0,100)}</td><td>${r.tgl_penetapan ? new Date(r.tgl_penetapan).toLocaleDateString('id-ID') : '-'}${scanLink ? '<div style="margin-top:6px;">'+scanLink+'</div>' : ''}${hasSk ? '<div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:6px;">' + '<button class="btn-small btn-primary" data-skr-pdf="'+i+'" type="button">Download SK</button>' + '<button class="btn-small btn-success" data-skr-pdf-alt="'+i+'" type="button">⬇ PDF</button>' + '<button class="btn-small btn-verify" data-skr-docx="'+i+'" type="button">📄 DOCX</button>' + '<button class="btn-small btn-primary" data-skr-edit="'+i+'" type="button">✏️ Edit</button>' + '</div>' : '-'}</td></tr>`;
+        }).join('') || '<tr><td colspan="9" style="text-align:center; color:var(--muted);">Tidak ada data</td></tr>';
 
         tbody.querySelectorAll('[data-skr-pdf]').forEach((btn) => {
             btn.addEventListener('click', () => {
@@ -3640,7 +3988,8 @@ async function cariStatusLaporan(){
         query = query.or(`kode_tracking.ilike.%${kode}%,nama_pelapor.ilike.%${kode}%,kontak_pelapor.ilike.%${kode}%`);
     }
 
-    const { data, error } = await query;
+    const { data: rows, error } = await query;
+    const data = normalizeAduanRows(rows);
 
     let res = document.getElementById('lacak-result'); 
     if(!res){ 
@@ -3687,8 +4036,7 @@ async function kirimKorespondensi(){
     if(!nama||!pesan){ showToast('Nama & pesan wajib diisi', true); return; }
     
     const { error } = await supabaseClient.from('korespondensi').insert({ 
-        nama, email, pesan, 
-        target_role: targetRole, 
+        nama, email, pesan,
         user_id: currentUser?.id || null 
     });
     
@@ -3719,10 +4067,10 @@ async function loadParamValues(){
     }
 
     const kategori=document.getElementById('adm-param-pilih')?.value; const listEl=document.getElementById('adm-param-list'); if(!listEl||!kategori) return;
-    const tableMap={ 'kategori_aduan':'ref_kategori_aduan', 'sub_kategori':'ref_sub_kategori', 'pic':'ref_pic', 'eskalasi':'ref_eskalasi_level', 'urgensi':'ref_urgensi', 'sla_hari':'ref_sla_hari', 'hasil_verifikasi':'ref_hasil_verifikasi' };
-    const table=tableMap[kategori]||'ref_params'; let data=[];
-    if(table==='ref_params'){ const { data:d } = await supabaseClient.from('ref_params').select('*').eq('kategori', kategori); data=d||[]; listEl.innerHTML=data.map(r=>`<li style="display:flex; justify-content:space-between; padding:6px; border-bottom:1px solid var(--border); color:var(--text);"><span>${escapeHtml(r.value)}</span><button onclick="hapusParamDB('${r.id}','${kategori}')" style="background:#ef4444; color:white; border:none; border-radius:4px; padding:2px 8px;">x</button></li>`).join('') || '<li style="padding:10px; color:var(--muted); text-align:center;">Kosong</li>'; }
-    else { const { data:d } = await supabaseClient.from(table).select('*').order('created_at'); data=d||[]; listEl.innerHTML=data.map(r=>`<li style="display:flex; justify-content:space-between; padding:6px; border-bottom:1px solid var(--border); color:var(--text);"><span>${escapeHtml(r.nama||r.label||r.hari)}</span><button onclick="hapusParamDB('${r.id}','${kategori}')" style="background:#ef4444; color:white; border:none; border-radius:4px; padding:2px 8px;">x</button></li>`).join('') || '<li style="padding:10px; color:var(--muted); text-align:center;">Kosong</li>'; }
+    const tableMap={ kategori_aduan:'ref_kategori_aduan', sub_kategori:'ref_sub_kategori', pic:'ref_pic', eskalasi:'ref_eskalasi_level', urgensi:'ref_urgensi', sla_hari:'ref_sla_hari', hasil_verifikasi:'ref_hasil_verifikasi' };
+    const table=tableMap[kategori] || 'ref_params';
+    const { data } = await supabaseClient.from(table).select('*').eq(table === 'ref_params' ? 'kategori' : 'is_active', table === 'ref_params' ? kategori : true).order('created_at');
+    listEl.innerHTML=(data || []).map(r=>`<li style="padding:6px; border-bottom:1px solid var(--border); color:var(--text);">${escapeHtml(r.nama || r.label || r.value || r.hari)}</li>`).join('') || '<li style="padding:10px; color:var(--muted); text-align:center;">Kosong</li>';
 }
 
 async function tambahParameter(){
@@ -3733,10 +4081,10 @@ async function tambahParameter(){
     }
 
     const kategori=document.getElementById('adm-param-pilih')?.value; const baru=document.getElementById('adm-param-baru')?.value.trim(); if(!baru){ showToast('Isi opsi baru', true); return; }
-    const tableMap={ 'kategori_aduan':{table:'ref_kategori_aduan', payload:{nama:baru}}, 'sub_kategori':{table:'ref_sub_kategori', payload:{nama:baru}}, 'pic':{table:'ref_pic', payload:{nama:baru}}, 'eskalasi':{table:'ref_eskalasi_level', payload:{nama:baru}}, 'urgensi':{table:'ref_urgensi', payload:{nama:baru, level:1}}, 'sla_hari':{table:'ref_sla_hari', payload:{hari:parseInt(baru)||7, label:baru+' Hari Kerja'}}, 'hasil_verifikasi':{table:'ref_hasil_verifikasi', payload:{nama:baru}} };
-    const conf=tableMap[kategori];
-    if(!conf){ const { error } = await supabaseClient.from('ref_params').insert({ kategori, value:baru }); if(error){ showToast(error.message, true); return; } }
-    else { const { error } = await supabaseClient.from(conf.table).insert(conf.payload); if(error){ showToast(error.message, true); return; } }
+    const tableMap={ kategori_aduan:{table:'ref_kategori_aduan', payload:{nama:baru}}, sub_kategori:{table:'ref_sub_kategori', payload:{nama:baru}}, pic:{table:'ref_pic', payload:{nama:baru}}, eskalasi:{table:'ref_eskalasi_level', payload:{nama:baru}}, urgensi:{table:'ref_urgensi', payload:{nama:baru, level:1}}, sla_hari:{table:'ref_sla_hari', payload:{hari:parseInt(baru) || 7, label:baru+' Hari Kerja'}}, hasil_verifikasi:{table:'ref_hasil_verifikasi', payload:{nama:baru}} };
+    const config=tableMap[kategori] || { table:'ref_params', payload:{kategori, value:baru} };
+    const { error } = await supabaseClient.from(config.table).insert(config.payload);
+    if(error){ showToast(error.message, true); return; }
     document.getElementById('adm-param-baru').value=''; await loadParamValues(); await loadRefData(); showToast('✅ Ditambahkan: '+baru);
 }
 
@@ -3748,8 +4096,8 @@ async function hapusParamDB(id, kategori){
     }
 
     if(!confirm('Hapus data ini?')) return;
-    const tableMap={ 'kategori_aduan':'ref_kategori_aduan', 'sub_kategori':'ref_sub_kategori', 'pic':'ref_pic', 'eskalasi':'ref_eskalasi_level', 'urgensi':'ref_urgensi', 'sla_hari':'ref_sla_hari', 'hasil_verifikasi':'ref_hasil_verifikasi' };
-    const table=tableMap[kategori]||'ref_params'; const { error } = await supabaseClient.from(table).delete().eq('id', id); if(error){ showToast(error.message, true); return; }
+    const tableMap={ kategori_aduan:'ref_kategori_aduan', sub_kategori:'ref_sub_kategori', pic:'ref_pic', eskalasi:'ref_eskalasi_level', urgensi:'ref_urgensi', sla_hari:'ref_sla_hari', hasil_verifikasi:'ref_hasil_verifikasi' };
+    const { error } = await supabaseClient.from(tableMap[kategori] || 'ref_params').delete().eq('id', id); if(error){ showToast(error.message, true); return; }
     await loadParamValues(); await loadRefData(); showToast('Dihapus');
 }
 
@@ -3785,7 +4133,7 @@ async function renderPICDirectory(){
     }
 
     const { data } = await supabaseClient.from('ref_pic').select('*').eq('is_active', true);
-    const el=document.getElementById('pic-directory-list'); if(el){ el.innerHTML=(data||[]).map(p=>`<div style="padding:10px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; color:var(--text);"><span>👤 ${escapeHtml(p.nama)} - ${escapeHtml(p.jabatan || '')}</span><span style="font-size:11px; color:var(--muted);">${escapeHtml(p.email || '')}</span></div>`).join('') || '<div style="padding:20px; text-align:center; color:var(--muted);">Belum ada PIC</div>'; }
+    const el=document.getElementById('pic-directory-list'); if(el){ el.innerHTML=data.map(p=>`<div style="padding:10px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; color:var(--text);"><span>👤 ${escapeHtml(p.nama)} - ${escapeHtml(p.jabatan || '')}</span><span style="font-size:11px; color:var(--muted);">${escapeHtml(p.email || '')}</span></div>`).join('') || '<div style="padding:20px; text-align:center; color:var(--muted);">Belum ada PIC</div>'; }
 }
 
 async function loadAdminKorespondensi() {
@@ -3796,11 +4144,6 @@ async function loadAdminKorespondensi() {
     }
 
     let query = supabaseClient.from('korespondensi').select('*').order('created_at', { ascending: false }).limit(50);
-    const userRole = currentProfile?.role || 'Pelapor';
-    if (userRole.toLowerCase() !== 'administrator' && userRole.toLowerCase() !== 'superadmin') {
-        query = query.eq('target_role', userRole);
-    }
-
     const { data, error } = await query;
     if (error) { showToast('Gagal memuat pesan: ' + error.message, true); return; }
     
@@ -3835,7 +4178,7 @@ async function balasPesan(id) {
     }
 
     const balasan = document.getElementById(`balas-${id}`).value.trim(); if(!balasan) { showToast('Balasan tidak boleh kosong', true); return; }
-    const { error } = await supabaseClient.from('korespondensi').update({ balasan: balasan }).eq('id', id);
+    const { error } = await supabaseClient.from('korespondensi').update({ balasan }).eq('id', id);
     if(error) { showToast(error.message, true); return; }
     showToast('✅ Balasan terkirim ke pengguna'); loadAdminKorespondensi(); loadKorespondensiHistory();
 }
@@ -3863,7 +4206,7 @@ async function uploadPublikasiBaru() {
 
     try {
         const uploadRes = await uploadFile('publikasi', file); if (!uploadRes.url) { throw new Error('Gagal mendapatkan URL file dari server.'); }
-        const payload = { judul: judul, kategori: kategori, file_url: uploadRes.url, file_path: uploadRes.path, created_by: currentUser?.id || null };
+        const payload = { judul, kategori, file_url: uploadRes.url, file_path: uploadRes.path, created_by: currentUser?.id || null };
         const { error } = await supabaseClient.from('publikasi').insert(payload); if (error) throw error;
         showToast('✅ Publikasi berhasil diunggah!'); document.getElementById('adm-pub-judul').value = ''; fileInput.value = ''; await loadAdminPublikasi();
     } catch (e) { showToast('Gagal: ' + e.message, true); console.error(e); } finally { btn.disabled = false; btn.textContent = '📤 Upload Dokumen'; }
@@ -3932,20 +4275,9 @@ function renderChecklistSuperAdmin() {
 async function loadRBACDatabase() {
     const roles = ['Pelapor', 'Operator', 'Komite Etik', 'PIC', 'Direktur', 'Administrator', 'SuperAdmin'];
     roles.forEach(r => { if (!aksesConfigGlobal[r]) aksesConfigGlobal[r] = []; });
-
-    const { data, error } = await supabaseClient.from('hak_akses_matriks').select('nama_role, nama_modul, is_granted');
-    if (error) { console.warn("Gagal memuat RBAC DB, menggunakan default:", error); return; }
-
-    if (data && data.length > 0) {
-        roles.forEach(r => aksesConfigGlobal[r] = []);
-        data.forEach(row => {
-            if (row.is_granted) {
-                if (!aksesConfigGlobal[row.nama_role]) aksesConfigGlobal[row.nama_role] = [];
-                aksesConfigGlobal[row.nama_role].push(row.nama_modul);
-            }
-        });
-        console.log("RBAC berhasil disinkronkan dari Database.");
-    }
+    const { data, error } = await supabaseClient.from('system_settings').select('key_value').eq('key_name', 'akses_config').maybeSingle();
+    if (error) { console.warn('Konfigurasi akses Supabase tidak dapat dimuat:', error); return; }
+    if (data?.key_value) Object.assign(aksesConfigGlobal, JSON.parse(data.key_value));
 }
 
 async function simpanChecklistHakAkses() {
@@ -3967,12 +4299,10 @@ async function simpanChecklistHakAkses() {
             }
         });
 
-        const { error } = await supabaseClient.from('hak_akses_matriks').upsert(payload, { onConflict: 'nama_role,nama_modul' });
-
         if(btn) { btn.disabled = false; btn.textContent = originalText; }
-
-        if (error) { showToast("Gagal menyimpan RBAC: " + error.message, true); console.error("Supabase Error:", error); } 
-        else { showToast("✅ Konfigurasi Hak Akses berhasil disimpan ke Database!"); localStorage.setItem('akses_config_sigap', JSON.stringify(aksesConfigGlobal)); }
+        const { error } = await supabaseClient.from('system_settings').upsert([{ key_name: 'akses_config', key_value: JSON.stringify(aksesConfigGlobal) }], { onConflict: 'key_name' });
+        if (error) throw error;
+        showToast("✅ Konfigurasi Hak Akses tersimpan di Supabase.");
         
     } catch (err) {
         if(btn) { btn.disabled = false; btn.textContent = originalText; }
@@ -4072,8 +4402,7 @@ function renderMappingTabel() {
 }
 
 async function loadMappingTabel() {
-    const dataDefault = [{tabel: 'profiles', fungsi: 'Menyimpan data otentikasi dan role', kolom: 'id, email, full_name, role, is_active'}, {tabel: 'aduan', fungsi: 'Menyimpan entri laporan utama', kolom: 'id, nama_pelapor, terlapor, status, kategori_id...'}, {tabel: 'penanganan_pic', fungsi: 'Catatan tindak lanjut PIC', kolom: 'id, aduan_id, tanggapan_proses, tanggapan_akhir...'}];
-    try { const { data } = await supabaseClient.from('system_settings').select('key_value').eq('key_name', 'db_mapping').single(); dbMappingData = data?.key_value ? JSON.parse(data.key_value) : dataDefault; } catch(e) { dbMappingData = dataDefault; } renderMappingTabel();
+    try { const { data } = await supabaseClient.from('system_settings').select('key_value').eq('key_name', 'db_mapping').maybeSingle(); dbMappingData = data?.key_value ? JSON.parse(data.key_value) : []; } catch(e) { dbMappingData = []; } renderMappingTabel();
 }
 
 async function simpanKeSupabaseMapping() { await supabaseClient.from('system_settings').upsert([{ key_name: 'db_mapping', key_value: JSON.stringify(dbMappingData) }], { onConflict: 'key_name' }); }
