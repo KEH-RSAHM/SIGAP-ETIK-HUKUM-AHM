@@ -3100,17 +3100,17 @@ function renderSkDocContent({ noSK, hal, tgl, tglFormat, isi, jenis, pejabat, ja
     let diktumMengingat = `
         <table style="width: 100%; border-collapse: collapse; border: none;">
             <tr><td style="width: 25px; vertical-align: top;">1.</td><td style="vertical-align: top; text-align: justify;">Undang-Undang Nomor 44 Tahun 2009 tentang Rumah Sakit.</td></tr>
-            <tr><td style="width: 25px; vertical-align: top;">2.</td><td style="vertical-align: top; text-align: justify;">Peraturan Menteri Kesehatan terkait pelayanan kesehatan dan kode etik profesi.</td></tr>
+            <tr><td style="width: 25px; vertical-align: top;">2.</td><td style="vertical-align: top; text-align: justify;">Peraturan Menteri Kesehatan Nomor 42 Tahun 2018 tentang Komite Etik dan Hukum Rumah Sakit.</td></tr>
             <tr><td style="width: 25px; vertical-align: top;">3.</td><td style="vertical-align: top; text-align: justify;">Pedoman Etik dan Hukum RSJD Atma Husada Mahakam.</td></tr>
-            <tr><td style="width: 25px; vertical-align: top;">4.</td><td style="vertical-align: top; text-align: justify;">SOP penanganan aduan etik dan hukum internal rumah sakit (SIGAP).</td></tr>
+            <tr><td style="width: 25px; vertical-align: top;">4.</td><td style="vertical-align: top; text-align: justify;">SOP penanganan aduan Etik dan Hukum internal rumah sakit pada aplikasi SIGAP.</td></tr>
         </table>`;
     let diktumMenimbang = `
         <table style="width: 100%; border-collapse: collapse; border: none;">
             <tr><td style="width: 25px; vertical-align: top;">1.</td><td style="vertical-align: top; text-align: justify;">Bahwa berdasarkan data aduan masuk pada sistem aplikasi dengan nomor ${kodeTracking || '-'} tentang perkara ${kategori || '-'} yang melibatkan ${terlapor || '-'}, telah dilakukan proses verifikasi.</td></tr>
-            <tr><td style="width: 25px; vertical-align: top;">2.</td><td style="vertical-align: top; text-align: justify;">Bahwa setelah dilakukan pemeriksaan dan telaah oleh Komite terkait, dipandang perlu menetapkan keputusan sanksi/tindak lanjut secara formal.</td></tr>
+            <tr><td style="width: 25px; vertical-align: top;">2.</td><td style="vertical-align: top; text-align: justify;">Bahwa setelah dilakukan pemeriksaan dan telaah serta rangkaian penanganan aduan oleh Komite terkait, dipandang perlu menetapkan keputusan sanksi/tindak lanjut secara formal.</td></tr>
         </table>`;
     let labelMemutuskan = 'MEMUTUSKAN:';
-    let diktumSatuTeks = `Dinyatakan terbukti secara sah dan meyakinkan melakukan pemenuhan unsur kategori perkara [${kategori}] dengan tingkat urgensi penanganan [${urgensi || '-'}].`;
+    let diktumSatuTeks = `Dinyatakan terbukti secara sah dan meyakinkan melakukan pemenuhan unsur kategori perkara ${kategori} dengan tingkat urgensi penanganan ${urgensi || '-'}.`;
 
     if (jenis === 'penghentian') {
         judulSK = 'SURAT KETERANGAN PENGHENTIAN PROSES ADUAN';
@@ -3135,7 +3135,7 @@ function renderSkDocContent({ noSK, hal, tgl, tglFormat, isi, jenis, pejabat, ja
     const isiKeputusan = (isi || '').trim() || '-';
 
     return `
-    <div style="font-family: 'Times New Roman', Times, serif; color: #000; width: 100%; font-size: 12pt; line-height: 1.5; padding: 0 10mm;">
+    <div style="font-family: 'Times New Roman', Times, serif; color: #000; width: 100%; box-sizing: border-box; font-size: 12pt; line-height: 1.5;">
         <div style="text-align: center; margin-bottom: 25px;">
             <div style="font-weight: bold; text-decoration: underline; font-size: 13pt;">${judulSK}</div>
             <div style="margin-top: 2px;">Nomor: ${noSK}</div>
@@ -3369,9 +3369,24 @@ function downloadDOCX(id, name){
 
 async function syncCetakSKList(){ await loadAduanOptions(); showToast('Daftar SK disinkronkan'); }
 
+let currentCetakAduanData = null;
+
+// =================================================================================
+// PERBAIKAN: PREVIEW PANEL CETAK SK
+// =================================================================================
+
 async function loadCetakSK(aduanId){
     if(!aduanId) return;
-    const { data } = await supabaseClient.from('v_aduan_lengkap').select('*').eq('id', aduanId).single(); if(!data) return;
+    const { data } = await supabaseClient.from('v_aduan_lengkap').select('*').eq('id', aduanId).single(); 
+    if(!data) return;
+    
+    currentCetakAduanData = data; // Simpan ke global
+    
+    // Sembunyikan elemen statis bawaan HTML agar tidak bocor/bertumpuk
+    ['sk-static-title', 'sk-static-meta', 'sk-static-signature', 'sk-lampiran'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
     
     document.getElementById('sk-no-text').textContent = data.no_sk || data.kode_tracking;
     
@@ -3385,86 +3400,176 @@ async function loadCetakSK(aduanId){
     const dropdownJenis = document.getElementById('cetak-sk-jenis');
     if (dropdownJenis) dropdownJenis.value = jenisDokumen;
     
+    document.getElementById('cetak-sk-info').style.display = 'block'; 
+    document.getElementById('cetak-sk-info').textContent = 'Loaded: ' + (data.no_sk || data.kode_tracking);
+
+    // Langsung render ke layar
+    await renderLiveCetakSK();
+    updateSKPreview(); 
+}
+
+async function renderLiveCetakSK() {
+    const data = currentCetakAduanData;
+    if (!data) return;
+
     const bodyContainer = document.getElementById('sk-body-container');
-    if(bodyContainer) {
-        const { data: eskalasi } = await supabaseClient.from('eskalasi').select('urgensi_id').eq('aduan_id', aduanId).maybeSingle();
-        const { data: urgensi } = eskalasi?.urgensi_id ? await supabaseClient.from('ref_urgensi').select('nama').eq('id', eskalasi.urgensi_id).maybeSingle() : { data: null };
+    if (!bodyContainer) return;
 
-        const tglAduan = new Date(data.created_at).toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
-        
-        let templateText = null;
-        if (jenisDokumen === 'sk' && templateSKSanksiGlobal && templateSKSanksiGlobal.trim() !== '') {
-             templateText = formatImportedSkTemplate(applySkTemplate(templateSKSanksiGlobal, {
-                noSK: data.no_sk || data.kode_tracking || '-/SK/RSJD-AHM/2026',
-                tglFormat: tglAduan,
-                isi: data.isi_keputusan || data.tanggapan_akhir || '-',
-                jenis: jenisDokumen,
-                pejabat: data.nama_pejabat || 'dr. Indah Puspitasari, MARS',
-                jabatan: data.jabatan_pejabat || 'Direktur',
-                jabatanTerlapor: data.jabatan_terlapor || '-',
-                nip: '196705301998032003',
-                tempat: data.tempat_ditetapkan || 'Samarinda',
-                kategori: data.kategori_nama || '-',
-                lokasi: data.lokasi_kejadian || '-',
-                terlapor: data.nama_terlapor || '-',
-                kodeTracking: data.kode_tracking || '-'
-            }));
-        }
+    // Ambil nilai terbaru langsung dari Input box di UI Cetak SK
+    const noSK = document.getElementById('sk-no-text')?.textContent || data.no_sk || data.kode_tracking || '-/SK/RSJD-AHM/2026';
+    const tglInput = document.getElementById('cetak-sk-tgl')?.value || data.tgl_penetapan || new Date().toISOString().slice(0,10);
+    const tglFormat = new Date(tglInput).toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
+    const pejabat = document.getElementById('cetak-sk-pejabat')?.value || data.nama_pejabat || 'dr. Indah Puspitasari, MARS';
+    const jabatan = document.getElementById('cetak-sk-jabatan')?.value || data.jabatan_pejabat || 'Direktur';
+    const nip = document.getElementById('cetak-sk-nip')?.value || data.nip_pejabat || '196705301998032003';
+    const jenisDokumen = document.getElementById('cetak-sk-jenis')?.value || data.jenis_dokumen || 'sk';
+    
+    // Ambil tingkat urgensi untuk teks
+    const { data: eskalasi } = await supabaseClient.from('eskalasi').select('urgensi_id').eq('aduan_id', data.id).maybeSingle();
+    const { data: urgensi } = eskalasi?.urgensi_id ? await supabaseClient.from('ref_urgensi').select('nama').eq('id', eskalasi.urgensi_id).maybeSingle() : { data: null };
 
-        bodyContainer.innerHTML = templateText || renderSkDocContent({
-            noSK: data.no_sk || data.kode_tracking || '-/SK/RSJD-AHM/2026',
-            tglFormat: tglAduan,
-            isi: data.isi_keputusan || data.tanggapan_akhir || '-',
+    const isiKeputusan = data.isi_keputusan || data.tanggapan_akhir || '-';
+    const tglAduan = new Date(data.created_at).toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
+
+    let templateText = null;
+    
+    // Jika ada DOCX yang sukses di-load Mammoth, kita coba format
+    if (jenisDokumen === 'sk' && templateSKSanksiGlobal && templateSKSanksiGlobal.trim() !== '') {
+        templateText = formatImportedSkTemplate(applySkTemplate(templateSKSanksiGlobal, {
+            noSK: noSK,
+            tglFormat: tglFormat,
+            isi: isiKeputusan,
             jenis: jenisDokumen,
-            pejabat: data.nama_pejabat || 'dr. Indah Puspitasari, MARS',
-            jabatan: data.jabatan_pejabat || 'Direktur',
-            nip: '196705301998032003',
+            pejabat: pejabat,
+            jabatan: jabatan,
+            jabatanTerlapor: data.jabatan_terlapor || '-',
+            nip: nip,
             tempat: data.tempat_ditetapkan || 'Samarinda',
-            jabatanTerlapor: data.jabatan_terlapor || '-', // PERBAIKAN
             kategori: data.kategori_nama || '-',
             lokasi: data.lokasi_kejadian || '-',
             urgensi: urgensi?.nama || '-',
             terlapor: data.nama_terlapor || '-',
             kodeTracking: data.kode_tracking || '-'
-        });
+        }));
     }
+
+    // Jika template DOCX kosong atau tidak valid (gagal dimuat), render menggunakan template HTML bawaan yang rapi
+    bodyContainer.innerHTML = templateText || renderSkDocContent({
+        noSK: noSK,
+        hal: data.hal_sk || 'Hasil Penanganan Aduan',
+        tgl: tglInput,
+        tglFormat: tglFormat,
+        isi: isiKeputusan,
+        jenis: jenisDokumen,
+        pejabat: pejabat,
+        jabatan: jabatan,
+        nip: nip,
+        tempat: data.tempat_ditetapkan || 'Samarinda',
+        jabatanTerlapor: data.jabatan_terlapor || '-',
+        kategori: data.kategori_nama || '-',
+        lokasi: data.lokasi_kejadian || '-',
+        urgensi: urgensi?.nama || '-',
+        terlapor: data.nama_terlapor || '-',
+        kodeTracking: data.kode_tracking || '-'
+    });
     
-    document.getElementById('cetak-sk-info').style.display = 'block'; 
-    document.getElementById('cetak-sk-info').textContent = 'Loaded: ' + (data.no_sk || data.kode_tracking);
-
-    const staticHeader = document.getElementById('sk-static-title'); if(staticHeader) staticHeader.style.display = 'none';
-    const staticMeta = document.getElementById('sk-static-meta'); if(staticMeta) staticMeta.style.display = 'none';
-    const staticSign = document.getElementById('sk-static-signature'); if(staticSign) staticSign.style.display = 'none';
-
-    updateSKPreview();
-    updateSKPreviewText(); 
+    // Pastikan tidak ada padding tambahan yang merusak layout
+    bodyContainer.style.padding = '0';
 }
 
-function updateSKPreviewText() {
-    const tglInput = document.getElementById('cetak-sk-tgl')?.value;
+async function updateSKPreviewText() {
+    // Cek panel mana yang sedang aktif
+    const isPanelPenetapan = document.getElementById('section-penetapan')?.classList.contains('active');
+    
+    if (isPanelPenetapan) {
+        // Jika sedang di Panel Penetapan, muat ulang dari form penetapan
+        const aduanId = document.getElementById('pen-pilih-aduan')?.value;
+        if (aduanId) muatPreviewSK(aduanId);
+        return;
+    }
+    
+    // --- LOGIKA LIVE UPDATE UNTUK PANEL CETAK SK ---
+    const data = currentCetakAduanData;
+    if (!data) return;
+    
+    const bodyContainer = document.getElementById('sk-body-container');
+    if(!bodyContainer) return;
+
+    const noSK = document.getElementById('pen-no-sk')?.value || data.no_sk || data.kode_tracking || '-/SK/RSJD-AHM/2026';
+    const tglInput = document.getElementById('cetak-sk-tgl')?.value || data.tgl_penetapan || new Date().toISOString().slice(0,10);
+    const tglFormat = new Date(tglInput).toLocaleDateString('id-ID', {day:'numeric',month:'long',year:'numeric'});
     const pejabat = document.getElementById('cetak-sk-pejabat')?.value || 'dr. Indah Puspitasari, MARS';
     const jabatan = document.getElementById('cetak-sk-jabatan')?.value || 'Direktur';
     const nip = document.getElementById('cetak-sk-nip')?.value || '196705301998032003';
+    const jenisDokumen = document.getElementById('cetak-sk-jenis')?.value || data.jenis_dokumen || 'sk';
     
-    const tglObj = tglInput ? new Date(tglInput) : new Date();
-    const tglFormat = tglObj.toLocaleDateString('id-ID', {day:'numeric',month:'long',year:'numeric'});
+    // Ambil urgensi jika ada
+    const { data: eskalasi } = await supabaseClient.from('eskalasi').select('urgensi_id').eq('aduan_id', data.id).maybeSingle();
+    const { data: urgensi } = eskalasi?.urgensi_id ? await supabaseClient.from('ref_urgensi').select('nama').eq('id', eskalasi.urgensi_id).maybeSingle() : { data: null };
+
+    const isiKeputusan = data.isi_keputusan || data.tanggapan_akhir || '-';
+    const tglAduan = new Date(data.created_at).toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
+
+    let templateText = null;
+    // Cek Template Kustom (Jika tersedia dan tipe laporan adalah SK)
+    if (jenisDokumen === 'sk' && templateSKSanksiGlobal && templateSKSanksiGlobal.trim() !== '') {
+         templateText = formatImportedSkTemplate(applySkTemplate(templateSKSanksiGlobal, {
+            noSK: noSK,
+            tglFormat: tglFormat,
+            isi: isiKeputusan,
+            jenis: jenisDokumen,
+            pejabat: pejabat,
+            jabatan: jabatan,
+            jabatanTerlapor: data.jabatan_terlapor || '-',
+            nip: nip,
+            tempat: data.tempat_ditetapkan || 'Samarinda',
+            kategori: data.kategori_nama || '-',
+            lokasi: data.lokasi_kejadian || '-',
+            urgensi: urgensi?.nama || '-',
+            terlapor: data.nama_terlapor || '-',
+            kodeTracking: data.kode_tracking || '-'
+        }));
+    }
+
+    // Render HTML Penuh ke dalam bodyContainer
+    bodyContainer.innerHTML = templateText || renderSkDocContent({
+        noSK: noSK,
+        hal: data.hal_sk || 'Hasil Penanganan Aduan',
+        tgl: tglInput,
+        tglFormat: tglFormat,
+        isi: isiKeputusan,
+        jenis: jenisDokumen,
+        pejabat: pejabat,
+        jabatan: jabatan,
+        nip: nip,
+        tempat: data.tempat_ditetapkan || 'Samarinda',
+        jabatanTerlapor: data.jabatan_terlapor || '-',
+        kategori: data.kategori_nama || '-',
+        lokasi: data.lokasi_kejadian || '-',
+        urgensi: urgensi?.nama || '-',
+        terlapor: data.nama_terlapor || '-',
+        kodeTracking: data.kode_tracking || '-'
+    });
     
-    const elTgl1 = document.getElementById('sk-tgl-preview');
-    const elTgl2 = document.getElementById('sk-tgl2-preview');
-    const elPejabat = document.getElementById('sk-pejabat-preview');
-    const elJabatan = document.getElementById('sk-jabatan-preview');
-    const elNip = document.getElementById('sk-nip-preview');
-    
-    if(elTgl1) elTgl1.textContent = 'Samarinda, ' + tglFormat;
-    if(elTgl2) elTgl2.textContent = tglFormat;
-    if(elPejabat) elPejabat.textContent = pejabat;
-    if(elJabatan) elJabatan.textContent = jabatan;
-    if(elNip) elNip.textContent = nip;
+    // Pastikan tidak ada padding tambahan yang merusak layout
+    bodyContainer.style.padding = '0';
+}
+
+function updateSKPreviewText() {
+    const drafting = document.getElementById('section-penetapan')?.classList.contains('active');
+    // Jika di panel Cetak SK, gunakan render ulang berbasis form Live
+    if (!drafting) {
+        renderLiveCetakSK();
+    } else {
+        // Jika di panel Penetapan SK, muat ulang dari Supabase
+        muatPreviewSK(document.getElementById('pen-pilih-aduan')?.value);
+    }
 }
 
 function updateSKPreview(){
     const drafting = document.getElementById('section-penetapan')?.classList.contains('active');
     const id = (draft, print) => document.getElementById(drafting ? draft : print);
+    
     const paper = id('print-paper-size', 'cetak-sk-paper')?.value || 'A4';
     const orient = id('print-orientation', 'cetak-sk-orient')?.value || 'Portrait';
     const mt = id('print-margin-top', 'cetak-sk-mt')?.value || 20;
@@ -3488,17 +3593,12 @@ function updateSKPreview(){
 
         area.style.width = `${w}mm`;
         area.style.minHeight = `${h}mm`;
+        
+        // Pastikan layout tidak terganggu padding card bawaan
+        area.style.boxSizing = "border-box";
     }
 
-    const jenis = document.getElementById('cetak-sk-jenis')?.value;
-    const judul = document.getElementById('sk-judul-preview');
-    if(judul){ 
-        if(jenis === 'penghentian') judul.textContent = 'SURAT KETERANGAN PENGHENTIAN PROSES ADUAN'; 
-        else if(jenis === 'tidak_ada_sanksi') judul.textContent = 'SURAT KETERANGAN TIDAK ADA PENGENAAN SANKSI'; 
-        else judul.textContent = 'SURAT KEPUTUSAN'; 
-    }
-
-    const kopMode = document.getElementById('cetak-sk-kop-mode')?.value;
+    const kopMode = id('print-kop-header', 'cetak-sk-kop-mode')?.value;
     const kopContainer = document.getElementById('sk-kop-container');
     if(kopContainer) {
         if(kopMode === 'tanpa') kopContainer.style.display = 'none';
