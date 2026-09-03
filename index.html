@@ -1002,6 +1002,7 @@
                 </div>
                 <div class="form-group"><label>Tempat Ditetapkan</label><input type="text" id="pen-tempat" value="Samarinda" oninput="muatPreviewSK(document.getElementById('pen-pilih-aduan').value)"></div>
                 <div class="form-group"><label>Isi Keputusan / Amar Putusan *</label><textarea id="pen-isi-keputusan" placeholder="Tuliskan amar keputusan lengkap, sanksi, dan tindak lanjut yang diputuskan..." style="min-height:120px;" oninput="muatPreviewSK(document.getElementById('pen-pilih-aduan').value)" required></textarea></div>
+                
                 <div style="background: var(--surface-soft); border:1px solid var(--border); border-radius:12px; padding:14px; margin:12px 0;">
                     <h4 style="margin:0 0 10px 0; font-size:14px; color:var(--text);">📝 Template SK Sanksi</h4>
                     <div class="form-group"><label>Upload Template SK (.docx)</label><input type="file" id="template-sk-file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"></div>
@@ -1022,40 +1023,6 @@
                 <div class="form-row">
                     <button class="btn-verify" onclick="downloadDOCX('preview-sk-content', 'sk_penetapan.docx')">⬇ Download Draft (.docx)</button>
                     <button class="btn-pdf" onclick="downloadPDF('preview-sk-content', 'sk_penetapan.pdf')">⬇ Download Draft (.pdf)</button>
-                </div>
-
-                <!-- BLOK KUSTOMISASI CETAK TELAH DIHAPUS DARI SINI -->
-
-                <hr>
-                <div class="form-group"><label>Upload Scan SK Bertanda Tangan (Final)</label><input type="file" id="pen-file" accept="image/*,.pdf" onchange="validasiUkuranFile(this, 5)"><span class="file-hint">Maks. 5MB.</span></div>
-                    <button class="btn-primary" id="btn-pen-simpan" onclick="simpanPenetapan()">Terbitkan & Arsipkan SK</button>
-                    <button class="btn-admin btn-small" style="margin-left:8px;" onclick="kembalikanProses('penetapan')">↩ Kembalikan ke Otorisasi</button>
-                    <button class="btn-danger btn-small" style="margin-left:8px;" onclick="batalPengesahan()">⤴ Batalkan Pengesahan</button>
-                </div>
-
-                <div style="background: var(--surface-soft); border:1px solid var(--border); border-radius:12px; padding:16px; margin:16px 0;">
-                    <h4 style="margin:0 0 12px 0; font-size:14px; color:var(--text);">🖨️ Panel Cetak Surat - Kustomisasi Cetak</h4>
-                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
-                        <div class="form-group" style="margin-bottom:8px;"><label style="font-size:11px;">Ukuran Kertas</label><select id="print-paper-size" style="font-size:12px; padding:6px;"><option value="A4">A4 (210x297mm)</option><option value="F4">F4/Folio (210x330mm)</option><option value="Letter">Letter (216x279mm)</option><option value="Legal">Legal (216x356mm)</option></select></div>
-                        <div class="form-group" style="margin-bottom:8px;"><label style="font-size:11px;">Orientasi</label><select id="print-orientation" style="font-size:12px; padding:6px;"><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select></div>
-                        <div class="form-group" style="margin-bottom:8px;"><label style="font-size:11px;">KOP sebagai Header?</label><select id="print-kop-header" style="font-size:12px; padding:6px;"><option value="yes">Ya, KOP di setiap halaman</option><option value="no">Tidak, KOP hanya di halaman 1</option></select></div>
-                    </div>
-                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:8px; margin-top:8px;">
-                        <div class="form-group" style="margin-bottom:6px;"><label style="font-size:11px;">Margin Top (mm)</label><input type="number" id="print-margin-top" value="20" min="5" max="50" style="font-size:12px; padding:6px;"></div>
-                        <div class="form-group" style="margin-bottom:6px;"><label style="font-size:11px;">Margin Bottom (mm)</label><input type="number" id="print-margin-bottom" value="15" min="5" max="50" style="font-size:12px; padding:6px;"></div>
-                        <div class="form-group" style="margin-bottom:6px;"><label style="font-size:11px;">Margin Left (mm)</label><input type="number" id="print-margin-left" value="20" min="5" max="50" style="font-size:12px; padding:6px;"></div>
-                        <div class="form-group" style="margin-bottom:6px;"><label style="font-size:11px;">Margin Right (mm)</label><input type="number" id="print-margin-right" value="20" min="5" max="50" style="font-size:12px; padding:6px;"></div>
-                    </div>
-                    <div class="form-row" style="margin-top:8px;">
-                        <div class="form-group"><label style="font-size:11px;">Range Halaman Cetak</label><select id="print-page-range" style="font-size:12px; padding:6px;"><option value="all">Semua Halaman</option><option value="1">Halaman 1 saja</option><option value="1-2">Halaman 1-2</option><option value="custom">Custom (mis: 1,3,5)</option></select></div>
-                        <div class="form-group" id="print-custom-range-group" style="display:none;"><label style="font-size:11px;">Custom Range</label><input type="text" id="print-custom-range" placeholder="1,3,5-7" style="font-size:12px; padding:6px;"></div>
-                    </div>
-                    <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
-                        <button class="btn-verify btn-small" style="width:auto;" onclick="applyPrintSettings()">✅ Terapkan Pengaturan</button>
-                        <button class="btn-pdf btn-small" style="width:auto;" onclick="cetakSuratCustom()">🖨️ Cetak dengan Pengaturan Ini</button>
-                        <button class="btn-admin btn-small" style="width:auto;" onclick="resetPrintSettings()">↩ Reset Default</button>
-                    </div>
-                    <div id="print-settings-info" style="font-size:11px; padding:6px 10px; border-radius:6px; margin-top:8px;">Pengaturan: A4 Portrait, margin 20/15/20/20 mm, KOP sebagai header</div>
                 </div>
 
                 <hr>
@@ -1208,7 +1175,27 @@
             </div>
         </div>
 
-        <div id="print-area" class="card card-large" style="box-shadow: none;">
+        <div id="section-laporan" class="section">
+            <div class="header no-print"><h2>Laporan Rekapitulasi Data</h2><p>Cetak Laporan Riwayat Penanganan</p></div>
+            <div class="card card-large no-print">
+                <h3 style="font-size: 14px; margin-bottom:10px;">Filter Pencarian</h3>
+                <div class="form-row">
+                    <div class="form-group"><label>Periode Waktu</label><select id="lap-filter-waktu"><option value="semua">Semua Waktu</option><option value="bulanan">Bulan Ini</option><option value="semester">Semester Ini</option><option value="tahunan">Tahun Ini</option></select></div>
+                    <div class="form-group"><label>Kategori</label><select id="lap-filter-kategori" class="dyn-kategori_aduan"><option value="">Semua Kategori</option></select></div>
+                    <div class="form-group"><label>Status</label><select id="lap-filter-status"><option value="">Semua Status</option><option value="Terkirim">Terkirim / Baru</option><option value="Proses PIC / Dieskalasi">Dalam Proses PIC</option><option value="Selesai (SK Diterbitkan)">Selesai</option></select></div>
+                    <div class="form-group"><button class="btn-verify" style="margin-top:22px;" onclick="muatLaporanFormal()">Terapkan Filter</button></div>
+                </div>
+                <hr>
+                <h3 style="font-size: 14px; margin-bottom:10px;">Pengaturan Format Cetak (A4)</h3>
+                <div class="form-row">
+                    <div class="form-group"><label>Dibuat Oleh (Jabatan)</label><input type="text" id="lap-jabatan" placeholder="Contoh: Ketua Komite Etik"></div>
+                    <div class="form-group"><label>Nama Pejabat</label><input type="text" id="lap-nama" placeholder="Contoh: Ns. Thoha Ma'ruf, S.Kep"></div>
+                    <div class="form-group"><label>NIP</label><input type="text" id="lap-nip" placeholder="Nomor Induk Pegawai"></div>
+                </div>
+                <button class="btn-otorisasi" style="margin-bottom: 20px;" onclick="cetakLaporan()">🖨️ Cetak Laporan Resmi (A4)</button>
+            </div>
+
+            <div id="print-area" class="card card-large" style="box-shadow: none;">
                 <div style="text-align: center; margin-bottom: 20px; border-bottom: 3px double #000; padding-bottom: 15px;">
                     <h3 style="margin: 0; font-size: 16px;">LAPORAN REKAPITULASI RIWAYAT PENANGANAN ADUAN</h3>
                     <h4 style="margin: 5px 0 0 0; font-size: 14px;" id="print-instansi-name">SISTEM PELAPORAN ETIK & HUKUM TERPADU (SIGAP)</h4>
@@ -1227,6 +1214,7 @@
                     </div>
                 </div>
             </div>
+        </div>
 
         <div id="section-cetak-laporan" class="section no-print">
             <div class="header no-print"><h2>Panel Cetak Laporan</h2><p>Preview format laporan resmi sesuai template A4</p></div>
@@ -1542,6 +1530,18 @@
                 <div style="display:flex; gap:10px; margin-top:10px;">
                     <button class="btn-primary" onclick="simpanKustomisasiLanding()">💾 Simpan & Terapkan Kustomisasi</button>
                     <button class="btn-danger" onclick="resetKustomisasiLanding()">🗑️ Reset ke Bawaan</button>
+                </div>
+            </div>
+            <!-- ================= MULAI: PANEL AUDIT TRAIL ================= -->
+            <div class="card" style="background:#0f172a; border:1px solid #334155; padding:20px; margin-top: 20px;">
+                <h3 style="margin-top:0; color:#f8fafc;">Jejak Aktivitas Pengguna (Audit Trail)</h3>
+                <p style="font-size:13px; color:#cbd5e1; margin-bottom:12px;">Sistem mencatat setiap akses, pengunduhan dokumen, dan pencetakan laporan untuk menjaga keamanan tingkat tinggi.</p>
+                <button class="btn-search btn-small" onclick="muatAuditTrail()">🔄 Muat Log Aktivitas</button>
+                <div style="overflow-x:auto; margin-top: 10px;">
+                    <table class="dashboard-table" id="audit-trail-table" style="width:100%; font-size:12px; color:white; border-color: #334155;">
+                        <thead><tr style="background:#1e293b;"><th style="border-color:#334155;">Waktu Kejadian</th><th style="border-color:#334155;">Nama Pengguna</th><th style="border-color:#334155;">Akses / Role</th><th style="border-color:#334155;">Aktivitas</th><th style="border-color:#334155;">Keterangan / Detail Dokumen</th></tr></thead>
+                        <tbody><tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:16px; border-color:#334155;">Klik Muat Log Aktivitas untuk menampilkan.</td></tr></tbody>
+                    </table>
                 </div>
             </div>
             <button class="btn-verify" style="margin-top: 20px;" onclick="simpanChecklistHakAkses()">Simpan Konfigurasi Hak Akses</button>
@@ -1981,7 +1981,6 @@ function toggleSidebar() {
 function toggleTheme() { 
     document.body.classList.toggle('light-theme'); 
     localStorage.setItem('sigap-theme', document.body.classList.contains('light-theme') ? 'light' : 'dark'); 
-    // Render ulang grafik agar warna teks menyesuaikan tema
     if (typeof renderDashboardCharts === 'function') renderDashboardCharts();
 }
 
@@ -2154,7 +2153,7 @@ function renderDocxPlaceholders(container, values) {
     const replacements = {
         '[no_sk]': values.noSK || '-', '[ID_Aduan]': values.kodeTracking || '-', '[kode_tracking]': values.kodeTracking || '-',
         '[tanggal_aduan]': values.tglFormat || values.tgl || '-', '[tgl_format]': values.tglFormat || values.tgl || '-',
-        '[nama_terlapor]': values.terlapor || '-', '[jabatan]': values.jabatan || '-', '[lokasi]': values.lokasi || '-',
+        '[nama_terlapor]': values.terlapor || '-', '[jabatan]': values.jabatanTerlapor || '-', '[lokasi]': values.lokasi || '-',
         '[kategori]': values.kategori || '-', '[urgensi]': values.urgensi || '-', '[isi_keputusan]': values.isi || '-',
         '[hal]': values.hal || '-', '[nama_pejabat]': values.pejabat || '-', '[tempat]': values.tempat || 'Samarinda'
     };
@@ -2303,22 +2302,11 @@ async function loadDatasheets() {
             <td>
                 <div style="display:flex; gap:4px; flex-wrap:wrap;">
                     <button class="btn-small btn-primary" onclick="bukaTab('cetak-sk'); document.getElementById('cetak-sk-pilih').value='${d.id}'; loadCetakSK('${d.id}');">🖨️ Cetak</button>
-                    <button class="btn-small btn-success" onclick="downloadSkRowFromQueue('${d.id}', 'pdf')">⬇ PDF</button>
-                    <button class="btn-small btn-verify" onclick="downloadSkRowFromQueue('${d.id}', 'docx')">📄 DOCX</button>
                     <button class="btn-small btn-verify" onclick="editPenetapan('${d.id}')">✏️ Edit</button>
                 </div>
             </td>
         </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;">Tidak ada antrean penerbitan SK</td></tr>';
     }
-}
-
-async function downloadSkRowFromQueue(aduanId, type = 'pdf') {
-    const { data } = await supabaseClient.from('v_aduan_lengkap').select('*').eq('id', aduanId).single();
-    if (!data) {
-        showToast('Data SK tidak ditemukan untuk diunduh', true);
-        return;
-    }
-    downloadSkFromRow(data, type);
 }
 
 async function editPenetapan(aduanId) {
@@ -2388,7 +2376,7 @@ function isSkReadyAduan(item) {
     const status = normalizeAduanStatusValue(item?.status);
     const noSk = normalizeAduanStatusValue(item?.no_sk);
     const jenis = normalizeAduanStatusValue(item?.jenis_dokumen);
-    const allowed = ['disahkan','selesai_sk','selesai (sk diterbitkan)','menunggu_otorisasi','menunggu penerbitan sk','menunggu penerbitan sk'];
+    const allowed = ['disahkan','selesai_sk','selesai (sk diterbitkan)','menunggu_otorisasi','menunggu penerbitan sk'];
     return matchesStatusList(status, allowed) || !!noSk || !!jenis;
 }
 
@@ -2495,14 +2483,12 @@ async function renderDashboardCharts() {
         const createChart = (id, type, labels, dataArr, title, useMultiColor = true) => {
             const ctx = document.getElementById(id); if(!ctx) return null;
             
-            // Konfigurasi Warna Adaptif (Terang/Gelap)
             const isLight = document.body.classList.contains('light-theme');
             const textColor = isLight ? '#111827' : '#f8fafc';
             const gridColor = isLight ? 'rgba(15, 23, 42, 0.1)' : 'rgba(255, 255, 255, 0.15)';
             const lineColor = isLight ? '#800000' : '#d4af37';
             const areaColor = isLight ? 'rgba(128, 0, 0, 0.12)' : 'rgba(212, 175, 55, 0.2)';
             
-            // Palet Warna Chart
             const colors = ['#800000', '#d4af37', '#4b5563', '#1e293b', '#b45309', '#0f766e', '#1d4ed8'];
             const bgColors = useMultiColor ? colors.slice(0, labels.length) : '#800000';
             const datasetBorder = type === 'line' ? lineColor : (isLight ? '#ffffff' : '#1e1e1e');
@@ -2528,12 +2514,10 @@ async function renderDashboardCharts() {
                         borderJoinStyle: 'round'
                     }]
                 },
-                // Aktifkan Plugin Datalabels
                 plugins: [typeof ChartDataLabels !== 'undefined' ? ChartDataLabels : null].filter(Boolean),
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    // Tambah padding agar kotak hitam tidak terpotong tepi canvas
                     layout: { padding: { top: 30, bottom: 20, left: 15, right: 15 } },
                     animation: { duration: 650 },
                     plugins: {
@@ -2541,11 +2525,9 @@ async function renderDashboardCharts() {
                             position: 'bottom',
                             labels: { color: textColor, usePointStyle: true, pointStyle: 'circle', boxWidth: 10, font: { size: 11, weight: '600' } }
                         },
-                        // Matikan tooltip bawaan untuk SEMUA chart (digantikan label permanen)
                         tooltip: {
                             enabled: false
                         },
-                        // Konfigurasi Label Kotak Hitam Permanen untuk SEMUA chart
                         datalabels: {
                             display: true,
                             formatter: function(value, context) {
@@ -2555,12 +2537,11 @@ async function renderDashboardCharts() {
                                 return label + '\n' + datasetLabel + ': ' + value;
                             },
                             color: '#ffffff',
-                            backgroundColor: 'rgba(30, 41, 59, 0.95)', // Background hitam pekat elegan
+                            backgroundColor: 'rgba(30, 41, 59, 0.95)',
                             borderRadius: 6,
                             padding: { top: 6, bottom: 6, left: 10, right: 10 },
                             font: { weight: 'bold', size: 11, family: "'Inter', sans-serif" },
                             textAlign: 'center',
-                            // Posisi Label (line chart ditaruh sedikit di atas titik, selain itu di tengah)
                             align: type === 'line' ? 'top' : 'center',
                             anchor: type === 'line' ? 'center' : 'center',
                             textStrokeColor: 'transparent',
@@ -2586,7 +2567,6 @@ async function renderDashboardCharts() {
             };
 
             if(type === 'doughnut') config.options.cutout = '55%';
-            // Radius sedikit dikecilkan agar label kotak di pinggir Pie/Doughnut tidak keluar batas layar
             if(type === 'pie' || type === 'doughnut') config.options.radius = '75%';
 
             return new Chart(ctx, config);
@@ -2827,18 +2807,18 @@ async function simpanPenanganan(){
 function previewSuratPIC(){}
 function downloadSuratPIC(type){
     const content=document.getElementById('pic-tanggapan-akhir')?.value || ''; if(!content){ showToast('Isi rekomendasi kosong', true); return; }
-    const el=document.createElement('div'); el.innerHTML=`<h3>Rekomendasi PIC</h3><p>${content}</p>`;
+    const el=document.createElement('div'); el.innerHTML=`<h3>Rekomendasi PIC</h3><p>${escapeHtml(content)}</p>`;
     if(type==='pdf' && window.html2pdf){ html2pdf().from(el).save('rekomendasi-pic.pdf'); }
     else if(window.htmlDocx){ const blob=htmlDocx.asBlob(el.innerHTML); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='rekomendasi-pic.docx'; a.click(); }
 }
+    // ... (lanjutan di bawah fungsi simpanPenanganan) ...
 
 async function simpanOtorisasi(){
     const aduanId=document.getElementById('ot-pilih-aduan')?.value; if(!aduanId){ showToast('Pilih laporan', true); return; }
     const keputusan=document.getElementById('ot-keputusan')?.value; if(!keputusan){ showToast('Keputusan wajib', true); return; }
     const mapKeputusan={ 'Dinyatakan terbukti secara sah dan meyakinkan':'terbukti', 'tidak terbukti - Hentikan Proses':'tidak_terbukti_hentikan', 'Tidak ada sanksi - Pembinaan/Edukasi':'tidak_ada_sanksi_pembinaan', 'Kembalikan ke PIC':'kembalikan_ke_pic', 'Ditolak':'ditolak' };
-    const file=document.getElementById('kop-input')?.files?.[0]; let kop={url:null, path:null}; if(file){ kop=await uploadFile('kop-surat', file); }
 
-    const payload={ aduan_id:aduanId, pimpinan_id:currentUser?.id || null, keputusan:mapKeputusan[keputusan] || 'terbukti', catatan_final:document.getElementById('ot-catatan')?.value || '', is_approved:document.getElementById('ot-approved')?.checked || false, kop_surat_url:kop.url, kop_surat_path:kop.path };
+    const payload={ aduan_id:aduanId, pimpinan_id:currentUser?.id || null, keputusan:mapKeputusan[keputusan] || 'terbukti', catatan_final:document.getElementById('ot-catatan')?.value || '', is_approved:document.getElementById('ot-approved')?.checked || false };
     
     const { error } = await supabaseClient.from('otorisasi').upsert(payload, { onConflict:'aduan_id' });
     if(error){ showToast(error.message, true); return; }
@@ -3024,7 +3004,7 @@ function applySkTemplate(templateText, values = {}) {
         ID_Aduan: values.kodeTracking || '-',
         id_aduan: values.kodeTracking || '-',
         nama_terlapor: values.terlapor || '-',
-        jabatan: values.jabatanTerlapor || '-', // PERBAIKAN: Template merujuk ke jabatan terlapor
+        jabatan: values.jabatanTerlapor || '-', 
         lokasi: values.lokasi || '-',
         lokasi_kejadian: values.lokasi || '-',
         'lokasi/unit kerja': values.lokasi || '-',
@@ -3037,7 +3017,7 @@ function applySkTemplate(templateText, values = {}) {
         tentang: values.hal || 'Hasil Penanganan Aduan',
         nama_pejabat: values.pejabat || 'dr. Indah Puspitasari, MARS',
         pejabat: values.pejabat || 'dr. Indah Puspitasari, MARS',
-        jabatan_pejabat: values.jabatan || 'Direktur', // Jabatan penandatangan
+        jabatan_pejabat: values.jabatan || 'Direktur',
         nip_pejabat: values.nip || '196705301998032003',
         nip: values.nip || '196705301998032003',
         tempat_ditetapkan: values.tempat || 'Samarinda',
@@ -3115,15 +3095,12 @@ function formatImportedSkTemplate(html) {
     return wrapper.innerHTML;
 }
 
-// =================================================================================
-// PERBAIKAN: FORMAT TEMPLATE SK (Tabel Sejajar, Indentasi Rapi Sesuai Gambar)
-// =================================================================================
 function renderSkDocContent({ noSK, hal, tgl, tglFormat, isi, jenis, pejabat, jabatan, nip, tempat, kategori, lokasi, terlapor, kodeTracking, urgensi, jabatanTerlapor }) {
     let judulSK = 'SURAT KEPUTUSAN PENETAPAN';
     let diktumMengingat = `
         <table style="width: 100%; border-collapse: collapse; border: none;">
             <tr><td style="width: 25px; vertical-align: top;">1.</td><td style="vertical-align: top; text-align: justify;">Undang-Undang Nomor 44 Tahun 2009 tentang Rumah Sakit.</td></tr>
-            <tr><td style="width: 25px; vertical-align: top;">2.</td><td style="vertical-align: top; text-align: justify;">Peraturan Menteri Kesehatan Nomor 42 Tahun 2018 tentang Komite Etik dan Hukum Rumah Sakit.</td></tr>
+            <tr><td style="width: 25px; vertical-align: top;">2.</td><td style="vertical-align: top; text-align: justify;">Peraturan Menteri Kesehatan terkait pelayanan kesehatan dan kode etik profesi.</td></tr>
             <tr><td style="width: 25px; vertical-align: top;">3.</td><td style="vertical-align: top; text-align: justify;">Pedoman Etik dan Hukum RSJD Atma Husada Mahakam.</td></tr>
             <tr><td style="width: 25px; vertical-align: top;">4.</td><td style="vertical-align: top; text-align: justify;">SOP penanganan aduan etik dan hukum internal rumah sakit (SIGAP).</td></tr>
         </table>`;
@@ -3135,7 +3112,6 @@ function renderSkDocContent({ noSK, hal, tgl, tglFormat, isi, jenis, pejabat, ja
     let labelMemutuskan = 'MEMUTUSKAN:';
     let diktumSatuTeks = `Dinyatakan terbukti secara sah dan meyakinkan melakukan pemenuhan unsur kategori perkara [${kategori}] dengan tingkat urgensi penanganan [${urgensi || '-'}].`;
 
-    // PERBAIKAN: Format konten dinamis (tapi tetap menggunakan layout Tabel SK) jika dokumen bukan SK biasa
     if (jenis === 'penghentian') {
         judulSK = 'SURAT KETERANGAN PENGHENTIAN PROSES ADUAN';
         diktumMenimbang = `
@@ -3267,7 +3243,7 @@ async function muatPreviewSK(aduanId){
 
         preview.innerHTML = renderSkDocContent({
             noSK, tglFormat, isi, jenis, pejabat, jabatan, nip, tempat,
-            jabatanTerlapor: data.jabatan_terlapor || '-', // PERBAIKAN: Kirim jabatan terlapor secara spesifik
+            jabatanTerlapor: data.jabatan_terlapor || '-',
             kategori: data.kategori_nama || '-',
             lokasi: data.lokasi_kejadian || '-',
             urgensi: urgensi?.nama || '-',
@@ -3332,7 +3308,8 @@ async function ambilTemplateSanksi() {
         isi: isiKeputusan,
         jenis: document.getElementById('pen-jenis-dokumen')?.value || 'sk',
         pejabat: document.getElementById('pen-pejabat')?.value || 'dr. Indah Puspitasari, MARS',
-        jabatan: document.getElementById('pen-jabatan')?.value || data.jabatan_terlapor || 'Direktur',
+        jabatan: document.getElementById('pen-jabatan')?.value || 'Direktur',
+        jabatanTerlapor: data.jabatan_terlapor || '-', // PERBAIKAN
         nip: document.getElementById('pen-nip')?.value || '196705301998032003',
         tempat: document.getElementById('pen-tempat')?.value || 'Samarinda',
         kategori: data.kategori_nama || '-',
@@ -3364,6 +3341,7 @@ async function ambilTemplateSanksi() {
             jabatan,
             nip,
             tempat,
+            jabatanTerlapor: data.jabatan_terlapor || '-', // PERBAIKAN
             kategori: data.kategori_nama || '-',
             lokasi: data.lokasi_kejadian || '-',
             urgensi: urgensi?.nama || '-',
@@ -3433,7 +3411,6 @@ async function loadCetakSK(aduanId){
             }));
         }
 
-        // Render hasil akhir: Pakai template custom JIKA ada, kalau tidak pakai template table baku yang rapi
         bodyContainer.innerHTML = templateText || renderSkDocContent({
             noSK: data.no_sk || data.kode_tracking || '-/SK/RSJD-AHM/2026',
             tglFormat: tglAduan,
@@ -3443,7 +3420,7 @@ async function loadCetakSK(aduanId){
             jabatan: data.jabatan_pejabat || 'Direktur',
             nip: '196705301998032003',
             tempat: data.tempat_ditetapkan || 'Samarinda',
-            jabatanTerlapor: data.jabatan_terlapor || '-',
+            jabatanTerlapor: data.jabatan_terlapor || '-', // PERBAIKAN
             kategori: data.kategori_nama || '-',
             lokasi: data.lokasi_kejadian || '-',
             urgensi: urgensi?.nama || '-',
@@ -3636,6 +3613,106 @@ function normalizeLaporanStatus(value) {
     return raw;
 }
 
+function renderLaporanTable(rows, periode) {
+    const tbody = document.getElementById('lap-tbody');
+    const now = new Date();
+    const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+    
+    // Set teks Bulan dan Tahun
+    document.querySelectorAll('.lap-print-bulan').forEach(el => el.textContent = monthNames[now.getMonth()]);
+    document.querySelectorAll('.lap-print-tahun').forEach(el => el.textContent = now.getFullYear());
+
+    const filteredRows = rows.filter((r) => {
+        if (periode === 'semua') return true;
+        const date = r.created_at ? new Date(r.created_at) : null;
+        if (!date || Number.isNaN(date.getTime())) return true;
+        if (periode === 'bulanan') return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+        if (periode === 'semester') return Math.floor(date.getMonth() / 6) === Math.floor(now.getMonth() / 6) && date.getFullYear() === now.getFullYear();
+        if (periode === 'tahunan') return date.getFullYear() === now.getFullYear();
+        return true;
+    });
+
+    if (tbody) {
+        tbody.innerHTML = filteredRows.map((r, i) => {
+            const status = r.status || '-';
+            const kategori = r.kategori_nama || '-';
+            const sk = r.no_sk || '-';
+            const ringkasan = (r.tanggapan_akhir || r.otorisasi_catatan || r.deskripsi_kejadian || '').replace(/\s+/g, ' ').trim();
+            
+            // Format HTML 8 Kolom (Tanpa Kolom Surat/Aksi)
+            return `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td>${r.created_at ? new Date(r.created_at).toLocaleDateString('id-ID') : '-'}</td>
+                    <td><b>${escapeHtml(r.kode_tracking)}</b></td>
+                    <td>${escapeHtml(r.nama_pelapor)}</td>
+                    <td>${escapeHtml(r.nama_terlapor)}<br><small>${escapeHtml(r.jabatan_terlapor || '')}</small></td>
+                    <td>${escapeHtml(r.lokasi_kejadian)}<br><small>${escapeHtml(kategori)}</small></td>
+                    <td><span class="badge" style="background:#e2e8f0; color:#111; padding:2px 6px; border-radius:4px; font-size:10px;">${escapeHtml(status)}</span><br><small>${escapeHtml(sk)}</small></td>
+                    <td>${escapeHtml(ringkasan ? ringkasan.substring(0, 150) : '-')}</td>
+                </tr>
+            `;
+        }).join('') || '<tr><td colspan="8" style="text-align:center; color:var(--muted);">Tidak ada data sesuai filter.</td></tr>';
+    }
+
+    const signTanggal = document.getElementById('sign-tanggal');
+    if (signTanggal) signTanggal.textContent = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    const signJabatan = document.getElementById('sign-jabatan');
+    if (signJabatan) signJabatan.textContent = (document.getElementById('lap-jabatan')?.value || 'Dibuat Oleh,');
+    const signNama = document.getElementById('sign-nama');
+    if (signNama) signNama.textContent = document.getElementById('lap-nama')?.value || 'Nama Pejabat';
+    const signNip = document.getElementById('sign-nip');
+    if (signNip) signNip.textContent = document.getElementById('lap-nip')?.value || '-';
+}
+
+function cetakLaporan() {
+    const area = document.getElementById('print-area');
+    if (!area) {
+        showToast('Area laporan tidak ditemukan.', true);
+        return;
+    }
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write('<html><head><title>Laporan SIGAP</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#000;} table{width:100%;border-collapse:collapse;font-size:12px;} th,td{border:1px solid #000;padding:6px;vertical-align:top;} th{background:#f3f4f6;} .badge{display:inline-block;padding:4px 6px;border-radius:4px;background:#f1f5f9;} a{color:#000;}</style></head><body>' + area.innerHTML + '</' + 'body></html>');
+    printWindow.document.close();
+    setTimeout(() => printWindow.print(), 500);
+}
+
+async function loadCetakLaporan(){
+    const periodeEl = document.getElementById('cetak-lap-periode') || document.getElementById('lap-filter-waktu');
+    const kategoriEl = document.getElementById('cetak-lap-kategori') || document.getElementById('lap-filter-kategori');
+    const statusEl = document.getElementById('cetak-lap-status') || document.getElementById('lap-filter-status');
+    const searchEl = document.getElementById('cetak-lap-search');
+    const periode = periodeEl?.value || 'semua';
+    const kategori = kategoriEl?.value || '';
+    const status = statusEl?.value || '';
+    const search = searchEl?.value?.toLowerCase() || document.getElementById('lap-search')?.value?.toLowerCase() || '';
+    const tbody = document.getElementById('cetak-lap-tbody') || document.getElementById('lap-tbody');
+    if (tbody) tbody.innerHTML='<tr><td colspan="8" style="text-align:center;">Memuat...</td></tr>';
+
+    let query=supabaseClient.from('v_aduan_lengkap').select('*').order('created_at',{ascending:false}).limit(200);
+    if(kategori) query=query.eq('kategori_id', kategori); if(status) query=query.eq('status', status);
+    const { data, error } = await query; if(error){ showToast(error.message, true); return; }
+    let rows=normalizeAduanRows(data) || []; if(search) rows=rows.filter(r=> (r.nama_terlapor||'').toLowerCase().includes(search) || (r.nama_pelapor||'').toLowerCase().includes(search) || (r.kode_tracking||'').toLowerCase().includes(search) || (r.lokasi_kejadian||'').toLowerCase().includes(search) || (r.kategori_nama||'').toLowerCase().includes(search) || (r.status||'').toLowerCase().includes(search) );
+    cacheLaporan=rows;
+
+    const now = new Date();
+    const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+    document.querySelectorAll('.lap-print-bulan').forEach(el => el.textContent = monthNames[now.getMonth()]);
+    document.querySelectorAll('.lap-print-tahun').forEach(el => el.textContent = now.getFullYear());
+
+    if(tbody){
+        tbody.innerHTML=rows.map((r,i)=>{
+            return `<tr><td>${i+1}</td><td>${r.created_at?new Date(r.created_at).toLocaleDateString('id-ID'):'-'}</td><td><b>${escapeHtml(r.kode_tracking)}</b></td><td>${escapeHtml(r.nama_pelapor)}</td><td>${escapeHtml(r.nama_terlapor)}<br><small>${escapeHtml(r.jabatan_terlapor||'')}</small></td><td>${escapeHtml(r.lokasi_kejadian)}<br><small>${escapeHtml(r.kategori_nama||'')}</small></td><td><span style="background:var(--surface-soft); color:var(--text); padding:2px 6px; border-radius:4px; font-size:10px;">${escapeHtml(r.status)}</span><br><small>${escapeHtml(r.no_sk||'')}</small></td><td style="max-width:220px;">${escapeHtml((r.tanggapan_akhir||r.otorisasi_catatan||'').substring(0,150))}</td></tr>`;
+        }).join('') || '<tr><td colspan="8" style="text-align:center; color:var(--muted);">Tidak ada data</td></tr>';
+    }
+    const signTgl = document.getElementById('cetak-sign-tgl'); if (signTgl) signTgl.textContent = now.toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+    const signNama = document.getElementById('cetak-sign-nama'); if (signNama) signNama.textContent = document.getElementById('cetak-lap-nama')?.value || document.getElementById('lap-nama')?.value || 'Nama Pejabat';
+    const signNip = document.getElementById('cetak-sign-nip'); if (signNip) signNip.textContent = document.getElementById('cetak-lap-nip')?.value || document.getElementById('lap-nip')?.value || '-';
+    const signJabatan = document.getElementById('cetak-sign-jabatan'); if (signJabatan) signJabatan.textContent = (document.getElementById('cetak-lap-jabatan')?.value || document.getElementById('lap-jabatan')?.value || 'Ketua Komite Etik') + ',';
+    showToast('Laporan: '+rows.length+' data');
+}
+
 async function muatLaporanFormal() {
     const periode = document.getElementById('lap-filter-waktu')?.value || 'semua';
     const kategori = document.getElementById('lap-filter-kategori')?.value || '';
@@ -3748,106 +3825,6 @@ function downloadSkFromRow(row, type = 'pdf') {
     a.click();
     URL.revokeObjectURL(url);
     showToast('DOCX tidak tersedia; file HTML otomatis diunduh sebagai fallback', true);
-}
-
-function renderLaporanTable(rows, periode) {
-    const tbody = document.getElementById('lap-tbody');
-    const now = new Date();
-    const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-    
-    // Set teks Bulan dan Tahun
-    document.querySelectorAll('.lap-print-bulan').forEach(el => el.textContent = monthNames[now.getMonth()]);
-    document.querySelectorAll('.lap-print-tahun').forEach(el => el.textContent = now.getFullYear());
-
-    const filteredRows = rows.filter((r) => {
-        if (periode === 'semua') return true;
-        const date = r.created_at ? new Date(r.created_at) : null;
-        if (!date || Number.isNaN(date.getTime())) return true;
-        if (periode === 'bulanan') return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
-        if (periode === 'semester') return Math.floor(date.getMonth() / 6) === Math.floor(now.getMonth() / 6) && date.getFullYear() === now.getFullYear();
-        if (periode === 'tahunan') return date.getFullYear() === now.getFullYear();
-        return true;
-    });
-
-    if (tbody) {
-        tbody.innerHTML = filteredRows.map((r, i) => {
-            const status = r.status || '-';
-            const kategori = r.kategori_nama || '-';
-            const sk = r.no_sk || '-';
-            const ringkasan = (r.tanggapan_akhir || r.otorisasi_catatan || r.deskripsi_kejadian || '').replace(/\s+/g, ' ').trim();
-            
-            // Format HTML 8 Kolom (Tanpa Kolom Surat/Aksi)
-            return `
-                <tr>
-                    <td>${i + 1}</td>
-                    <td>${r.created_at ? new Date(r.created_at).toLocaleDateString('id-ID') : '-'}</td>
-                    <td><b>${escapeHtml(r.kode_tracking)}</b></td>
-                    <td>${escapeHtml(r.nama_pelapor)}</td>
-                    <td>${escapeHtml(r.nama_terlapor)}<br><small>${escapeHtml(r.jabatan_terlapor || '')}</small></td>
-                    <td>${escapeHtml(r.lokasi_kejadian)}<br><small>${escapeHtml(kategori)}</small></td>
-                    <td><span class="badge" style="background:#e2e8f0; color:#111; padding:2px 6px; border-radius:4px; font-size:10px;">${escapeHtml(status)}</span><br><small>${escapeHtml(sk)}</small></td>
-                    <td>${escapeHtml(ringkasan ? ringkasan.substring(0, 150) : '-')}</td>
-                </tr>
-            `;
-        }).join('') || '<tr><td colspan="8" style="text-align:center; color:var(--muted);">Tidak ada data sesuai filter.</td></tr>';
-    }
-
-    const signTanggal = document.getElementById('sign-tanggal');
-    if (signTanggal) signTanggal.textContent = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-    const signJabatan = document.getElementById('sign-jabatan');
-    if (signJabatan) signJabatan.textContent = (document.getElementById('lap-jabatan')?.value || 'Dibuat Oleh,');
-    const signNama = document.getElementById('sign-nama');
-    if (signNama) signNama.textContent = document.getElementById('lap-nama')?.value || 'Nama Pejabat';
-    const signNip = document.getElementById('sign-nip');
-    if (signNip) signNip.textContent = document.getElementById('lap-nip')?.value || '-';
-}
-
-function cetakLaporan() {
-    const area = document.getElementById('print-area');
-    if (!area) {
-        showToast('Area laporan tidak ditemukan.', true);
-        return;
-    }
-
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write('<html><head><title>Laporan SIGAP</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#000;} table{width:100%;border-collapse:collapse;font-size:12px;} th,td{border:1px solid #000;padding:6px;vertical-align:top;} th{background:#f3f4f6;} .badge{display:inline-block;padding:4px 6px;border-radius:4px;background:#f1f5f9;} a{color:#000;}</style></head><body>' + area.innerHTML + '</' + 'body></html>');
-    printWindow.document.close();
-    setTimeout(() => printWindow.print(), 500);
-}
-
-async function loadCetakLaporan(){
-    const periodeEl = document.getElementById('cetak-lap-periode') || document.getElementById('lap-filter-waktu');
-    const kategoriEl = document.getElementById('cetak-lap-kategori') || document.getElementById('lap-filter-kategori');
-    const statusEl = document.getElementById('cetak-lap-status') || document.getElementById('lap-filter-status');
-    const searchEl = document.getElementById('cetak-lap-search');
-    const periode = periodeEl?.value || 'semua';
-    const kategori = kategoriEl?.value || '';
-    const status = statusEl?.value || '';
-    const search = searchEl?.value?.toLowerCase() || document.getElementById('lap-search')?.value?.toLowerCase() || '';
-    const tbody = document.getElementById('cetak-lap-tbody') || document.getElementById('lap-tbody');
-    if (tbody) tbody.innerHTML='<tr><td colspan="8" style="text-align:center;">Memuat...</td></tr>';
-
-    let query=supabaseClient.from('v_aduan_lengkap').select('*').order('created_at',{ascending:false}).limit(200);
-    if(kategori) query=query.eq('kategori_id', kategori); if(status) query=query.eq('status', status);
-    const { data, error } = await query; if(error){ showToast(error.message, true); return; }
-    let rows=normalizeAduanRows(data) || []; if(search) rows=rows.filter(r=> (r.nama_terlapor||'').toLowerCase().includes(search) || (r.nama_pelapor||'').toLowerCase().includes(search) || (r.kode_tracking||'').toLowerCase().includes(search) || (r.lokasi_kejadian||'').toLowerCase().includes(search) || (r.kategori_nama||'').toLowerCase().includes(search) || (r.status||'').toLowerCase().includes(search) );
-    cacheLaporan=rows;
-
-    const now = new Date();
-    const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-    document.querySelectorAll('.lap-print-bulan').forEach(el => el.textContent = monthNames[now.getMonth()]);
-    document.querySelectorAll('.lap-print-tahun').forEach(el => el.textContent = now.getFullYear());
-
-    if(tbody){
-        tbody.innerHTML=rows.map((r,i)=>{
-            return `<tr><td>${i+1}</td><td>${r.created_at?new Date(r.created_at).toLocaleDateString('id-ID'):'-'}</td><td><b>${escapeHtml(r.kode_tracking)}</b></td><td>${escapeHtml(r.nama_pelapor)}</td><td>${escapeHtml(r.nama_terlapor)}<br><small>${escapeHtml(r.jabatan_terlapor||'')}</small></td><td>${escapeHtml(r.lokasi_kejadian)}<br><small>${escapeHtml(r.kategori_nama||'')}</small></td><td><span style="background:var(--surface-soft); color:var(--text); padding:2px 6px; border-radius:4px; font-size:10px;">${escapeHtml(r.status)}</span><br><small>${escapeHtml(r.no_sk||'')}</small></td><td style="max-width:220px;">${escapeHtml((r.tanggapan_akhir||r.otorisasi_catatan||'').substring(0,150))}</td></tr>`;
-        }).join('') || '<tr><td colspan="8" style="text-align:center; color:var(--muted);">Tidak ada data</td></tr>';
-    }
-    const signTgl = document.getElementById('cetak-sign-tgl'); if (signTgl) signTgl.textContent = now.toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
-    const signNama = document.getElementById('cetak-sign-nama'); if (signNama) signNama.textContent = document.getElementById('cetak-lap-nama')?.value || document.getElementById('lap-nama')?.value || 'Nama Pejabat';
-    const signNip = document.getElementById('cetak-sign-nip'); if (signNip) signNip.textContent = document.getElementById('cetak-lap-nip')?.value || document.getElementById('lap-nip')?.value || '-';
-    const signJabatan = document.getElementById('cetak-sign-jabatan'); if (signJabatan) signJabatan.textContent = (document.getElementById('cetak-lap-jabatan')?.value || document.getElementById('lap-jabatan')?.value || 'Ketua Komite Etik') + ',';
-    showToast('Laporan: '+rows.length+' data');
 }
 
 function resetCetakLaporan(){ ['cetak-lap-periode','cetak-lap-kategori','cetak-lap-status','cetak-lap-search'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=id==='cetak-lap-periode'?'semua':''; }); loadCetakLaporan(); }
@@ -4333,6 +4310,122 @@ function toggleLayoutMode() {
             btn.innerHTML = '⇄ Mode Topbar';
         }
     }
+}
+
+// ==============================================================================
+// FITUR KEAMANAN TAMBAHAN: AUTO-LOGOUT & AUDIT TRAIL (TANPA MERUSAK KODE LAMA)
+// ==============================================================================
+
+// 1. Fungsi Mengirim Catatan Audit ke Supabase
+async function catatAudit(aksi, keterangan) {
+    if (!currentUser || !currentProfile) return;
+    try {
+        const payload = {
+            user_id: currentUser.id,
+            nama_user: currentProfile.full_name || currentUser.email,
+            role: currentProfile.role || 'User',
+            action: aksi,
+            keterangan: keterangan || '-'
+        };
+        // Perintah dikirim ke latar belakang (fire and forget) agar tidak membuat loading aplikasi melambat
+        supabaseClient.from('audit_trail').insert(payload).then(); 
+    } catch (e) {
+        console.warn("Audit logger gagal mencatat:", e);
+    }
+}
+
+// 2. Fitur Auto-Logout (Session Timeout 15 Menit Tanpa Pergerakan)
+let idleTime = 0;
+let idleInterval;
+
+function resetIdleTimer() { idleTime = 0; } // Mereset timer kembali ke 0 jika ada pergerakan
+
+function startIdleTimer() {
+    if (idleInterval) clearInterval(idleInterval);
+    idleInterval = setInterval(() => {
+        if (!currentUser) return; // Hanya menghitung jika user sedang dalam status login
+        idleTime++;
+        if (idleTime >= 15) { // Angka 15 berarti 15 Menit
+            catatAudit('Auto-Logout', 'Sesi berakhir otomatis karena tidak ada pergerakan/aktivitas selama 15 menit');
+            showToast("Sesi Anda telah berakhir otomatis demi keamanan data.", true);
+            logout(); // Memanggil fungsi logout bawaan Anda
+        }
+    }, 60000); // Dihitung setiap 1 menit (60.000 ms)
+    
+    // Menyadap pergerakan mouse, keyboard, dan sentuhan layar
+    ['mousemove', 'keypress', 'click', 'touchstart', 'scroll'].forEach(evt => {
+        document.body.addEventListener(evt, resetIdleTimer, { passive: true });
+    });
+}
+
+// 3. Menyadap Fungsi-Fungsi Penting Anda untuk Dicatat ke Audit (Monkey-Patching)
+// Kode ini berjalan tepat sebelum aplikasi sepenuhnya dimuat.
+setTimeout(() => {
+    startIdleTimer();
+
+    // Catat Saat Login Berhasil
+    const oriAfterLogin = afterLogin;
+    afterLogin = async function(user) {
+        await oriAfterLogin.apply(this, arguments);
+        catatAudit('Login', 'Berhasil masuk ke dalam sistem SIGAP');
+    };
+
+    // Catat Saat Logout Manual
+    const oriLogout = logout;
+    logout = async function() {
+        catatAudit('Logout Manual', 'Pengguna dengan sengaja keluar dari sistem');
+        await oriLogout.apply(this, arguments);
+    };
+
+    // Catat Saat Seseorang Mengunduh SK Pelanggaran (PDF/DOCX)
+    if (typeof downloadSkFromRow === 'function') {
+        const oriDownloadSk = downloadSkFromRow;
+        downloadSkFromRow = function(row, type) {
+            catatAudit('Unduh Dokumen SK', `Mengunduh format ${type.toUpperCase()} untuk No Aduan: ${row.kode_tracking || '-'}`);
+            return oriDownloadSk.apply(this, arguments);
+        };
+    }
+
+    // Catat Saat Mengunduh atau Mencetak Laporan Eksekutif
+    if (typeof cetakLaporan === 'function') {
+        const oriCetakLaporan = cetakLaporan;
+        cetakLaporan = function() {
+            catatAudit('Cetak Laporan', 'Mencetak Laporan Rekapitulasi via Layar Print');
+            return oriCetakLaporan.apply(this, arguments);
+        };
+    }
+    if (typeof cetakLaporan_PDF === 'function') {
+        const oriCetakLapPdf = cetakLaporan_PDF;
+        cetakLaporan_PDF = function() {
+            catatAudit('Unduh Laporan (PDF)', 'Mengunduh rekapitulasi aduan berformat PDF');
+            return oriCetakLapPdf.apply(this, arguments);
+        };
+    }
+    if (typeof cetakLaporan_Excel === 'function') {
+        const oriCetakLapExcel = cetakLaporan_Excel;
+        cetakLaporan_Excel = function() {
+            catatAudit('Unduh Laporan (Excel)', 'Mengunduh rekapitulasi aduan berformat Excel (XLSX)');
+            return oriCetakLapExcel.apply(this, arguments);
+        };
+    }
+}, 1000);
+
+// 4. Menarik Data Log untuk Ditampilkan di Panel SuperAdmin
+async function muatAuditTrail() {
+    const tbody = document.querySelector('#audit-trail-table tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Memuat data keamanan...</td></tr>';
+    
+    const { data, error } = await supabaseClient.from('audit_trail').select('*').order('created_at', { ascending: false }).limit(150);
+    if (error || !data.length) return tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Tidak ada log aktivitas tercatat.</td></tr>';
+    
+    tbody.innerHTML = data.map(a => `<tr>
+        <td style="white-space:nowrap;">${new Date(a.created_at).toLocaleString('id-ID')}</td>
+        <td>${escapeHtml(a.nama_user || '-')}</td>
+        <td><span class="badge" style="background:#334155; color:white;">${escapeHtml(a.role || '-')}</span></td>
+        <td><b style="color:var(--accent);">${escapeHtml(a.action || '-')}</b></td>
+        <td>${escapeHtml(a.keterangan || '-')}</td>
+    </tr>`).join('');
 }
 
 document.addEventListener('DOMContentLoaded', async ()=>{
