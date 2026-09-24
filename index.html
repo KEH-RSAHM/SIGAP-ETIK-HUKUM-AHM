@@ -4021,8 +4021,15 @@ async function kirimKorespondensi(){
 }
 
 async function loadKorespondensiHistory(){
-    const { data } = await supabaseClient.from('korespondensi').select('*').order('created_at',{ascending:false}).limit(10);
-    const hist=document.getElementById('kor-history-list'); if(hist && data){ hist.innerHTML=data.map(k=>`<div style="border-bottom:1px solid var(--border); padding:8px 0; color:var(--text);"><b>${escapeHtml(k.nama)}</b> <small style="color:var(--muted);">${new Date(k.created_at).toLocaleString('id-ID')}</small><br>${escapeHtml(k.pesan)}${k.balasan?'<br><small style="color:var(--accent);">Balasan: '+escapeHtml(k.balasan)+'</small>':''}</div>`).join('') || 'Belum ada pesan'; }
+    if (!currentUser) return; // Pastikan data tidak dimuat jika belum login
+    
+    // Tambahkan filter .eq('user_id', currentUser.id)
+    const { data } = await supabaseClient.from('korespondensi').select('*').eq('user_id', currentUser.id).order('created_at',{ascending:false}).limit(10);
+    
+    const hist=document.getElementById('kor-history-list'); 
+    if(hist && data){ 
+        hist.innerHTML=data.map(k=>`<div style="border-bottom:1px solid var(--border); padding:8px 0; color:var(--text);"><b>${escapeHtml(k.nama)}</b> <small style="color:var(--muted);">${new Date(k.created_at).toLocaleString('id-ID')}</small><br>${escapeHtml(k.pesan)}${k.balasan?'<br><small style="color:var(--accent);">Balasan: '+escapeHtml(k.balasan)+'</small>':''}</div>`).join('') || 'Belum ada pesan'; 
+    }
 }
 
 async function kirimSurvey(){
