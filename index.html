@@ -1842,6 +1842,18 @@ async function afterLogin(user){
     const userRole = currentProfile?.role || 'Pelapor';
     document.getElementById('top-role-badge').textContent = userRole.toUpperCase() + ' | ' + user.email;
     
+    // =========================================================
+    // TAMBAHAN: Sembunyikan tombol Mode Topbar untuk Pelapor
+    // =========================================================
+    const btnToggleLayout = document.getElementById('btn-toggle-layout');
+    if (userRole.toLowerCase() === 'pelapor') {
+        if (btnToggleLayout) btnToggleLayout.style.display = 'none'; // Hilangkan tombol
+        document.body.classList.remove('top-nav-mode'); // Paksa selalu mode sidebar
+    } else {
+        if (btnToggleLayout) btnToggleLayout.style.display = 'inline-flex'; // Munculkan untuk role lain
+    }
+    // =========================================================
+    
     if (userRole.toLowerCase() === 'superadmin') {
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.style.display = 'inline-flex';
